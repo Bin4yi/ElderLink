@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ef4444" />
+    <meta name="description" content="ElderLink - Comprehensive smart elder-caring platform connecting families with their elderly parents through technology and healthcare services." />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <title>ElderLink - Smart Elder Care Platform</title>
+    
+    <style>
+        /* Loading Screen Styles */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ef4444, #d946ef);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        #loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loading-logo {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite;
+        }
+        
+        .loading-text {
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #root {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        #root.loaded {
+            opacity: 1;
+        }
+        
+        .no-script-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            padding: 2rem;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #ef4444, #d946ef);
+            color: white;
+        }
+        
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+        
+        @media (max-width: 768px) {
+            html {
+                font-size: 14px;
+            }
+        }
+        
+        body {
+            margin: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: #fafafa;
+            line-height: 1.6;
+        }
+        
+        code {
+            font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-logo">
+            <span style="font-size: 40px;">❤️</span>
+        </div>
+        <div class="loading-text">ElderLink</div>
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- No Script Message -->
+    <noscript>
+        <div class="no-script-message">
+            <h1>JavaScript Required</h1>
+            <p>You need to enable JavaScript to run ElderLink.</p>
+            <p>ElderLink is a modern web application that requires JavaScript to provide the best user experience for managing elder care.</p>
+        </div>
+    </noscript>
+    
+    <!-- React Root -->
+    <div id="root"></div>
+    
+    <script>
+        // Hide loading screen when page loads
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const loadingScreen = document.getElementById('loading-screen');
+                const root = document.getElementById('root');
+                
+                if (loadingScreen) {
+                    loadingScreen.classList.add('hidden');
+                }
+                
+                if (root) {
+                    root.classList.add('loaded');
+                }
+                
+                setTimeout(function() {
+                    if (loadingScreen && loadingScreen.parentNode) {
+                        loadingScreen.parentNode.removeChild(loadingScreen);
+                    }
+                }, 500);
+            }, 1000);
+        });
+        
+        // Handle React app errors
+        window.addEventListener('error', function(e) {
+            console.error('Application error:', e.error);
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                loadingScreen.innerHTML = `
+                    <div style="text-align: center; color: white;">
+                        <h2>Something went wrong</h2>
+                        <p>Please refresh the page or contact support if the problem persists.</p>
+                        <button onclick="location.reload()" style="
+                            background: white; 
+                            color: #ef4444; 
+                            border: none; 
+                            padding: 12px 24px; 
+                            border-radius: 8px; 
+                            font-weight: 600; 
+                            cursor: pointer;
+                            margin-top: 16px;
+                        ">Refresh Page</button>
+                    </div>
+                `;
+            }
+        });
+        
+        // Performance monitoring
+        if ('performance' in window) {
+            window.addEventListener('load', function() {
+                setTimeout(function() {
+                    const navigation = performance.getEntriesByType('navigation')[0];
+                    if (navigation) {
+                        console.log('Page load time:', navigation.loadEventEnd - navigation.loadEventStart, 'ms');
+                    }
+                }, 0);
+            });
+        }
+        
+        // REMOVED SERVICE WORKER REGISTRATION TO FIX PROXY ERROR
+    </script>
+</body>
+
+
+
+</html>
