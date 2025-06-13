@@ -3,20 +3,14 @@ node_modules/
 package-lock.json
 
 
-
-# Logs
-*.log
-npm-debug.log*
-
 # IDE files
 .vscode/
 .idea/
 
+
+
+
 # OS files
 .DS_Store
 Thumbs.db
-
-
-# Coverage (if using tests)
-coverage/
 
