@@ -1,21 +1,13 @@
 // frontend/src/components/subscription/PaymentForm.js
 import React, { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements
-} from '@stripe/react-stripe-js';
-import { ArrowLeft, Lock } from 'lucide-react';
-import { subscriptionService } from '../../services/subscription';
-import { PACKAGE_PLANS } from '../../utils/constants';
-import { formatCurrency } from '../../utils/helpers';
+import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { ArrowLeft, Lock, CreditCard } from 'lucide-react';
+import { subscriptionService } from '../../../services/subscription';
+import { PACKAGE_PLANS } from '../../../utils/constants';
+import { formatCurrency } from '../../../utils/helpers';
 import toast from 'react-hot-toast';
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
-
-const CheckoutForm = ({ plan, duration, amount, onSuccess, onBack }) => {
+const PaymentForm = ({ plan, duration, amount, onBack, onSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -115,7 +107,7 @@ const CheckoutForm = ({ plan, duration, amount, onSuccess, onBack }) => {
   );
 };
 
-const PaymentForm = (props) => {
+const PaymentFormWrapper = (props) => {
   return (
     <div className="max-w-2xl mx-auto p-6">
       <div className="text-center mb-8">
@@ -124,12 +116,10 @@ const PaymentForm = (props) => {
       </div>
 
       <div className="bg-white rounded-lg shadow-lg p-8">
-        <Elements stripe={stripePromise}>
-          <CheckoutForm {...props} />
-        </Elements>
+        <PaymentForm {...props} />
       </div>
     </div>
   );
 };
 
-export default PaymentForm;
+export default PaymentFormWrapper;

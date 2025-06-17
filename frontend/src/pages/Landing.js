@@ -1,22 +1,13 @@
-// frontend/src/pages/Landing.js
+// src/pages/Landing.js
 import React, { useState } from 'react';
 import { 
-  Play, 
-  Heart, 
-  Shield, 
-  Users, 
-  Smartphone, 
-  Calendar,
-  Pill,
-  Phone,
-  CheckCircle,
-  Star,
-  ArrowRight
+  Heart, Shield, Users, Pill, CheckCircle, Star, 
+  ArrowRight, Play, Calendar, Smartphone, Phone 
 } from 'lucide-react';
 import Navbar from '../components/common/Navbar';
 import Login from '../components/auth/Login';
 import Register from '../components/auth/Register';
-import PackageSelection from '../components/subscription/PackageSelection';
+import PackageSelection from '../components/family/subscription/PackageSelection';
 import { useAuth } from '../context/AuthContext';
 import { PACKAGE_PLANS } from '../utils/constants';
 import { formatCurrency } from '../utils/helpers';
@@ -69,43 +60,47 @@ const Landing = () => {
 <section className="relative h-screen flex items-center justify-center overflow-hidden">
         {/* Full screen video background */}
         <div className="absolute inset-0 w-full h-full">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover"
-          >
-            <source src="/videos/hero-video.mp4" type="video/mp4" />
-          </video>
-          {/* Overlay - removed dark overlay, keeping minimal gradient for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-600/20 via-transparent to-secondary-600/20"></div>
-        </div>
-        
-        {/* Content */}
-        <div className="relative z-10 container mx-auto px-4 text-center text-white">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              Caring for Your{' '}
-              <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
-                Loved Ones
-              </span>
-            </h1>
-            <p className="text-xl md:text-2xl mb-12 text-white/90 leading-relaxed max-w-3xl mx-auto">
-              Bridge the distance with technology. ElderLink connects families with their elderly parents through comprehensive health monitoring and care services.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <button
-                onClick={handleGetStarted}
-                className="bg-white text-primary-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2 shadow-lg"
-              >
-                <span>Get Started Today</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
-              <button className="border-2 border-white/30 text-white px-8 py-4 rounded-xl font-semibold backdrop-blur-sm hover:bg-white/10 transition-all duration-300 flex items-center justify-center space-x-2">
-                <Play className="w-5 h-5" />
-                <span>Watch Demo</span>
-              </button>
+          <div className="relative">
+            <video 
+              className="w-full h-full object-cover"
+              autoPlay 
+              muted 
+              loop
+            >
+              <source src="/videos/hero-video.mp4" type="video/mp4" />
+            </video>
+            
+            {/* Dark overlay */}
+            <div className="absolute inset-0 bg-black/30"></div>
+            
+            {/* Content */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="relative z-10 container mx-auto px-4 text-center text-white">
+                <div className="max-w-4xl mx-auto">
+                  <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+                    Caring for Your{' '}
+                    <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
+                      Loved Ones
+                    </span>
+                  </h1>
+                  <p className="text-xl md:text-2xl mb-12 text-white/90 leading-relaxed max-w-3xl mx-auto">
+                    Bridge the distance with technology. ElderLink connects families with their elderly parents through comprehensive health monitoring and care services.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                    <button
+                      onClick={handleGetStarted}
+                      className="bg-white text-primary-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2 shadow-lg"
+                    >
+                      <span>Get Started Today</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                    <button className="border-2 border-white/30 text-white px-8 py-4 rounded-xl font-semibold backdrop-blur-sm hover:bg-white/10 transition-all duration-300 flex items-center justify-center space-x-2">
+                      <Play className="w-5 h-5" />
+                      <span>Watch Demo</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

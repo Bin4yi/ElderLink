@@ -1,5 +1,5 @@
 // Fixed AddElder component - prevents auto-submit on step 4
-// src/components/elder/AddElder.js (FIXED)
+// src/components/family/elder/AddElder.js (FIXED)
 import React, { useState } from 'react';
 import { 
   User, 
@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   CreditCard
 } from 'lucide-react';
-import { elderService } from '../../services/elder';
+import { elderService } from '../../../services/elder';
 import toast from 'react-hot-toast';
 
 const AddElder = ({ subscription, availableSubscriptions = [], onSuccess, onCancel }) => {

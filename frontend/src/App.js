@@ -6,16 +6,64 @@ import { Toaster } from 'react-hot-toast';
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { useAuth } from './context/AuthContext';
 
-// Pages
+// Public Pages
 import Landing from './pages/Landing';
-import Dashboard from './pages/Dashboard';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
-import AdminDashboard from './pages/AdminDashboard';
 
-// Components
+// Family Member Components
+import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
+import FamilyProfile from './components/family/profile/FamilyProfile';
+
+// Admin Components
+import AdminDashboard from './components/admin/dashboard/AdminDashboard';
+import UserManagement from './components/admin/users/UserManagement';
+import PackageManagement from './components/admin/packages/PackageManagement';
+import SystemAnalytics from './components/admin/analytics/SystemAnalytics';
+
+// Doctor Components
+import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
+import PatientList from './components/doctor/patients/PatientList';
+import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
+import AppointmentList from './components/doctor/appointments/AppointmentList';
+
+// Staff Components
+import StaffDashboard from './components/staff/dashboard/StaffDashboard';
+import CareManagement from './components/staff/care/CareManagement';
+import HealthMonitoring from './components/staff/monitoring/HealthMonitoring';
+import AlertsManagement from './components/staff/monitoring/AlertsManagement';
+
+// Pharmacist Components
+import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
+import MedicationManagement from './components/pharmacist/medications/MedicationManagement';
+import DeliverySchedule from './components/pharmacist/delivery/DeliverySchedule';
+
+// Auth Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
+
+// Helper component to redirect based on role
+const RoleRedirect = () => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  switch (user.role) {
+    case 'family_member':
+      return <Navigate to="/family/dashboard" replace />;
+    case 'admin':
+      return <Navigate to="/admin/dashboard" replace />;
+    case 'doctor':
+      return <Navigate to="/doctor/dashboard" replace />;
+    case 'staff':
+      return <Navigate to="/staff/dashboard" replace />;
+    case 'pharmacist':
+      return <Navigate to="/pharmacy/dashboard" replace />;
+    default:
+      return <Navigate to="/" replace />;
+  }
+};
 
 function App() {
   return (
@@ -27,28 +75,20 @@ function App() {
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
               
-              {/* Protected Routes for Family Members */}
+              {/* Family Member Routes */}
               <Route 
-                path="/dashboard" 
+                path="/family/dashboard" 
                 element={
                   <ProtectedRoute allowedRoles={['family_member']}>
-                    <Dashboard />
+                    <FamilyDashboard />
                   </ProtectedRoute>
                 } 
               />
               <Route 
-                path="/profile" 
+                path="/family/profile" 
                 element={
                   <ProtectedRoute allowedRoles={['family_member']}>
-                    <Profile />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/settings" 
-                element={
-                  <ProtectedRoute allowedRoles={['family_member']}>
-                    <Settings />
+                    <FamilyProfile />
                   </ProtectedRoute>
                 } 
               />
@@ -62,16 +102,61 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/admin/users" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <UserManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/packages" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <PackageManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/analytics" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <SystemAnalytics />
+                  </ProtectedRoute>
+                } 
+              />
 
               {/* Doctor Routes */}
               <Route 
                 path="/doctor/dashboard" 
                 element={
                   <ProtectedRoute allowedRoles={['doctor']}>
-                    <div className="p-8">
-                      <h1 className="text-3xl font-bold">Doctor Dashboard</h1>
-                      <p className="text-gray-600 mt-2">Patient management portal</p>
-                    </div>
+                    <DoctorDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/doctor/patients" 
+                element={
+                  <ProtectedRoute allowedRoles={['doctor']}>
+                    <PatientList />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/doctor/consultations" 
+                element={
+                  <ProtectedRoute allowedRoles={['doctor']}>
+                    <ConsultationHistory />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/doctor/appointments" 
+                element={
+                  <ProtectedRoute allowedRoles={['doctor']}>
+                    <AppointmentList />
                   </ProtectedRoute>
                 } 
               />
@@ -81,10 +166,31 @@ function App() {
                 path="/staff/dashboard" 
                 element={
                   <ProtectedRoute allowedRoles={['staff']}>
-                    <div className="p-8">
-                      <h1 className="text-3xl font-bold">Staff Dashboard</h1>
-                      <p className="text-gray-600 mt-2">Care management portal</p>
-                    </div>
+                    <StaffDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/staff/care-management" 
+                element={
+                  <ProtectedRoute allowedRoles={['staff']}>
+                    <CareManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/staff/monitoring" 
+                element={
+                  <ProtectedRoute allowedRoles={['staff']}>
+                    <HealthMonitoring />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/staff/alerts" 
+                element={
+                  <ProtectedRoute allowedRoles={['staff']}>
+                    <AlertsManagement />
                   </ProtectedRoute>
                 } 
               />
@@ -94,13 +200,29 @@ function App() {
                 path="/pharmacy/dashboard" 
                 element={
                   <ProtectedRoute allowedRoles={['pharmacist']}>
-                    <div className="p-8">
-                      <h1 className="text-3xl font-bold">Pharmacy Dashboard</h1>
-                      <p className="text-gray-600 mt-2">Medication management portal</p>
-                    </div>
+                    <PharmacyDashboard />
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/pharmacy/medications" 
+                element={
+                  <ProtectedRoute allowedRoles={['pharmacist']}>
+                    <MedicationManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/pharmacy/delivery" 
+                element={
+                  <ProtectedRoute allowedRoles={['pharmacist']}>
+                    <DeliverySchedule />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Redirect based on user role */}
+              <Route path="/dashboard" element={<RoleRedirect />} />
 
               {/* Catch all route */}
               <Route path="*" element={<Navigate to="/" replace />} />

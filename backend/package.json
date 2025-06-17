@@ -9,6 +9,7 @@
     "db:seed": "node scripts/initializeDatabase.js",
     "db:seed:packages": "node scripts/initializeDatabase.js packages",
     "db:seed:users": "node scripts/initializeDatabase.js users",
+    "update-roles": "node scripts/updateUserRoles.js",
     "test": "jest",
     "test:watch": "jest --watch"
   },

@@ -1,7 +1,7 @@
-// frontend/src/components/elder/ElderList.js (FIXED)
+// src/components/family/elder/ElderList.js
 import React from 'react';
 import { User, Calendar, MapPin, Heart } from 'lucide-react';
-import { calculateAge } from '../../utils/helpers';
+import { calculateAge } from '../../../utils/helpers';
 
 const ElderList = ({ elders, onSelectElder }) => {
   // Debug logging

@@ -1,8 +1,8 @@
-// frontend/src/components/subscription/SubscriptionStatus.js (FIXED)
+// src/components/family/subscription/SubscriptionStatus.js
 import React from 'react';
 import { Calendar, DollarSign, Package, AlertCircle, Plus } from 'lucide-react';
-import { formatCurrency, formatDate, getDaysRemaining } from '../../utils/helpers';
-import { PACKAGE_PLANS } from '../../utils/constants';
+import { formatCurrency, formatDate, getDaysRemaining } from '../../../utils/helpers';
+import { PACKAGE_PLANS } from '../../../utils/constants';
 
 const SubscriptionStatus = ({ subscription, onManage, onAddElder }) => {
   const daysRemaining = getDaysRemaining(subscription.endDate);

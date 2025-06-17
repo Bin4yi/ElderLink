@@ -3,11 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Users, CreditCard, Bell, Calendar, TrendingUp } from 'lucide-react';
 import Sidebar from '../components/common/Sidebar';
 import Loading from '../components/common/Loading';
-import PackageSelection from '../components/subscription/PackageSelection';
-import AddElder from '../components/elder/AddElder';
-import ElderList from '../components/elder/ElderList';
-import ElderProfile from '../components/elder/ElderProfile';
-import SubscriptionStatus from '../components/subscription/SubscriptionStatus';
+// UPDATED IMPORTS - Changed from components/subscription to components/family/subscription
+import PackageSelection from '../components/family/subscription/PackageSelection';
+// UPDATED IMPORTS - Changed from components/elder to components/family/elder
+import AddElder from '../components/family/elder/AddElder';
+import ElderList from '../components/family/elder/ElderList';
+import ElderProfile from '../components/family/elder/ElderProfile';
+// UPDATED IMPORTS - Changed from components/subscription to components/family/subscription
+import SubscriptionStatus from '../components/family/subscription/SubscriptionStatus';
 import { subscriptionService } from '../services/subscription';
 import { elderService } from '../services/elder';
 import { useAuth } from '../context/AuthContext';

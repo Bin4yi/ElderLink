@@ -1,7 +1,7 @@
-// frontend/src/components/elder/ElderProfile.js
+// src/components/family/elder/ElderProfile.js
 import React from 'react';
 import { User, Calendar, MapPin, Phone, Heart, Shield, Pill } from 'lucide-react';
-import { calculateAge, formatDate } from '../../utils/helpers';
+import { calculateAge, formatDate } from '../../../utils/helpers';
 
 const ElderProfile = ({ elder }) => {
   const age = calculateAge(elder.dateOfBirth);

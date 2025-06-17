@@ -1,8 +1,8 @@
-// frontend/src/components/subscription/PackageSelection.js
+// src/components/family/subscription/PackageSelection.js
 import React, { useState } from 'react';
 import { Check, Star } from 'lucide-react';
-import { PACKAGE_PLANS, DURATION_OPTIONS } from '../../utils/constants';
-import { formatCurrency } from '../../utils/helpers';
+import { PACKAGE_PLANS, DURATION_OPTIONS } from '../../../utils/constants';
+import { formatCurrency } from '../../../utils/helpers';
 import PaymentForm from './PaymentForm';
 
 const PackageSelection = ({ onSubscribe }) => {
