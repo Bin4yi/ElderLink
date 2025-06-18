@@ -1,9 +1,11 @@
 // src/components/family/subscription/PackageSelection.js
 import React, { useState } from 'react';
+import { Elements } from '@stripe/react-stripe-js';
 import { Check, Star } from 'lucide-react';
 import { PACKAGE_PLANS, DURATION_OPTIONS } from '../../../utils/constants';
 import { formatCurrency } from '../../../utils/helpers';
 import PaymentForm from './PaymentForm';
+import stripePromise from '../../../config/stripe';
 
 const PackageSelection = ({ onSubscribe }) => {
   const [selectedPlan, setSelectedPlan] = useState('premium');
@@ -42,13 +44,15 @@ const PackageSelection = ({ onSubscribe }) => {
 
   if (showPayment) {
     return (
-      <PaymentForm
-        plan={selectedPlan}
-        duration={selectedDuration}
-        amount={getCurrentPrice()}
-        onSuccess={onSubscribe}
-        onBack={() => setShowPayment(false)}
-      />
+      <Elements stripe={stripePromise}>
+        <PaymentForm
+          plan={selectedPlan}
+          duration={selectedDuration}
+          amount={getCurrentPrice()}
+          onSuccess={onSubscribe}
+          onBack={() => setShowPayment(false)}
+        />
+      </Elements>
     );
   }
 

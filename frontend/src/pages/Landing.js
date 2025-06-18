@@ -1,5 +1,6 @@
 // src/pages/Landing.js
 import React, { useState } from 'react';
+import { Elements } from '@stripe/react-stripe-js';
 import { 
   Heart, Shield, Users, Pill, CheckCircle, Star, 
   ArrowRight, Play, Calendar, Smartphone, Phone 
@@ -11,6 +12,7 @@ import PackageSelection from '../components/family/subscription/PackageSelection
 import { useAuth } from '../context/AuthContext';
 import { PACKAGE_PLANS } from '../utils/constants';
 import { formatCurrency } from '../utils/helpers';
+import stripePromise from '../config/stripe';
 
 const Landing = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -44,8 +46,24 @@ const Landing = () => {
     window.location.href = '/dashboard';
   };
 
+  // ✅ FIXED: Wrap PackageSelection with Elements when showing packages
   if (showPackages) {
-    return <PackageSelection onSubscribe={handleSelectPackage} />;
+    return (
+      <Elements stripe={stripePromise}>
+        <div className="min-h-screen bg-gray-50">
+          <Navbar />
+          <div className="pt-20">
+            <PackageSelection
+              onSubscribe={(subscription) => {
+                console.log('Subscription created:', subscription);
+                setShowPackages(false);
+                // Redirect to dashboard or show success
+              }}
+            />
+          </div>
+        </div>
+      </Elements>
+    );
   }
 
   return (
