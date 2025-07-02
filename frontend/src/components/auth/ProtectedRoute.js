@@ -38,7 +38,10 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
       case 'pharmacist':
         return <Navigate to="/pharmacy/dashboard" replace />;
       case 'family_member':
-        return <Navigate to="/dashboard" replace />;
+        return <Navigate to="/family/dashboard" replace />;
+      case 'elder':
+        return <Navigate to="/elder/dashboard" replace />;
+      break;
       default:
         return <Navigate to="/" replace />;
     }

@@ -4,7 +4,7 @@ const Subscription = require('./Subscription');
 const Elder = require('./Elder');
 const Notification = require('./Notification');
 
-// Define associations
+// Existing associations
 User.hasMany(Subscription, { 
   foreignKey: 'userId', 
   as: 'subscriptions',
@@ -31,6 +31,18 @@ Subscription.hasOne(Elder, {
 Elder.belongsTo(Subscription, { 
   foreignKey: 'subscriptionId', 
   as: 'subscription' 
+});
+
+// NEW: Elder-User associations
+User.hasOne(Elder, {
+  foreignKey: 'userId',
+  as: 'elderProfile',
+  onDelete: 'SET NULL'
+});
+
+Elder.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
 });
 
 Notification.belongsTo(User, { 
