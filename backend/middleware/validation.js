@@ -31,6 +31,12 @@ const validateLogin = (req, res, next) => {
 };
 
 const validateElder = (req, res, next) => {
+  console.log('=== VALIDATION DEBUG ===');
+  console.log('📋 Request body:', req.body);
+  console.log('📁 Request files:', req.files);
+  console.log('📷 Request file:', req.file);
+  console.log('🔑 Headers:', req.headers);
+  
   const schema = Joi.object({
     subscriptionId: Joi.string().uuid().required(),
     firstName: Joi.string().min(2).max(50).required(),
@@ -53,10 +59,13 @@ const validateElder = (req, res, next) => {
 
   const { error } = schema.validate(req.body);
   if (error) {
-    console.log('Validation error:', error.details[0].message);
-    console.log('Request body:', req.body);
+    console.error('❌ Validation error:', error.details[0].message);
+    console.error('🔍 Failed field:', error.details[0].path);
+    console.error('🔍 Failed value:', error.details[0].context?.value);
     return res.status(400).json({ message: error.details[0].message });
   }
+  
+  console.log('✅ Validation passed');
   next();
 };
 

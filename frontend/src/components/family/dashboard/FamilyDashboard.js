@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Users, CreditCard, Bell, Calendar, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// Fix import paths based on your actual folder structure
-import Sidebar from '../../common/Sidebar';
+// Changed: Using RoleLayout like doctor dashboard (consistent sidebar style)
+import RoleLayout from '../../common/RoleLayout';
 import Loading from '../../common/Loading';
 import PackageSelection from '../subscription/PackageSelection';
 import AddElder from '../elder/AddElder';
@@ -27,6 +27,7 @@ const FamilyDashboard = () => {
   const [currentView, setCurrentView] = useState('overview');
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
+  
   const { user } = useAuth();
 
   useEffect(() => {
@@ -56,6 +57,24 @@ const FamilyDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Simple subscription checking without context
+  const hasValidSubscription = () => {
+    return subscriptions.some(sub => 
+      sub.status === 'active' && 
+      new Date(sub.endDate) > new Date()
+    );
+  };
+
+  const requireSubscription = (callback, errorMessage = 'Active subscription required') => {
+    if (!hasValidSubscription()) {
+      toast.error(errorMessage);
+      setCurrentView('packages');
+      return false;
+    }
+    callback();
+    return true;
   };
 
   const handleSubscriptionSuccess = (subscription) => {
@@ -90,8 +109,21 @@ const FamilyDashboard = () => {
     setCurrentView('packages');
   };
 
+  const handleScheduleCheckup = () => {
+    requireSubscription(
+      () => {
+        console.log('Scheduling checkup');
+        toast.success('Checkup scheduling feature coming soon!');
+      },
+      'You need an active subscription to schedule checkups'
+    );
+  };
+
   const getActiveSubscriptions = () => {
-    return subscriptions.filter(sub => sub.status === 'active');
+    return subscriptions.filter(sub => 
+      sub.status === 'active' && 
+      new Date(sub.endDate) > new Date()
+    );
   };
 
   const getSubscriptionsWithElders = () => {
@@ -99,7 +131,27 @@ const FamilyDashboard = () => {
   };
 
   const getSubscriptionsWithoutElders = () => {
-    return subscriptions.filter(sub => sub.status === 'active' && !sub.elder);
+    return subscriptions.filter(sub => 
+      sub.status === 'active' && 
+      !sub.elder &&
+      new Date(sub.endDate) > new Date()
+    );
+  };
+
+  const handleAddElderClick = () => {
+    if (getActiveSubscriptions().length === 0) {
+      toast.error('You need an active subscription to add an elder');
+      setCurrentView('packages');
+      return;
+    }
+    
+    if (getSubscriptionsWithoutElders().length === 0) {
+      toast.error('All your subscriptions already have elders assigned. Subscribe to a new plan.');
+      setCurrentView('packages');
+      return;
+    }
+    
+    setCurrentView('add-elder');
   };
 
   if (loading) {
@@ -117,6 +169,20 @@ const FamilyDashboard = () => {
         );
       
       case 'add-elder':
+        if (!hasValidSubscription()) {
+          return (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+              <h3 className="font-semibold text-yellow-800 mb-2">Subscription Required</h3>
+              <p className="text-yellow-700 mb-4">You need an active subscription to add an elder.</p>
+              <button
+                onClick={() => setCurrentView('packages')}
+                className="bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600"
+              >
+                Subscribe Now
+              </button>
+            </div>
+          );
+        }
         return (
           <AddElder
             subscription={selectedSubscription}
@@ -131,7 +197,7 @@ const FamilyDashboard = () => {
           <div className="space-y-6">
             <button
               onClick={() => setCurrentView('overview')}
-              className="text-primary-500 hover:text-primary-600 font-medium"
+              className="text-red-500 hover:text-red-600 font-medium"
             >
               ← Back to Dashboard
             </button>
@@ -143,9 +209,9 @@ const FamilyDashboard = () => {
         return (
           <div className="space-y-8">
             {/* Welcome Section */}
-            <div className="bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg p-8 text-white">
+            <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-lg p-8 text-white">
               <h1 className="text-3xl font-bold mb-2">
-                Welcome back, {user?.name}!
+                Welcome back, {user?.firstName || user?.name || 'User'}!
               </h1>
               <p className="text-white/80">
                 Monitor and manage care for your loved ones from your dashboard
@@ -156,7 +222,7 @@ const FamilyDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white p-6 rounded-lg shadow-lg">
                 <div className="flex items-center">
-                  <Users className="w-10 h-10 text-primary-500 mr-4" />
+                  <Users className="w-10 h-10 text-red-500 mr-4" />
                   <div>
                     <p className="text-sm text-gray-600">Total Elders</p>
                     <p className="text-2xl font-bold">{elders.length}</p>
@@ -195,6 +261,20 @@ const FamilyDashboard = () => {
               </div>
             </div>
 
+            {/* Subscription Status Warning */}
+            {!hasValidSubscription() && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                <h3 className="text-lg font-semibold text-yellow-800 mb-2">No Active Subscription</h3>
+                <p className="text-yellow-700 mb-4">Subscribe to a care package to access all premium features</p>
+                <button
+                  onClick={() => setCurrentView('packages')}
+                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:from-red-600 hover:to-pink-600 transition-all"
+                >
+                  Choose Package
+                </button>
+              </div>
+            )}
+
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <button
@@ -202,8 +282,8 @@ const FamilyDashboard = () => {
                 className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group"
               >
                 <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                    <Plus className="w-6 h-6 text-primary-500" />
+                  <div className="w-12 h-12 bg-gradient-to-r from-red-100 to-pink-100 rounded-lg flex items-center justify-center group-hover:from-red-200 group-hover:to-pink-200 transition-colors">
+                    <Plus className="w-6 h-6 text-red-500" />
                   </div>
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Subscribe to New Plan</h3>
@@ -231,11 +311,21 @@ const FamilyDashboard = () => {
                 </div>
               )}
 
-              <button className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group">
+              <button 
+                onClick={handleScheduleCheckup}
+                className={`bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group ${
+                  !hasValidSubscription() ? 'opacity-50' : ''
+                }`}
+              >
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                     <Calendar className="w-6 h-6 text-blue-500" />
                   </div>
+                  {!hasValidSubscription() && (
+                    <div className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                      Subscription Required
+                    </div>
+                  )}
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Schedule Checkup</h3>
                 <p className="text-gray-600">Book a health consultation for your elder</p>
@@ -277,27 +367,22 @@ const FamilyDashboard = () => {
                 </p>
                 <button
                   onClick={handleAddNewPackage}
-                  className="btn-primary text-lg px-8 py-4"
+                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-lg px-8 py-4 rounded-lg hover:from-red-600 hover:to-pink-600 transition-all shadow-lg"
                 >
                   Choose Your Package
                 </button>
               </div>
             )}
-
           </div>
         );
     }
   };
 
+  // Changed: Using RoleLayout like doctor dashboard for consistent sidebar style
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex-1 ml-64">
-        <div className="p-8">
-          {renderContent()}
-        </div>
-      </div>
-    </div>
+    <RoleLayout title="Family Dashboard">
+      {renderContent()}
+    </RoleLayout>
   );
 };
 

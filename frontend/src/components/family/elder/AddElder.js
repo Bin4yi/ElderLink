@@ -86,26 +86,43 @@ const AddElder = ({ subscription, availableSubscriptions = [], onSuccess, onCanc
     setLoading(true);
 
     try {
-      // Create the data object to send
+      // FIXED: Explicitly include subscriptionId in the data
       const elderDataToSend = {
-        ...formData,
-        subscriptionId: selectedSubscriptionId
+        subscriptionId: selectedSubscriptionId, // Ensure this is included
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender,
+        address: formData.address,
+        phone: formData.phone,
+        emergencyContact: formData.emergencyContact,
+        bloodType: formData.bloodType || '',
+        medicalHistory: formData.medicalHistory || '',
+        currentMedications: formData.currentMedications || '',
+        allergies: formData.allergies || '',
+        chronicConditions: formData.chronicConditions || '',
+        doctorName: formData.doctorName || '',
+        doctorPhone: formData.doctorPhone || '',
+        insuranceProvider: formData.insuranceProvider || '',
+        insuranceNumber: formData.insuranceNumber || '',
+        photo: formData.photo
       };
 
-      console.log('Data being sent to elderService:', elderDataToSend);
+      console.log('🚀 Data being sent to elderService:', elderDataToSend);
+      console.log('🔍 SubscriptionId specifically:', elderDataToSend.subscriptionId);
       
       const response = await elderService.addElder(elderDataToSend);
       
       toast.success('Elder added successfully!');
       onSuccess(response.elder);
     } catch (error) {
-      console.error('Form submission error:', error);
+      console.error('❌ Form submission error:', error);
       const message = error.response?.data?.message || 'Failed to add elder';
       toast.error(message);
       
       // Show detailed error for debugging
       if (error.response?.data) {
-        console.error('Detailed error:', error.response.data);
+        console.error('📋 Detailed error:', error.response.data);
       }
     } finally {
       setLoading(false);

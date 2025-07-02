@@ -42,10 +42,10 @@ const Login = ({ onClose, onSwitchToRegister }) => {
         redirectPath = '/pharmacy/dashboard';
         break;
       case 'family_member':
-        redirectPath = '/dashboard';
+        redirectPath = 'family/dashboard';
         break;
       default:
-        redirectPath = '/dashboard';
+        redirectPath = 'family/dashboard';
     }
 
     // Use React Router navigate instead of window.location.href

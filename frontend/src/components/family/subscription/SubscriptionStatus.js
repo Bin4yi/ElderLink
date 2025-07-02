@@ -70,14 +70,14 @@ const SubscriptionStatus = ({ subscription, onManage, onAddElder }) => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-3">
+        {/* <div className="flex items-center space-x-3">
           <DollarSign className="w-5 h-5 text-gray-400" />
           <div>
             <p className="text-sm text-gray-600">Amount</p>
             <p className="font-semibold">{formatCurrency(subscription.amount)}</p>
           </div>
         </div>
-        
+         */}
         <div className="flex items-center space-x-3">
           <Calendar className="w-5 h-5 text-gray-400" />
           <div>
