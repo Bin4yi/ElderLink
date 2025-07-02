@@ -7,13 +7,27 @@ const Elder = sequelize.define('Elder', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  subscriptionId: {  // ← Make sure this field exists
+  subscriptionId: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
       model: 'Subscriptions',
       key: 'id'
     }
+  },
+  userId: {
+    type: DataTypes.UUID,
+    allowNull: true, // Allow null for existing elders
+    references: {
+      model: 'Users',
+      key: 'id'
+    },
+    unique: true // One user per elder
+  },
+  username: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true
   },
   firstName: {
     type: DataTypes.STRING,
@@ -86,6 +100,10 @@ const Elder = sequelize.define('Elder', {
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  hasLoginAccess: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 });
 

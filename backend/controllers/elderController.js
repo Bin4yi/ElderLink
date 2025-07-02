@@ -1,6 +1,7 @@
-const { Elder, Subscription } = require('../models');
+const { Elder, Subscription, User } = require('../models');
 const multer = require('multer');
 const path = require('path');
+const ElderAuthService = require('../services/elderAuthService');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -125,6 +126,105 @@ const addElder = async (req, res) => {
   }
 };
 
+// NEW: Create elder login credentials
+const createElderLogin = async (req, res) => {
+  try {
+    const { elderId } = req.params;
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ 
+        message: 'Username and password are required' 
+      });
+    }
+
+    // Verify elder belongs to the requesting user
+    const elder = await Elder.findOne({
+      where: { id: elderId },
+      include: [{
+        model: Subscription,
+        as: 'subscription',
+        where: { userId: req.user.id }
+      }]
+    });
+
+    if (!elder) {
+      return res.status(404).json({ message: 'Elder not found' });
+    }
+
+    if (elder.hasLoginAccess) {
+      return res.status(400).json({ 
+        message: 'Elder already has login access' 
+      });
+    }
+
+    const result = await ElderAuthService.createElderLogin(elderId, username, password);
+
+    res.json({
+      message: 'Elder login created successfully',
+      elder: result.elder,
+      credentials: {
+        username: username,
+        loginUrl: '/elder/login'
+      }
+    });
+  } catch (error) {
+    console.error('Create elder login error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Internal server error' 
+    });
+  }
+};
+
+// NEW: Toggle elder access
+const toggleElderAccess = async (req, res) => {
+  try {
+    const { elderId } = req.params;
+    const { hasAccess } = req.body;
+
+    // Verify elder belongs to the requesting user
+    const elder = await Elder.findOne({
+      where: { id: elderId },
+      include: [{
+        model: Subscription,
+        as: 'subscription',
+        where: { userId: req.user.id }
+      }]
+    });
+
+    if (!elder) {
+      return res.status(404).json({ message: 'Elder not found' });
+    }
+
+    const updatedElder = await ElderAuthService.toggleElderAccess(elderId, hasAccess);
+
+    res.json({
+      message: `Elder access ${hasAccess ? 'enabled' : 'disabled'} successfully`,
+      elder: updatedElder
+    });
+  } catch (error) {
+    console.error('Toggle elder access error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// NEW: Get elder profile (for elder dashboard)
+const getElderProfile = async (req, res) => {
+  try {
+    // Get elder associated with the logged-in user
+    const elder = await ElderAuthService.getElderByUserId(req.user.id);
+
+    if (!elder) {
+      return res.status(404).json({ message: 'Elder profile not found' });
+    }
+
+    res.json({ elder });
+  } catch (error) {
+    console.error('Get elder profile error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 const getElders = async (req, res) => {
   try {
     const elders = await Elder.findAll({
@@ -134,6 +234,12 @@ const getElders = async (req, res) => {
           as: 'subscription',
           where: { userId: req.user.id },
           attributes: ['id', 'plan', 'status', 'startDate', 'endDate']
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'email', 'isActive'],
+          required: false
         }
       ]
     });
@@ -156,6 +262,12 @@ const getElderById = async (req, res) => {
           model: Subscription,
           as: 'subscription',
           where: { userId: req.user.id }
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'email', 'isActive'],
+          required: false
         }
       ]
     });
@@ -207,10 +319,159 @@ const updateElder = async (req, res) => {
   }
 };
 
+// NEW: Add elder with authentication
+const addElderWithAuth = async (req, res) => {
+  try {
+    console.log('=== ADD ELDER WITH AUTH CONTROLLER ===');
+    console.log('📋 Request body:', req.body);
+    console.log('📷 Request file:', req.file);
+    console.log('🔑 Content-Type:', req.headers['content-type']);
+    
+    const elderData = { ...req.body };
+    
+    // CRITICAL: Ensure subscriptionId is present
+    if (!elderData.subscriptionId) {
+      console.error('❌ Missing subscriptionId in request');
+      return res.status(400).json({ 
+        message: 'Subscription ID is required',
+        received: elderData 
+      });
+    }
+    
+    console.log('✅ SubscriptionId found:', elderData.subscriptionId);
+    
+    // Verify subscription belongs to user
+    const subscription = await Subscription.findOne({
+      where: { 
+        id: elderData.subscriptionId,
+        userId: req.user.id 
+      }
+    });
+    
+    if (!subscription) {
+      return res.status(404).json({ message: 'Subscription not found or access denied' });
+    }
+    
+    // Handle photo upload if present
+    if (req.file) {
+      elderData.photo = req.file.filename;
+      console.log('📸 Photo saved as:', req.file.filename);
+    }
+    
+    // Extract authentication data
+    const enableLogin = elderData.enableLogin === 'true' || elderData.enableLogin === true;
+    const email = elderData.email;
+    const password = elderData.password;
+    
+    // Remove auth fields from elder data
+    delete elderData.enableLogin;
+    delete elderData.email;
+    delete elderData.password;
+    delete elderData.confirmPassword;
+    
+    console.log('🚀 Creating elder with data:', elderData);
+    console.log('🔐 Login enabled:', enableLogin);
+    
+    // Create elder first
+    const elder = await Elder.create(elderData);
+    console.log('✅ Elder created successfully:', elder.id);
+    
+    let user = null;
+    
+    // Create user account if login is enabled
+    if (enableLogin && email && password) {
+      console.log('🔐 Creating user account for elder...');
+      
+      try {
+        // Check if email already exists
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+          // If user creation fails, we should rollback the elder creation
+          await elder.destroy();
+          return res.status(400).json({ 
+            message: 'Email already exists. Please choose a different email.' 
+          });
+        }
+        
+        // Create user account
+        user = await User.create({
+          firstName: elder.firstName,
+          lastName: elder.lastName,
+          email: email,
+          password: password,
+          phone: elder.phone,
+          role: 'elder',
+          isActive: true
+        });
+        
+        // Link elder to user
+        await elder.update({
+          userId: user.id,
+          username: email,
+          hasLoginAccess: true
+        });
+        
+        console.log('✅ User account created and linked:', user.id);
+        
+      } catch (userError) {
+        console.error('❌ User creation failed:', userError);
+        // Rollback elder creation
+        await elder.destroy();
+        
+        const message = userError.name === 'SequelizeUniqueConstraintError' 
+          ? 'Email already exists' 
+          : 'Failed to create login credentials';
+          
+        return res.status(400).json({ message });
+      }
+    }
+    
+    // Fetch complete elder data with associations
+    const completeElder = await Elder.findByPk(elder.id, {
+      include: [
+        {
+          model: Subscription,
+          as: 'subscription',
+          attributes: ['id', 'plan', 'status', 'startDate', 'endDate']
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'email', 'role', 'isActive'],
+          required: false
+        }
+      ]
+    });
+    
+    res.status(201).json({
+      message: enableLogin 
+        ? 'Elder added successfully with login access' 
+        : 'Elder added successfully',
+      elder: completeElder,
+      loginCreated: enableLogin,
+      credentials: enableLogin ? {
+        email: email,
+        loginUrl: '/elder/login'
+      } : null
+    });
+    
+  } catch (error) {
+    console.error('❌ Add elder with auth error:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = { 
   addElder, 
   getElders, 
   getElderById, 
   updateElder, 
-  upload 
+  upload,
+  createElderLogin,
+  toggleElderAccess,
+  getElderProfile,
+  addElderWithAuth // NEW: Add this export
 };

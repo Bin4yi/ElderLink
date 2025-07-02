@@ -28,6 +28,9 @@ import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboa
 // Staff Components
 import StaffDashboard from './components/staff/dashboard/StaffDashboard';
 
+// Elder Components
+import ElderDashboard from './components/Elder/dashboard/Elder';
+
 function App() {
   return (
     <Router>
@@ -46,6 +49,9 @@ function App() {
               <Route path="/family/dashboard" element={<FamilyDashboard />} />
               <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
               <Route path="/staff/dashboard" element={<StaffDashboard />} />
+              
+              {/* NEW: Elder routes */}
+              <Route path="/elder/dashboard" element={<ElderDashboard />} />
             </Routes>
             
             {/* Toast notifications */}
