@@ -27,6 +27,7 @@ import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboa
 
 // Staff Components
 import StaffDashboard from './components/staff/dashboard/StaffDashboard';
+import CareManagement from './components/staff/care/CareManagement';
 
 // Elder Components
 import ElderDashboard from './components/Elder/dashboard/Elder';
@@ -52,6 +53,10 @@ function App() {
               
               {/* NEW: Elder routes */}
               <Route path="/elder/dashboard" element={<ElderDashboard />} />
+              
+              {/* Staff routes */}
+              <Route path="/staff/care" element={<CareManagement />} />
+              
             </Routes>
             
             {/* Toast notifications */}
