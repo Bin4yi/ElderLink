@@ -120,6 +120,52 @@ const defaultUsers = [
     phone: '+1-555-FAM-002',
     role: 'family_member',
     isActive: true
+  },
+  
+  // Mental Health Consultant Accounts - NEW!
+  {
+    firstName: 'Dr. Sarah',
+    lastName: 'Mitchell',
+    email: 'dr.mitchell@elderlink.com',
+    password: 'Mental@123',
+    phone: '+1-555-MH-001',
+    role: 'mental_health_consultant',
+    licenseNumber: 'MH-2024-001',
+    specialization: 'Geriatric Psychology',
+    isActive: true
+  },
+  {
+    firstName: 'Dr. James',
+    lastName: 'Thompson',
+    email: 'dr.thompson@elderlink.com',
+    password: 'Mental@456',
+    phone: '+1-555-MH-002',
+    role: 'mental_health_consultant',
+    licenseNumber: 'MH-2024-002',
+    specialization: 'Dementia Care and Support',
+    isActive: true
+  },
+  {
+    firstName: 'Dr. Maria',
+    lastName: 'Rodriguez',
+    email: 'dr.maria.rodriguez@elderlink.com',
+    password: 'Mental@789',
+    phone: '+1-555-MH-003',
+    role: 'mental_health_consultant',
+    licenseNumber: 'MH-2024-003',
+    specialization: 'Anxiety and Depression in Seniors',
+    isActive: true
+  },
+  {
+    firstName: 'Dr. Robert',
+    lastName: 'Chen',
+    email: 'dr.robert.chen@elderlink.com',
+    password: 'Mental@012',
+    phone: '+1-555-MH-004',
+    role: 'mental_health_consultant',
+    licenseNumber: 'MH-2024-004',
+    specialization: 'Cognitive Behavioral Therapy for Elderly',
+    isActive: true
   }
 ];
 
@@ -150,6 +196,11 @@ const getWelcomeNotifications = (userId, role, firstName) => {
       title: 'Welcome to ElderLink',
       message: `Hi ${firstName}! Welcome to ElderLink. You can now subscribe to care packages.`,
       type: 'success'
+    },
+    mental_health_consultant: {
+      title: 'Welcome Dr. ' + firstName,
+      message: `Welcome to the ElderLink mental health consultant team! You can now provide mental health support and consultations.`,
+      type: 'info'
     }
   };
 
@@ -248,9 +299,6 @@ const displayCredentials = () => {
   console.log('\n👨‍💼 ADMIN ACCOUNTS:');
   console.log('Email: admin@elderlink.com');
   console.log('Password: Admin@123456');
-  console.log('---');
-  console.log('Email: sarah.manager@elderlink.com');
-  console.log('Password: Manager@123');
   
   console.log('\n👨‍⚕️ DOCTOR ACCOUNTS:');
   console.log('Email: dr.johnson@elderlink.com');
@@ -270,7 +318,25 @@ const displayCredentials = () => {
   console.log('Email: pharmacist.lee@elderlink.com');
   console.log('Password: Pharm@123');
   
-  console.log('\n👨‍👩‍👧‍👦 FAMILY MEMBER ACCOUNTS (Test):');
+  // NEW: Mental Health Consultant accounts
+  console.log('\n🧠 MENTAL HEALTH CONSULTANT ACCOUNTS:');
+  console.log('Email: dr.mitchell@elderlink.com');
+  console.log('Password: Mental@123');
+  console.log('Specialization: Geriatric Psychology');
+  console.log('---');
+  console.log('Email: dr.thompson@elderlink.com');
+  console.log('Password: Mental@456');
+  console.log('Specialization: Dementia Care and Support');
+  console.log('---');
+  console.log('Email: dr.maria.rodriguez@elderlink.com');
+  console.log('Password: Mental@789');
+  console.log('Specialization: Anxiety and Depression in Seniors');
+  console.log('---');
+  console.log('Email: dr.robert.chen@elderlink.com');
+  console.log('Password: Mental@012');
+  console.log('Specialization: Cognitive Behavioral Therapy for Elderly');
+  
+  console.log('\n👨‍👩‍👧‍👦 FAMILY MEMBER ACCOUNTS:');
   console.log('Email: john.smith@example.com');
   console.log('Password: Family@123');
   
