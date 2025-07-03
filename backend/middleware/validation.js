@@ -92,7 +92,6 @@ const validateElderWithAuth = (req, res, next) => {
     doctorPhone: Joi.string().optional().allow(''),
     insuranceProvider: Joi.string().optional().allow(''),
     insuranceNumber: Joi.string().optional().allow(''),
-    // NEW: Authentication fields
     enableLogin: Joi.boolean().optional(),
     email: Joi.when('enableLogin', {
       is: true,
@@ -108,18 +107,12 @@ const validateElderWithAuth = (req, res, next) => {
   });
 
   const { error } = schema.validate(req.body);
+  
   if (error) {
-    console.error('❌ Validation error:', error.details[0].message);
-    console.error('🔍 Failed field:', error.details[0].path);
-    console.error('🔍 Failed value:', error.details[0].context?.value);
+    console.log('❌ Validation error:', error.details[0].message);
     return res.status(400).json({ message: error.details[0].message });
   }
-  
-  // Additional validation for password confirmation
-  if (req.body.enableLogin && req.body.password !== req.body.confirmPassword) {
-    return res.status(400).json({ message: 'Passwords do not match' });
-  }
-  
+
   console.log('✅ Validation passed');
   next();
 };

@@ -32,6 +32,7 @@ import AlertManagement from './components/staff/monitoring/AlertsManagement';
 import HealthMonitoring from './components/staff/alerts/HealthMonitoring';
 import Report from './components/staff/reports/Report';
 import Profilestaff from './components/staff/profile/Profilestaff';
+import CareManagement from './components/staff/care-management/PatientManagement';
 // Elder Components
 import ElderDashboard from './components/Elder/dashboard/Elder';
 
@@ -65,6 +66,10 @@ function App() {
               
               {/* NEW: Elder routes */}
               <Route path="/elder/dashboard" element={<ElderDashboard />} />
+              
+              {/* Staff routes */}
+              <Route path="/staff/care" element={<CareManagement />} />
+              
             </Routes>
             
             {/* Toast notifications */}
