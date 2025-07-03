@@ -5,24 +5,46 @@ import toast from 'react-hot-toast';
 
 const ElderLoginManager = ({ elder, onUpdate }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [credentials, setCredentials] = useState({ username: '', password: '' });
+  const [credentials, setCredentials] = useState({ 
+    username: '', 
+    password: '', 
+    confirmPassword: '' // FIXED: Add confirmPassword field
+  });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // FIXED: Add separate state
   const [loading, setLoading] = useState(false);
 
   const handleCreateLogin = async (e) => {
     e.preventDefault();
     
-    if (!credentials.username || !credentials.password) {
+    if (!credentials.username || !credentials.password || !credentials.confirmPassword) {
       toast.error('Please fill in all fields');
+      return;
+    }
+
+    // FIXED: Check password match
+    if (credentials.password !== credentials.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    // FIXED: Check minimum password length
+    if (credentials.password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await elderService.createElderLogin(elder.id, credentials);
+      // FIXED: Only send username and password to API
+      const response = await elderService.createElderLogin(elder.id, {
+        username: credentials.username,
+        password: credentials.password
+      });
+      
       toast.success('Login credentials created successfully!');
       setShowCreateForm(false);
-      setCredentials({ username: '', password: '' });
+      setCredentials({ username: '', password: '', confirmPassword: '' }); // FIXED: Reset all fields
       onUpdate(response.elder);
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to create login';
@@ -44,6 +66,11 @@ const ElderLoginManager = ({ elder, onUpdate }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // FIXED: Handle form field changes properly
+  const handleCredentialChange = (field, value) => {
+    setCredentials(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -81,7 +108,7 @@ const ElderLoginManager = ({ elder, onUpdate }) => {
                 <input
                   type="email"
                   value={credentials.username}
-                  onChange={(e) => setCredentials(prev => ({ ...prev, username: e.target.value }))}
+                  onChange={(e) => handleCredentialChange('username', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="elder@example.com"
                   required
@@ -96,10 +123,11 @@ const ElderLoginManager = ({ elder, onUpdate }) => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={credentials.password}
-                    onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
+                    onChange={(e) => handleCredentialChange('password', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                     placeholder="Create a secure password"
                     required
+                    minLength="6"
                   />
                   <button
                     type="button"
@@ -109,13 +137,55 @@ const ElderLoginManager = ({ elder, onUpdate }) => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Must be at least 6 characters long
+                </p>
+              </div>
+
+              {/* FIXED: Add confirm password field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={credentials.confirmPassword}
+                    onChange={(e) => handleCredentialChange('confirmPassword', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 ${
+                      credentials.confirmPassword && credentials.password !== credentials.confirmPassword
+                        ? 'border-red-300 bg-red-50'
+                        : 'border-gray-300'
+                    }`}
+                    placeholder="Confirm the password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {/* FIXED: Show password mismatch error */}
+                {credentials.confirmPassword && credentials.password !== credentials.confirmPassword && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Passwords do not match
+                  </p>
+                )}
+                {credentials.confirmPassword && credentials.password === credentials.confirmPassword && credentials.password && (
+                  <p className="text-xs text-green-600 mt-1">
+                    Passwords match ✓
+                  </p>
+                )}
               </div>
 
               <div className="flex space-x-3">
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
+                  disabled={loading || (credentials.password !== credentials.confirmPassword) || !credentials.password || !credentials.confirmPassword}
+                  className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Creating...' : 'Create Login'}
                 </button>
@@ -123,7 +193,7 @@ const ElderLoginManager = ({ elder, onUpdate }) => {
                   type="button"
                   onClick={() => {
                     setShowCreateForm(false);
-                    setCredentials({ username: '', password: '' });
+                    setCredentials({ username: '', password: '', confirmPassword: '' }); // FIXED: Reset all fields
                   }}
                   className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
                 >
