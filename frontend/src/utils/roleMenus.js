@@ -2,7 +2,8 @@
 import { 
   Home, Users, Package, Activity, Settings, User, Heart,
   Stethoscope, Calendar, FileText, Pill, Truck, Shield,
-  Monitor, AlertTriangle, UserCheck, ClipboardList, BarChart3
+  Monitor, AlertTriangle, UserCheck, ClipboardList, BarChart3,
+  Brain // NEW: Icon for mental health
 } from 'lucide-react';
 
 export const getRoleMenuItems = (role) => {
@@ -39,7 +40,7 @@ export const getRoleMenuItems = (role) => {
     case 'staff':
       return [
         { path: '/staff/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/staff/care-management', icon: Heart, label: 'Care Management' },
+        { path: '/staff/caret', icon: Heart, label: 'Care Management' },
         { path: '/staff/monitoring', icon: Monitor, label: 'Health Monitoring' },
         { path: '/staff/alerts', icon: AlertTriangle, label: 'Alerts' },
         { path: '/staff/reports', icon: FileText, label: 'Reports' },
@@ -56,11 +57,34 @@ export const getRoleMenuItems = (role) => {
         { path: '/pharmacy/profile', icon: User, label: 'Profile' }
       ];
 
+    // NEW: Mental Health Consultant Menu
+    case 'mental_health_consultant':
+      return [
+        { path: '/mental-health/dashboard', icon: Home, label: 'Dashboard' },
+        { path: '/mental-health/clients', icon: Users, label: 'Clients' },
+        { path: '/mental-health/assessments', icon: Brain, label: 'Mental Health Assessments' },
+        { path: '/mental-health/therapy-sessions', icon: Calendar, label: 'Therapy Sessions' },
+        { path: '/mental-health/treatment-plans', icon: FileText, label: 'Treatment Plans' },
+        { path: '/mental-health/progress-reports', icon: BarChart3, label: 'Progress Reports' },
+        { path: '/mental-health/resources', icon: Heart, label: 'Mental Health Resources' },
+        { path: '/mental-health/profile', icon: User, label: 'Profile' }
+      ];
+
+    case 'elder':
+      return [
+        { path: '/elder/dashboard', icon: Home, label: 'Dashboard' },
+        { path: '/elder/health', icon: Heart, label: 'My Health' },
+        { path: '/elder/appointments', icon: Calendar, label: 'Appointments' },
+        { path: '/elder/medications', icon: Pill, label: 'Medications' },
+        { path: '/elder/mental-wellness', icon: Brain, label: 'Mental Wellness' }, // NEW!
+        { path: '/elder/emergency', icon: AlertTriangle, label: 'Emergency' },
+        { path: '/elder/profile', icon: User, label: 'Profile' }
+      ];
+
     default:
       return [
         { path: '/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/profile', icon: User, label: 'Profile' },
-        { path: '/settings', icon: Settings, label: 'Settings' }
+        { path: '/profile', icon: User, label: 'Profile' }
       ];
   }
 };
