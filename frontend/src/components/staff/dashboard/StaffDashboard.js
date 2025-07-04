@@ -48,11 +48,11 @@ const StaffDashboard = () => {
         });
         
         setTodaySchedule([
-          { id: 1, time: '07:30 AM', patient: 'John Carter', task: 'Emergency pickup - Cardiac arrest', status: 'completed' },
-          { id: 2, time: '09:00 AM', patient: 'Linda Evans', task: 'Scheduled transfer to City Hospital', status: 'completed' },
-          { id: 3, time: '11:15 AM', patient: 'Michael Brown', task: 'Accident scene response', status: 'in-progress' },
-          { id: 4, time: '01:45 PM', patient: 'Susan Lee', task: 'Non-emergency transport', status: 'pending' },
-          { id: 5, time: '03:30 PM', patient: 'David Kim', task: 'Discharge transport from hospital', status: 'pending' },
+          { id: 1, time: '08:00 AM', elder: 'Margaret Thompson', task: 'Morning medication check', status: 'completed' },
+          { id: 2, time: '09:30 AM', elder: 'Robert Wilson', task: 'Health monitoring', status: 'completed' },
+          { id: 3, time: '11:00 AM', elder: 'Dorothy Davis', task: 'Physical therapy session', status: 'in-progress' },
+          { id: 4, time: '02:00 PM', elder: 'Harold Johnson', task: 'Meal assistance', status: 'pending' },
+          { id: 5, time: '04:00 PM', elder: 'Betty Miller', task: 'Evening medication', status: 'pending' },
         ]);
 
         setRecentAlerts([
@@ -74,7 +74,7 @@ const StaffDashboard = () => {
   }
 
   return (
-    <RoleLayout title="Ambulance Staff Dashboard">
+    <RoleLayout title="Care Staff Dashboard">
       <div className="space-y-8">
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-teal-600 to-green-600 rounded-lg p-8 text-white">
@@ -92,7 +92,7 @@ const StaffDashboard = () => {
             <div className="flex items-center">
               <Users className="w-10 h-10 text-teal-500 mr-4" />
               <div>
-                <p className="text-sm text-gray-600">Assigned Ambulance</p>
+                <p className="text-sm text-gray-600">Assigned Elders</p>
                 <p className="text-2xl font-bold">{stats.assignedElders}</p>
                 <p className="text-xs text-blue-500">Under your care</p>
               </div>
@@ -163,7 +163,7 @@ const StaffDashboard = () => {
                 <Heart className="w-6 h-6 text-teal-500" />
               </div>
             </div>
-            <h3 className="text-lg font-semibold mb-2">Dispatch Ambulance</h3>
+            <h3 className="text-lg font-semibold mb-2">Care Management</h3>
             <p className="text-gray-600">Manage daily care activities</p>
           </button>
 
@@ -173,8 +173,8 @@ const StaffDashboard = () => {
                 <Monitor className="w-6 h-6 text-blue-500" />
               </div>
             </div>
-            <h3 className="text-lg font-semibold mb-2">Access Patients</h3>
-            <p className="text-gray-600">Transport to Hospital or treat at scene</p>
+            <h3 className="text-lg font-semibold mb-2">Health Monitoring</h3>
+            <p className="text-gray-600">Check vital signs and health status</p>
           </button>
 
           <button className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group">
@@ -183,7 +183,7 @@ const StaffDashboard = () => {
                 <AlertTriangle className="w-6 h-6 text-red-500" />
               </div>
             </div>
-            <h3 className="text-lg font-semibold mb-2">Emergency Alerts </h3>
+            <h3 className="text-lg font-semibold mb-2">Alert Management</h3>
             <p className="text-gray-600">Review and respond to alerts</p>
           </button>
 
@@ -201,7 +201,7 @@ const StaffDashboard = () => {
         {/* Today's Schedule & Recent Alerts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Today's Ambulance Schedule</h3>
+            <h3 className="text-lg font-semibold mb-4">Today's Care Schedule</h3>
             <div className="space-y-4">
               {todaySchedule.map(task => (
                 <div key={task.id} className="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg">
