@@ -27,6 +27,13 @@ import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboa
 
 // Staff Components
 import StaffDashboard from './components/staff/dashboard/StaffDashboard';
+
+import PatientManagement from './components/staff/care-management/PatientManagement';
+import AlertManagement from './components/staff/monitoring/AlertsManagement';
+import HealthMonitoring from './components/staff/alerts/HealthMonitoring';
+import Report from './components/staff/reports/Report';
+import Profilestaff from './components/staff/profile/Profilestaff';
+
 import CareManagement from './components/staff/care/CareManagement';
 
 // Elder Components
@@ -55,7 +62,7 @@ function App() {
               <Route path="/elder/dashboard" element={<ElderDashboard />} />
               
               {/* Staff routes */}
-              <Route path="/staff/care" element={<CareManagement />} />
+              {/* <Route path="/staff/care" element={<CareManagement />} /> */}
               
             </Routes>
             
