@@ -1,60 +1,63 @@
 // src/pages/AdminPortal.js
-import React, { useState } from 'react';
-import { Eye, EyeOff, Loader, Shield } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import React, { useState } from "react";
+import { Eye, EyeOff, Loader, Shield } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const AdminPortal = () => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
 
   const handleChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
-    if (error) setError('');
+    if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
       const response = await login(formData);
-      
+
       // Check if user is admin, staff, doctor, or pharmacist
-      const allowedRoles = ['admin', 'staff', 'doctor', 'pharmacist'];
+      const allowedRoles = ["admin", "staff", "doctor", "pharmacist"];
       if (!allowedRoles.includes(response.user.role)) {
-        setError('Access denied. This portal is for staff members only.');
+        setError("Access denied. This portal is for staff members only.");
         return;
       }
 
       // Redirect based on role
       switch (response.user.role) {
-        case 'admin':
-          window.location.href = '/admin/dashboard';
+        case "admin":
+          window.location.href = "/admin/dashboard";
           break;
-        case 'doctor':
-          window.location.href = '/doctor/dashboard';
+        case "doctor":
+          window.location.href = "/doctor/dashboard";
           break;
-        case 'staff':
-          window.location.href = '/staff/dashboard';
+        case "staff":
+          window.location.href = "/staff/dashboard";
           break;
-        case 'pharmacist':
-          window.location.href = '/pharmacy/dashboard';
+        case "pharmacist":
+          window.location.href = "/pharmacy/dashboard";
           break;
+        case "mental_health_consultant":
+          window.location.href = "/mental-health/dashboard";
         default:
-          window.location.href = '/dashboard';
+          window.location.href = "/dashboard";
       }
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed. Please try again.';
+      const message =
+        error.response?.data?.message || "Login failed. Please try again.";
       setError(message);
     } finally {
       setIsLoading(false);
@@ -69,8 +72,12 @@ const AdminPortal = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
             <Shield className="w-8 h-8 text-blue-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Staff Portal</h1>
-          <p className="text-gray-600">Sign in to access the ElderLink staff dashboard</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Staff Portal
+          </h1>
+          <p className="text-gray-600">
+            Sign in to access the ElderLink staff dashboard
+          </p>
         </div>
 
         {/* Login Form */}
@@ -104,7 +111,7 @@ const AdminPortal = () => {
               </label>
               <div className="relative">
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -118,7 +125,11 @@ const AdminPortal = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
@@ -141,21 +152,27 @@ const AdminPortal = () => {
 
           {/* Sample Credentials for Development */}
           <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Sample Credentials (Development):</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">
+              Sample Credentials (Development):
+            </h4>
             <div className="text-xs text-gray-600 space-y-1">
-              <div><strong>Admin:</strong> admin@elderlink.com / Admin@123456</div>
-              <div><strong>Doctor:</strong> dr.johnson@elderlink.com / Doctor@123</div>
-              <div><strong>Staff:</strong> jessica.thompson@elderlink.com / Staff@123</div>
+              <div>
+                <strong>Admin:</strong> admin@elderlink.com / Admin@123456
+              </div>
+              <div>
+                <strong>Doctor:</strong> dr.johnson@elderlink.com / Doctor@123
+              </div>
+              <div>
+                <strong>Staff:</strong> jessica.thompson@elderlink.com /
+                Staff@123
+              </div>
             </div>
           </div>
         </div>
 
         {/* Back to Main Site */}
         <div className="text-center mt-6">
-          <a
-            href="/"
-            className="text-sm text-gray-600 hover:text-gray-800"
-          >
+          <a href="/" className="text-sm text-gray-600 hover:text-gray-800">
             ← Back to ElderLink Home
           </a>
         </div>
