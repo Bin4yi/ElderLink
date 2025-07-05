@@ -24,7 +24,13 @@ import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
 
 // Pharmacy Components
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
+import MedicationManagement from './components/pharmacist/medications/MedicationManagement';
+import DeliverySchedule from './components/pharmacist/delivery/DeliverySchedule';
+import PrescriptionManagement from './components/pharmacist/prescriptions/PrescriptionManagement';
+import InventoryManagement from './components/pharmacist/inventory/InventoryManagement';
+import PharmacyProfile from './components/pharmacist/profile/Pharmacyprofile';
 
+// Staff Components
 // Staff Components
 import StaffDashboard from './components/staff/dashboard/StaffDashboard';
 import AlertsManagement from './components/staff/alerts/AlertsManagement';
@@ -52,13 +58,26 @@ function App() {
               <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
               <Route path="/family/dashboard" element={<FamilyDashboard />} />
               <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
+
               {/* Staff routes */}
-              <Route path="/staff/dashboard" element={<StaffDashboard />} />
+                <Route path="/staff/dashboard" element={<StaffDashboard />} />
                  <Route path="/staff/care" element={< CareManagement/>} />
                   <Route path="/staff/alerts" element={<AlertsManagement/>} />
               <Route path="/staff/monitoring" element={<HealthMonitoring />} />
                 <Route path="/staff/reports" element={<Report />} />
                   <Route path="/staff/profile" element={<Profilestaff />} />
+             
+=======
+              <Route path="/pharmacy/medications" element={<MedicationManagement />} />
+              <Route path="/pharmacy/delivery" element={<DeliverySchedule />} 
+              <Route path="/pharmacy/prescriptions" element={<PrescriptionManagement />} />
+              <Route path="/pharmacy/inventory" element={<InventoryManagement />} />
+              <Route path="/pharmacy/profile" element={<PharmacyProfile />} />
+              
+            
+
+              
+
               {/* NEW: Elder routes */}
               <Route path="/elder/dashboard" element={<ElderDashboard />} />
               
