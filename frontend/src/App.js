@@ -62,8 +62,7 @@ function App() {
               {/* NEW: Elder routes */}
               <Route path="/elder/dashboard" element={<ElderDashboard />} />
               
-              {/* Staff routes */}
-              {/* <Route path="/staff/care" element={<CareManagement />} /> */}
+           
               
             </Routes>
             
