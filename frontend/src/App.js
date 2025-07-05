@@ -32,17 +32,17 @@ import PharmacyProfile from './components/pharmacist/profile/Pharmacyprofile';
 
 // Staff Components
 import StaffDashboard from './components/staff/dashboard/StaffDashboard';
+
 import PatientManagement from './components/staff/care-management/PatientManagement';
 import AlertManagement from './components/staff/monitoring/AlertsManagement';
 import HealthMonitoring from './components/staff/alerts/HealthMonitoring';
 import Report from './components/staff/reports/Report';
 import Profilestaff from './components/staff/profile/Profilestaff';
-import CareManagement from './components/staff/care-management/PatientManagement';
+
+import CareManagement from './components/staff/care/CareManagement';
+
 // Elder Components
 import ElderDashboard from './components/Elder/dashboard/Elder';
-
-
-
 
 function App() {
   return (
@@ -73,12 +73,13 @@ function App() {
                 <Route path="/staff/reports" element={<Report />} />
                  <Route path="/staff/profile" element={<Profilestaff/>} />
             
+
               
               {/* NEW: Elder routes */}
               <Route path="/elder/dashboard" element={<ElderDashboard />} />
               
               {/* Staff routes */}
-              <Route path="/staff/care" element={<CareManagement />} />
+              {/* <Route path="/staff/care" element={<CareManagement />} /> */}
               
             </Routes>
             
