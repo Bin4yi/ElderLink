@@ -49,12 +49,12 @@ export const getRoleMenuItems = (role) => {
 
     case 'pharmacist':
       return [
-        { path: '/pharmacy/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/pharmacy/medications', icon: Pill, label: 'Medications' },
-        { path: '/pharmacy/prescriptions', icon: FileText, label: 'Prescriptions' },
-        { path: '/pharmacy/delivery', icon: Truck, label: 'Delivery' },
-        { path: '/pharmacy/inventory', icon: Package, label: 'Inventory' },
-        { path: '/pharmacy/profile', icon: User, label: 'Profile' }
+        { path: '/pharmacist/dashboard', icon: Home, label: 'Dashboard' },
+        { path: '/pharmacist/medications', icon: Pill, label: 'Medications' },
+        { path: '/pharmacist/prescriptions', icon: FileText, label: 'Prescriptions' },
+        { path: '/pharmacist/delivery', icon: Truck, label: 'Delivery' },
+        { path: '/pharmacist/inventory', icon: Package, label: 'Inventory' },
+        { path: '/pharmacist/profile', icon: User, label: 'Profile' }
       ];
 
     // NEW: Mental Health Consultant Menu

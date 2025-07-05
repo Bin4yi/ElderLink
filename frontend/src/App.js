@@ -57,7 +57,7 @@ function App() {
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
               <Route path="/family/dashboard" element={<FamilyDashboard />} />
-              <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
+              <Route path="/pharmacist/dashboard" element={<PharmacyDashboard />} />
 
               {/* Staff routes */}
                 <Route path="/staff/dashboard" element={<StaffDashboard />} />
@@ -68,11 +68,11 @@ function App() {
                   <Route path="/staff/profile" element={<Profilestaff />} />
              
 =======
-              <Route path="/pharmacy/medications" element={<MedicationManagement />} />
-              <Route path="/pharmacy/delivery" element={<DeliverySchedule />} 
-              <Route path="/pharmacy/prescriptions" element={<PrescriptionManagement />} />
-              <Route path="/pharmacy/inventory" element={<InventoryManagement />} />
-              <Route path="/pharmacy/profile" element={<PharmacyProfile />} />
+              <Route path="/pharmacist/medications" element={<MedicationManagement />} />
+              <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
+              <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
+              <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
+              <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
               
             
 
