@@ -27,17 +27,13 @@ import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboa
 
 // Staff Components
 import StaffDashboard from './components/staff/dashboard/StaffDashboard';
-import PatientManagement from './components/staff/care-management/PatientManagement';
-import AlertManagement from './components/staff/monitoring/AlertsManagement';
-import HealthMonitoring from './components/staff/alerts/HealthMonitoring';
+import AlertsManagement from './components/staff/alerts/AlertsManagement';
+import HealthMonitoring from './components/staff/monitoring/HealthMonitoring';
+import CareManagement from './components/staff/care/CareManagement';
 import Report from './components/staff/reports/Report';
 import Profilestaff from './components/staff/profile/Profilestaff';
-// import CareManagement from './components/staff/care-management/PatientManagement';
 // Elder Components
 import ElderDashboard from './components/Elder/dashboard/Elder';
-
-
-
 
 function App() {
   return (
@@ -56,14 +52,13 @@ function App() {
               <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
               <Route path="/family/dashboard" element={<FamilyDashboard />} />
               <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
+              {/* Staff routes */}
               <Route path="/staff/dashboard" element={<StaffDashboard />} />
-              <Route path="/staff/care-management" element={<PatientManagement />} />
-              <Route path="/staff/monitoring" element={<AlertManagement />} />
-               <Route path="/staff/alerts" element={<HealthMonitoring />} />
+                 <Route path="/staff/care" element={< CareManagement/>} />
+                  <Route path="/staff/alerts" element={<AlertsManagement/>} />
+              <Route path="/staff/monitoring" element={<HealthMonitoring />} />
                 <Route path="/staff/reports" element={<Report />} />
-                 <Route path="/staff/profile" element={<Profilestaff/>} />
-            
-              
+                  <Route path="/staff/profile" element={<Profilestaff />} />
               {/* NEW: Elder routes */}
               <Route path="/elder/dashboard" element={<ElderDashboard />} />
               

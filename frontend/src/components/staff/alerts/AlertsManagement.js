@@ -2,7 +2,7 @@
 import React from 'react';
 import RoleLayout from '../../common/RoleLayout';
 
-const Profilestaff = () => {
+const AlertsManagement = () => {
   return (
     <RoleLayout title="Alerts Management">
       <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -13,4 +13,4 @@ const Profilestaff = () => {
   );
 };
 
-export default Profilestaff;
+export default AlertsManagement;
