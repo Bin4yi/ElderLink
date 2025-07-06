@@ -31,6 +31,7 @@ import PrescriptionManagement from './components/pharmacist/prescriptions/Prescr
 import InventoryManagement from './components/pharmacist/inventory/InventoryManagement';
 import AddNewItem from './components/pharmacist/inventory/AddNewItem';
 import PharmacyProfile from './components/pharmacist/profile/Pharmacyprofile';
+import MedicineProfile from './components/pharmacist/inventory/MedicineProfile';
 
 // Staff Components
 // Staff Components
@@ -78,6 +79,8 @@ function App() {
               <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
               <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
               <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
+              <Route path="/pharmacist/inventory/:id" element={<MedicineProfile />} />
+
               
             
 
