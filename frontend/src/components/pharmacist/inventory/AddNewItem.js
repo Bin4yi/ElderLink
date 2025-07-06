@@ -32,7 +32,7 @@ const AddNewItem = () => {
     // Generate a unique id for the new item
     const newItem = { ...formData, id: Date.now().toString() };
     addItem(newItem);
-    navigate('/pharmacy/inventory');
+    navigate('/pharmacist/inventory');
   };
 
   return (

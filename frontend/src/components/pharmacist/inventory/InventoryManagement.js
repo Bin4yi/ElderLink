@@ -81,7 +81,7 @@ const InventoryManagement = () => {
         <h2 className="text-2xl font-bold text-gray-800">Inventory Management</h2>
 
         <button
-          onClick={() => navigate('/pharmacy/inventory/add')}
+          onClick={() => navigate('/pharmacist/inventory/add')}
           className="mb-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
         >
           ➕ Add New Item

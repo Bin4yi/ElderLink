@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { InventoryProvider } from './context/InventoryContext';
 
 // Providers
 import { AuthProvider } from './context/AuthContext';
@@ -28,6 +29,7 @@ import MedicationManagement from './components/pharmacist/medications/Medication
 import DeliverySchedule from './components/pharmacist/delivery/DeliverySchedule';
 import PrescriptionManagement from './components/pharmacist/prescriptions/PrescriptionManagement';
 import InventoryManagement from './components/pharmacist/inventory/InventoryManagement';
+import AddNewItem from './components/pharmacist/inventory/AddNewItem';
 import PharmacyProfile from './components/pharmacist/profile/Pharmacyprofile';
 
 // Staff Components
@@ -41,8 +43,10 @@ import Profilestaff from './components/staff/profile/Profilestaff';
 // Elder Components
 import ElderDashboard from './components/Elder/dashboard/Elder';
 
+
 function App() {
   return (
+    <InventoryProvider> {/* ADD THIS WRAPPER */}
     <Router>
       <AuthProvider>
         <SubscriptionProvider> {/* ADD THIS WRAPPER */}
@@ -73,6 +77,7 @@ function App() {
               <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
               <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
               <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
+              <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
               
             
 
@@ -112,6 +117,7 @@ function App() {
         </SubscriptionProvider> {/* CLOSE THE WRAPPER */}
       </AuthProvider>
     </Router>
+    </InventoryProvider> 
   );
 }
 
