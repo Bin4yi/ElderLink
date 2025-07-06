@@ -48,7 +48,7 @@ const AdminPortal = () => {
           window.location.href = '/staff/dashboard';
           break;
         case 'pharmacist':
-          window.location.href = '/pharmacy/dashboard';
+          window.location.href = '/pharmacist/dashboard';
           break;
         default:
           window.location.href = '/dashboard';
