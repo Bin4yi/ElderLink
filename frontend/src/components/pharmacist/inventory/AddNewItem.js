@@ -4,7 +4,7 @@ import RoleLayout from '../../common/RoleLayout';
 import { InventoryContext } from '../../../context/InventoryContext';
 
 const AddNewItem = () => {
-  const { items, addItem } = useContext(InventoryContext);
+  const { items, setItems } = useContext(InventoryContext);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -37,34 +37,29 @@ const AddNewItem = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-  
     if (!formData.name || !formData.quantity || !formData.expirationDate) {
       alert('Please fill in all required fields.');
       return;
     }
-  
+
     const newItem = {
       ...formData,
+      id: items.length + 1,
       quantity: parseInt(formData.quantity),
       reorderTriggered: parseInt(formData.quantity) < 10,
     };
-  
-    try {
-      // Use context method instead of direct fetch
-      await addItem(newItem);
-      
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        navigate('/pharmacist/inventory');
-      }, 2000);
-    } catch (error) {
-      alert('Error adding item: ' + error.message);
-    }
+
+    setItems([...items, newItem]);
+    setShowSuccess(true);
+
+    setTimeout(() => {
+      setShowSuccess(false);
+      navigate('/pharmacist/inventory');
+    }, 2000);
   };
-  
+
   const daysUntilExpiration = () => {
     if (!formData.expirationDate) return null;
     const today = new Date();
