@@ -31,8 +31,7 @@ const eldersData = [
       'Arthritis',
     ],
     careActivities: [
-      { id: 1, date: '2024-06-10', activity: 'Blood sugar monitoring', status: 'completed' },
-      { id: 2, date: '2024-06-10', activity: 'Mobility assistance', status: 'in-progress' },
+      { id: 1, date: '2024-06-10', activity: 'Weekly checkup', status: 'pending' },
     ],
     weeklyReport: [],
   },
@@ -250,84 +249,82 @@ const CareManagement = () => {
           {activeTab === 'care' && (
             <div className="space-y-8">
               {/* Elder Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Select Elder</label>
-                <select
-                  value={selectedElder.id}
-                  onChange={e => {
-                    const elder = eldersData.find(el => el.id === Number(e.target.value));
-                    setSelectedElder(elder);
-                    setShowReportForm(false);
-                  }}
-                  className="w-full border border-gray-300 px-4 py-2 rounded-md mb-4"
-                >
-                  {eldersData.map(elder => (
-                    <option key={elder.id} value={elder.id}>{elder.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Elder Details */}
-              <div>
-                <h2 className="text-2xl font-bold text-blue-800 flex items-center gap-2">
-                  <FileText size={22} className="text-blue-600" />
-                  {selectedElder.name}
-                </h2>
-                <div className="mt-2 text-gray-700">
-                  <div>Age: {selectedElder.age}</div>
-                  <div>Gender: {selectedElder.gender}</div>
-                </div>
-                <div className="mt-4">
-                  <h3 className="font-semibold text-gray-800 mb-1">Medical History</h3>
-                  <ul className="list-disc ml-6 text-gray-700">
-                    {selectedElder.medicalHistory.map((item, idx) => (
-                      <li key={idx}>{item}</li>
+              <div className="flex flex-col md:flex-row md:gap-8">
+                {/* Elder Details and Selection */}
+                <div className="md:w-1/2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Elder</label>
+                  <select
+                    value={selectedElder.id}
+                    onChange={e => {
+                      const elder = eldersData.find(el => el.id === Number(e.target.value));
+                      setSelectedElder(elder);
+                      setShowReportForm(false);
+                    }}
+                    className="w-full border border-gray-300 px-4 py-2 rounded-md mb-4"
+                  >
+                    {eldersData.map(elder => (
+                      <option key={elder.id} value={elder.id}>{elder.name}</option>
                     ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Daily Care Activities */}
-              <div>
-                <h3 className="text-xl font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                  <ClipboardList size={20} className="text-blue-600" />
-                  Daily Care Activities
-                </h3>
-                {selectedElder.careActivities.length === 0 ? (
-                  <p className="text-gray-500">No care activities assigned for today.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {selectedElder.careActivities.map(activity => (
-                      <div
-                        key={activity.id}
-                        className={`flex justify-between items-center p-3 border rounded-md ${
-                          activity.status === 'completed'
-                            ? 'bg-green-50 border-green-200'
-                            : activity.status === 'in-progress'
-                            ? 'bg-yellow-50 border-yellow-200'
-                            : 'bg-gray-50 border-gray-200'
-                        }`}
-                      >
-                        <div>
-                          <div className="font-medium">{activity.activity}</div>
-                          <div className="text-xs text-gray-500">{activity.date}</div>
-                          <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-opacity-30 font-medium capitalize">
-                            {activity.status}
-                          </span>
-                        </div>
-                        {activity.status !== 'completed' && (
-                          <button
-                            onClick={() => handleActivityAction(activity.id)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md flex items-center gap-1"
-                          >
-                            <CheckCircle2 size={16} />
-                            Mark as Done
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                  </select>
+                  <h2 className="text-2xl font-bold text-blue-800 flex items-center gap-2">
+                    <FileText size={22} className="text-blue-600" />
+                    {selectedElder.name}
+                  </h2>
+                  <div className="mt-2 text-gray-700">
+                    <div>Age: {selectedElder.age}</div>
+                    <div>Gender: {selectedElder.gender}</div>
                   </div>
-                )}
+                  <div className="mt-4">
+                    <h3 className="font-semibold text-gray-800 mb-1">Medical History</h3>
+                    <ul className="list-disc ml-6 text-gray-700">
+                      {selectedElder.medicalHistory.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                {/* Daily Care Activities */}
+                <div className="md:w-1/2 mt-8 md:mt-0">
+                  <h3 className="text-xl font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                    <ClipboardList size={20} className="text-blue-600" />
+                    Care Activities
+                  </h3>
+                  {selectedElder.careActivities.length === 0 ? (
+                    <p className="text-gray-500">No care activities assigned for today.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {selectedElder.careActivities.map(activity => (
+                        <div
+                          key={activity.id}
+                          className={`flex justify-between items-center p-3 border rounded-md ${
+                            activity.status === 'completed'
+                              ? 'bg-green-50 border-green-200'
+                              : activity.status === 'in-progress'
+                              ? 'bg-yellow-50 border-yellow-200'
+                              : 'bg-gray-50 border-gray-200'
+                          }`}
+                        >
+                          <div>
+                            <div className="font-medium">{activity.activity}</div>
+                            <div className="text-xs text-gray-500">{activity.date}</div>
+                            <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-opacity-30 font-medium capitalize">
+                              {activity.status}
+                            </span>
+                          </div>
+                          {activity.status !== 'completed' && (
+                            <button
+                              onClick={() => handleActivityAction(activity.id)}
+                              className="mt-2 bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-1"
+                            >
+                              <CheckCircle2 size={25} />
+                              Mark as Done
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -378,9 +375,9 @@ const CareManagement = () => {
                   />
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md flex items-center gap-2"
+                    className="mt-2 bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-2"
                   >
-                    <Plus size={16} />
+                    <Plus size={25} />
                     Add Activity
                   </button>
                 </form>
@@ -390,19 +387,19 @@ const CareManagement = () => {
               <div className="flex justify-end gap-4">
                 <button
                   onClick={handleGenerateReportPDF}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md flex items-center gap-2"
+                  className="mt-2 bg-green-500 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-2"
                 >
-                  <FileText size={16} />
+                  <FileText size={25} />
                   Generate PDF Report
                 </button>
                 <button
                   onClick={handleSubmitReport}
                   disabled={isSubmitting || activities.length === 0}
-                  className={`px-6 py-3 rounded-md flex items-center gap-2 ${
+                  className={`mt-2 px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-2 ${
                     isSubmitting || activities.length === 0
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  } text-white`}
+                      ? 'bg-gray-400 cursor-not-allowed text-white'
+                      : 'bg-blue-500 hover:bg-blue-700 text-white'
+                  }`}
                 >
                   {isSubmitting ? (
                     <>
@@ -456,7 +453,7 @@ const CareManagement = () => {
                               </div>
                               <button
                                 onClick={() => handleDeleteWeek(elderName, week)}
-                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+                                className="mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold shadow"
                               >
                                 Delete Week
                               </button>
