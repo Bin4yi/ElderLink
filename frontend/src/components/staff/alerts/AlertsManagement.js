@@ -1,6 +1,7 @@
 
 
 import { useState } from 'react';
+import { generateEmergencyPDF } from './emergencyPDF';
 import RoleLayout from '../../common/RoleLayout';
 
 
@@ -43,7 +44,7 @@ const AlertsManagement = () => {
   };
 
   const documentEmergencyDetails = (alert) => {
-    // Placeholder: Add logic to document emergency details
+    generateEmergencyPDF(alert);
     alertUser(`Emergency details documented for ${alert.elder}`);
     handleStatusChange(alert.id, 'Documented');
   };
@@ -83,7 +84,7 @@ return (
           ) : (
             <table className="min-w-full border-separate border-spacing-y-2 text-sm">
               <thead>
-                <tr className="bg-gradient-to-r from-red-100 to-yellow-100 text-gray-900">
+                <tr className="bg-white shadow rounded-xl ">
                   <th className="border px-4 py-2 text-left font-bold rounded-tl-xl">Elder</th>
                   <th className="border px-4 py-2 text-left font-bold">Message</th>
                   <th className="border px-4 py-2 text-left font-bold">Severity</th>
@@ -106,51 +107,37 @@ return (
                     </td>
                     <td className="border px-4 py-2 text-gray-600 align-middle">{alert.time}</td>
                     <td className="border px-4 py-2 align-middle">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold shadow ${
-                        alert.status === 'New'
-                          ? 'bg-blue-100 text-blue-700'
-                          : alert.status === 'Reviewed'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : alert.status === 'Responded'
-                          ? 'bg-green-100 text-green-700'
-                          : alert.status === 'Emergency Contacted'
-                          ? 'bg-red-200 text-red-800'
-                          : alert.status === 'Next of Kin Notified'
-                          ? 'bg-purple-100 text-purple-700'
-                          : alert.status === 'Documented'
-                          ? 'bg-gray-200 text-gray-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
+                      <span className="text-xs font-semibold text-gray-800">
                         {alert.status}
                       </span>
                     </td>
                     <td className="border px-4 py-2 text-center align-middle">
                       <button
                         onClick={() => contactEmergencyServices(alert)}
-                        className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 font-semibold shadow-md transition-all text-xs focus:outline-none focus:ring-2 focus:ring-red-400"
+                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-semibold shadow-md transition-all text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
                         title="Contact Emergency Services"
                       >
-                        <svg className="w-3 h-3 inline-block mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-1.414 1.414A9 9 0 015.636 18.364l-1.414-1.414M15 7h6m0 0v6" /></svg>
+                        <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-1.414 1.414A9 9 0 015.636 18.364l-1.414-1.414M15 7h6m0 0v6" /></svg>
                         Contact
                       </button>
                     </td>
                     <td className="border px-4 py-2 text-center align-middle">
                       <button
                         onClick={() => notifyNextOfKin(alert)}
-                        className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 font-semibold shadow-md transition-all text-xs focus:outline-none focus:ring-2 focus:ring-green-400"
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold shadow-md transition-all text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
                         title="Notify Next of Kin"
                       >
-                        <svg className="w-3 h-3 inline-block mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h2m2-4h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V6a2 2 0 012-2z" /></svg>
+                        <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h2m2-4h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V6a2 2 0 012-2z" /></svg>
                         Notify
                       </button>
                     </td>
                     <td className="border px-4 py-2 text-center align-middle">
                       <button
                         onClick={() => documentEmergencyDetails(alert)}
-                        className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-gray-800 font-semibold shadow-md transition-all text-xs focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        className="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800 font-semibold shadow-md transition-all text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                         title="Document Emergency Details"
                       >
-                        <svg className="w-3 h-3 inline-block mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
+                        <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
                         Document
                       </button>
                     </td>
