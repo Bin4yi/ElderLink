@@ -16,8 +16,11 @@ const eldersData = [
       'Mild cognitive impairment',
     ],
     careActivities: [
-      { id: 1, date: '2024-06-10', activity: 'Morning medication', status: 'completed' },
-      { id: 2, date: '2024-06-10', activity: 'Physical therapy', status: 'pending' },
+      { id: 1, time: '08:00 AM', elder: 'Margaret Thompson', activity: 'Morning medication check', status: 'completed' },
+      { id: 2, time: '09:30 AM', elder: 'Robert Wilson', activity: 'Health monitoring', status: 'completed' },
+      { id: 3, time: '11:00 AM', elder: 'Dorothy Davis', activity: 'Physical therapy session', status: 'in-progress' },
+      { id: 4, time: '02:00 PM', elder: 'Harold Johnson', activity: 'Meal assistance', status: 'pending' },
+      { id: 5, time: '04:00 PM', elder: 'Betty Miller', activity: 'Evening medication', status: 'pending' },
     ],
     weeklyReport: [],
   },
@@ -38,6 +41,47 @@ const eldersData = [
 ];
 
 const CareManagement = () => {
+  // Mental Specialist Plans state
+  const [mentalPlans, setMentalPlans] = useState([
+    {
+      id: 1,
+      activity: 'Cognitive Stimulation Program',
+      date: '2024-06-10',
+      status: 'pending',
+    },
+    {
+      id: 2,
+      activity: 'Emotional Support Session',
+      date: '2024-06-10',
+      status: 'pending',
+    },
+    {
+      id: 3,
+      activity: 'Mindfulness & Relaxation',
+      date: '2024-06-10',
+      status: 'pending',
+    },
+    {
+      id: 4,
+      activity: 'Family Engagement Activity',
+      date: '2024-06-10',
+      status: 'pending',
+    },
+    {
+      id: 5,
+      activity: 'Behavioral Monitoring',
+      date: '2024-06-10',
+      status: 'pending',
+    },
+  ]);
+
+  const handleMentalPlanAction = (planId) => {
+    setMentalPlans(prev =>
+      prev.map(plan =>
+        plan.id === planId ? { ...plan, status: 'completed' } : plan
+      )
+    );
+  };
   const [selectedElder, setSelectedElder] = useState(eldersData[0]);
   const [showReportForm, setShowReportForm] = useState(false);
   const [reportText, setReportText] = useState('');
@@ -241,44 +285,30 @@ const CareManagement = () => {
               }`}
             >
               <BarChart3 className="inline mr-2" size={16} />
-              Activity Reports
+              Mental Specialist plans
             </button>
           </div>
 
           {/* Care Management Tab */}
           {activeTab === 'care' && (
             <div className="space-y-8">
-              {/* Elder Selection */}
               <div className="flex flex-col md:flex-row md:gap-8">
-                {/* Elder Details and Selection */}
+                {/* Elder Details (single assigned elder) */}
                 <div className="md:w-1/2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Elder</label>
-                  <select
-                    value={selectedElder.id}
-                    onChange={e => {
-                      const elder = eldersData.find(el => el.id === Number(e.target.value));
-                      setSelectedElder(elder);
-                      setShowReportForm(false);
-                    }}
-                    className="w-full border border-gray-300 px-4 py-2 rounded-md mb-4"
-                  >
-                    {eldersData.map(elder => (
-                      <option key={elder.id} value={elder.id}>{elder.name}</option>
-                    ))}
-                  </select>
                   <h2 className="text-2xl font-bold text-blue-800 flex items-center gap-2">
                     <FileText size={22} className="text-blue-600" />
-                    {selectedElder.name}
+                    <span>{selectedElder.name}</span>
                   </h2>
-                  <div className="mt-2 text-gray-700">
-                    <div>Age: {selectedElder.age}</div>
-                    <div>Gender: {selectedElder.gender}</div>
+                  <div className="mt-2 text-gray-700 text-lg">
+                    <div className="mb-1">&nbsp;</div>
+                    <div className="mb-1 font-semibold">Age: {selectedElder.age}</div>
+                    <div className="font-semibold">Gender: {selectedElder.gender}</div>
                   </div>
                   <div className="mt-4">
-                    <h3 className="font-semibold text-gray-800 mb-1">Medical History</h3>
-                    <ul className="list-disc ml-6 text-gray-700">
+                    <h3 className="font-semibold text-gray-800 mb-1 text-xl">Medical History</h3>
+                    <ul className="list-disc ml-6 text-gray-700 text-lg">
                       {selectedElder.medicalHistory.map((item, idx) => (
-                        <li key={idx}>{item}</li>
+                        <li key={idx} className="font-medium">{item}</li>
                       ))}
                     </ul>
                   </div>
@@ -329,159 +359,60 @@ const CareManagement = () => {
             </div>
           )}
 
-          {/* Reports Tab */}
+          {/* Mental Specialist Plans Tab */}
           {activeTab === 'reports' && (
             <div className="space-y-8">
-              {/* Add Care Activity Form */}
-              <div>
-                <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-2">
-                  <Plus size={22} className="text-blue-600" />
-                  Add Care Activity
-                </h2>
-                <form onSubmit={handleAdd} className="bg-gray-50 p-6 rounded-lg space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input
-                      name="elderName"
-                      value={form.elderName}
-                      onChange={handleChange}
-                      placeholder="Elder Name"
-                      className="border border-gray-300 p-3 rounded-md"
-                      required
-                    />
-                    <input
-                      name="date"
-                      type="date"
-                      value={form.date}
-                      onChange={handleChange}
-                      className="border border-gray-300 p-3 rounded-md"
-                      required
-                    />
-                  </div>
-                  <input
-                    name="careManagement"
-                    value={form.careManagement}
-                    onChange={handleChange}
-                    placeholder="Care Management Details"
-                    className="w-full border border-gray-300 p-3 rounded-md"
-                    required
-                  />
-                  <input
-                    name="healthMonitoring"
-                    value={form.healthMonitoring}
-                    onChange={handleChange}
-                    placeholder="Health Monitoring Details"
-                    className="w-full border border-gray-300 p-3 rounded-md"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    className="mt-2 bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-2"
-                  >
-                    <Plus size={25} />
-                    Add Activity
-                  </button>
-                </form>
-              </div>
-
-              {/* Generate Report Button */}
-              <div className="flex justify-end gap-4">
-                <button
-                  onClick={handleGenerateReportPDF}
-                  className="mt-2 bg-green-500 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-2"
-                >
-                  <FileText size={25} />
-                  Generate PDF Report
-                </button>
-                <button
-                  onClick={handleSubmitReport}
-                  disabled={isSubmitting || activities.length === 0}
-                  className={`mt-2 px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-2 ${
-                    isSubmitting || activities.length === 0
-                      ? 'bg-gray-400 cursor-not-allowed text-white'
-                      : 'bg-blue-500 hover:bg-blue-700 text-white'
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 size={16} />
-                      Submit Report
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Submission Status */}
-              {submissionStatus && (
-                <div className={`p-4 rounded-md ${
-                  submissionStatus === 'success' 
-                    ? 'bg-green-100 border border-green-400 text-green-700' 
-                    : 'bg-red-100 border border-red-400 text-red-700'
-                }`}>
-                  {submissionStatus === 'success' 
-                    ? 'Report submitted successfully!' 
-                    : 'Failed to submit report. Please try again.'}
-                </div>
-              )}
-
-              {/* Weekly Care Activity Report */}
-              <div>
-                <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-2">
-                  <BarChart3 size={22} className="text-blue-600" />
-                  Weekly Care Activity Report
-                </h2>
-                {(() => {
-                  const grouped = groupByElderAndWeek();
-                  return Object.keys(grouped).length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <ClipboardList size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No care activities added yet.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {Object.entries(grouped).map(([elderName, weeks]) =>
-                        Object.entries(weeks).map(([week, acts]) => (
-                          <div key={elderName + week} className="bg-white border border-gray-200 rounded-lg p-6">
-                            <div className="flex items-center justify-between mb-4">
-                              <div>
-                                <h3 className="text-lg font-bold text-gray-800">{elderName}</h3>
-                                <p className="text-sm text-gray-600">Week: {week}</p>
-                              </div>
-                              <button
-                                onClick={() => handleDeleteWeek(elderName, week)}
-                                className="mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold shadow"
-                              >
-                                Delete Week
-                              </button>
-                            </div>
-                            <div className="space-y-4">
-                              {acts.map((activity, i) => (
-                                <div key={i} className="bg-gray-50 p-4 rounded-md">
-                                  <div className="font-medium text-gray-800 mb-2">{activity.date}</div>
-                                  <div className="space-y-1">
-                                    <div>
-                                      <span className="font-medium text-blue-600">Care Management:</span> {activity.careManagement}
-                                    </div>
-                                    <div>
-                                      <span className="font-medium text-green-600">Health Monitoring:</span> {activity.healthMonitoring}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))
+              <div className="mt-4">
+                <h3 className="text-xl font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                  <BarChart3 size={20} className="text-blue-600" />
+                  Mental Specialist Plans
+                </h3>
+                <div className="space-y-3">
+                  {mentalPlans.map(plan => (
+                    <div
+                      key={plan.id}
+                      className={`flex flex-col md:flex-row md:items-center md:justify-between p-3 border rounded-md ${
+                        plan.status === 'completed'
+                          ? 'bg-green-50 border-green-200'
+                          : plan.status === 'in-progress'
+                          ? 'bg-yellow-50 border-yellow-200'
+                          : 'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-medium text-blue-700">{plan.activity}</div>
+                        <div className="text-gray-600 text-sm">
+                          {plan.id === 1 && 'Daily memory games, puzzles, and group discussions to enhance cognitive function.'}
+                          {plan.id === 2 && 'Weekly one-on-one counseling with a mental health specialist to address anxiety, depression, or loneliness.'}
+                          {plan.id === 3 && 'Guided meditation and breathing exercises every morning to reduce stress and promote calmness.'}
+                          {plan.id === 4 && 'Monthly family video calls and shared activities to strengthen social bonds and reduce isolation.'}
+                          {plan.id === 5 && 'Regular check-ins and behavioral assessments to identify early signs of mental health concerns.'}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">{plan.date}</div>
+                        <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-opacity-30 font-medium capitalize">
+                          {plan.status}
+                        </span>
+                      </div>
+                      {plan.status !== 'completed' && (
+                        <button
+                          onClick={() => handleMentalPlanAction(plan.id)}
+                          className="mt-2 md:mt-0 bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-1"
+                        >
+                          <CheckCircle2 size={25} />
+                          Mark as Done
+                        </button>
                       )}
                     </div>
-                  );
-                })()}
+                  ))}
+                  {mentalPlans.length === 0 && (
+                    <p className="text-gray-500">No mental specialist plans assigned for today.</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
+
+        
         </div>
       </div>
     </RoleLayout>

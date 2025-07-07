@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { generateObservationPDF } from './observationPDF';
 import RoleLayout from '../../common/RoleLayout';
-
 
 const statusColor = (status) => {
   switch (status) {
@@ -25,16 +23,7 @@ const HealthMonitoring = () => {
       task: 'Morning medication check',
       status: 'completed',
       vitals: { heartRate: 72, bloodPressure: '120/80' }
-    },
-    {
-      id: 2,
-      time: '09:30 AM',
-      elder: 'Robert Wilson',
-      task: 'Health monitoring',
-      status: 'completed',
-      vitals: { heartRate: 80, bloodPressure: '130/85' }
-    },
-    // ...other activities...
+    }
   ]);
 
   // Track which activity is being edited and its vitals
@@ -108,16 +97,16 @@ const HealthMonitoring = () => {
                 className={`flex justify-between items-center p-4 border rounded-md ${statusColor(activity.status)}`}
               >
                 <div className="flex-1">
-                  <p className="text-sm font-semibold">{activity.time} - {activity.elder}</p>
-                  <p className="text-sm text-gray-700">{activity.task}</p>
-                  <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-opacity-30 font-medium capitalize">
+                  <p className="text-xl font-bold">{activity.time} - {activity.elder}</p>
+                  <p className="text-lg text-gray-800 font-semibold mt-1">{activity.task}</p>
+                  <span className="inline-block mt-2 px-3 py-1 text-base rounded bg-opacity-30 font-bold capitalize">
                     {activity.status}
                   </span>
                   {/* Vitals Visuals or Edit Form */}
                   {editId === activity.id ? (
-                    <div className="mt-2 flex flex-col gap-2 text-xs max-w-xs">
+                    <div className="mt-2 flex flex-col gap-2 text-base max-w-xs">
                       <div className="flex gap-2 items-center">
-                        <label className="w-24 text-gray-700 font-medium" htmlFor={`heartRate-${activity.id}`}>Heart Rate:</label>
+                        <label className="w-28 text-gray-700 font-semibold" htmlFor={`heartRate-${activity.id}`}>Heart Rate:</label>
                         <input
                           id={`heartRate-${activity.id}`}
                           type="text"
@@ -125,11 +114,11 @@ const HealthMonitoring = () => {
                           value={editVitals.heartRate}
                           onChange={handleVitalsChange}
                           placeholder="Heart Rate (bpm)"
-                          className="px-2 py-1 border rounded w-32"
+                          className="px-2 py-1 border rounded w-36"
                         />
                       </div>
                       <div className="flex gap-2 items-center mt-1">
-                        <label className="w-24 text-gray-700 font-medium" htmlFor={`bloodPressure-${activity.id}`}>Blood Pressure:</label>
+                        <label className="w-28 text-gray-700 font-semibold" htmlFor={`bloodPressure-${activity.id}`}>Blood Pressure:</label>
                         <input
                           id={`bloodPressure-${activity.id}`}
                           type="text"
@@ -137,19 +126,19 @@ const HealthMonitoring = () => {
                           value={editVitals.bloodPressure}
                           onChange={handleVitalsChange}
                           placeholder="Blood Pressure"
-                          className="px-2 py-1 border rounded w-32"
+                          className="px-2 py-1 border rounded w-36"
                         />
                       </div>
                       <div className="flex gap-2 mt-2">
                         <button
                           onClick={() => handleVitalsSave(activity.id)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-base font-semibold"
                         >
                           Save
                         </button>
                         <button
                           onClick={handleVitalsCancel}
-                          className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded text-xs"
+                          className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded text-base font-semibold"
                         >
                           Cancel
                         </button>
@@ -157,41 +146,27 @@ const HealthMonitoring = () => {
                     </div>
                   ) : (
                     activity.vitals && (activity.vitals.heartRate || activity.vitals.bloodPressure) && (
-                      <div className="mt-2 flex gap-4 text-xs">
+                      <div className="mt-4 flex flex-col gap-2 text-lg">
                         {activity.vitals.heartRate && (
-                          <span className="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded">
-                            <span className="font-semibold">Heart Rate:</span> ❤ {activity.vitals.heartRate} bpm
+                          <span className="flex items-center gap-2 px-3 py-2 bg-red-100 text-red-700 rounded text-lg">
+                            <span className="font-bold">Heart Rate:</span> ❤ {activity.vitals.heartRate} bpm
                           </span>
                         )}
                         {activity.vitals.bloodPressure && (
-                          <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded">
-                            <span className="font-semibold">Blood Pressure:</span> 🩺 {activity.vitals.bloodPressure}
+                          <span className="flex items-center gap-2 px-3 py-2 bg-green-100 text-green-700 rounded text-lg">
+                            <span className="font-bold">Blood Pressure:</span> 🩺 {activity.vitals.bloodPressure}
                           </span>
                         )}
                       </div>
                     )
                   )}
-                  {/* Document Daily Observations Button for each patient */}
-                  <button
-                    className="mt-2 bg-green-500 hover:bg-green-700 text-white px-5 py-2 rounded text-sm font-semibold shadow"
-                    onClick={() => generateObservationPDF(activity)}
-                  >
-                    Document Daily Observations
-                  </button>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleEditClick(activity)}
-                    className="mt-2 bg-blue-500 hover:bg-blue-700 text-white px-5 py-2 rounded text-sm font-semibold shadow"
+                    className="-mt-20 bg-blue-500 hover:bg-blue-700 text-white px-5 py-2 rounded text-sm font-semibold shadow"
                   >
                     Update Vitals
-                  </button>
-                  <button
-                    onClick={() => handleDelete(activity.id)}
-                    className="mt-2 bg-green-500 hover:bg-green-700 text-white px-5 py-2 rounded text-sm font-semibold shadow"
-                    title="Delete"
-                  >
-                    Done
                   </button>
                 </div>
               </div>
