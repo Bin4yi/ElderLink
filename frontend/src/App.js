@@ -34,7 +34,6 @@ import PharmacyProfile from './components/pharmacist/profile/Pharmacyprofile';
 import MedicineProfile from './components/pharmacist/inventory/MedicineProfile';
 
 // Staff Components
-// Staff Components
 import StaffDashboard from './components/staff/dashboard/StaffDashboard';
 import AlertsManagement from './components/staff/alerts/AlertsManagement';
 import HealthMonitoring from './components/staff/monitoring/HealthMonitoring';

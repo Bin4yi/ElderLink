@@ -1,6 +1,8 @@
-// src/components/staff/alerts/AlertsManagement.js
-import React, { useState } from 'react';
+
+
+import { useState } from 'react';
 import RoleLayout from '../../common/RoleLayout';
+
 
 const AlertsManagement = () => {
   const [alerts, setAlerts] = useState([
@@ -8,17 +10,47 @@ const AlertsManagement = () => {
     { id: 2, elder: 'Robert Wilson', message: 'Missed morning medication', severity: 'medium', time: '1 hour ago', status: 'New' },
     { id: 3, elder: 'Dorothy Davis', message: 'Fall detection alert resolved', severity: 'low', time: '2 hours ago', status: 'New' },
     { id: 4, elder: 'Helen Smith', message: 'Irregular heartbeat detected', severity: 'high', time: '10 min ago', status: 'New' },
-    { id: 5, elder: 'James Brown', message: 'Low blood sugar', severity: 'medium', time: '45 min ago', status: 'New' },
-    { id: 6, elder: 'Patricia Johnson', message: 'Missed lunch', severity: 'low', time: '3 hours ago', status: 'New' },
-    { id: 7, elder: 'William Lee', message: 'Wandering detected', severity: 'high', time: '5 min ago', status: 'New' },
-    { id: 8, elder: 'Barbara Garcia', message: 'Medication taken late', severity: 'medium', time: '20 min ago', status: 'New' },
-    { id: 9, elder: 'Charles Martinez', message: 'No activity detected', severity: 'low', time: '4 hours ago', status: 'New' },
+    
   ]);
 
-  const handleStatusChange = (id, newStatus) => {
-    setAlerts(alerts.map(alert =>
-      alert.id === id ? { ...alert, status: newStatus } : alert
-    ));
+
+  // Update the status of an alert by id
+  const handleStatusChange = (alertId, newStatus) => {
+    setAlerts(prevAlerts =>
+      prevAlerts.map(alert =>
+        alert.id === alertId ? { ...alert, status: newStatus } : alert
+      )
+    );
+  };
+
+  // Emergency protocol functions
+  const executeResponseProtocol = (alert) => {
+    // Placeholder: Add logic to execute response protocol
+    alertUser(`Response protocol executed for ${alert.elder}`);
+    handleStatusChange(alert.id, 'Responded');
+  };
+
+  const contactEmergencyServices = (alert) => {
+    // Placeholder: Add logic to contact emergency services
+    alertUser(`Emergency services contacted for ${alert.elder}`);
+    handleStatusChange(alert.id, 'Emergency Contacted');
+  };
+
+  const notifyNextOfKin = (alert) => {
+    // Placeholder: Add logic to notify next of kin
+    alertUser(`Next of kin notified for ${alert.elder}`);
+    handleStatusChange(alert.id, 'Next of Kin Notified');
+  };
+
+  const documentEmergencyDetails = (alert) => {
+    // Placeholder: Add logic to document emergency details
+    alertUser(`Emergency details documented for ${alert.elder}`);
+    handleStatusChange(alert.id, 'Documented');
+  };
+
+  // Simple alert for demonstration
+  const alertUser = (msg) => {
+    window.alert(msg);
   };
 
   const getSeverityStyle = (severity) => {
@@ -34,70 +66,93 @@ const AlertsManagement = () => {
     }
   };
 
-  return (
+return (
     <RoleLayout title="Alert Management">
-      <div className="bg-white p-6 rounded-lg shadow space-y-10">
-
-        <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-800">Recent Health Alerts</h2>
-            <p className="text-gray-500 mt-2">
-              Recent Health alerts for elderly residents. Review and take necessary actions.
-            </p>
-          </div>
+      <div className="bg-gradient-to-br from-white via-blue-50 to-gray-100 p-10 rounded-2xl shadow-2xl space-y-12 border border-gray-200">
+        <div className="text-center mb-12">
+         <h2 className="text-3xl font-bold text-gray-800">   Health Alerts for Elders</h2>
+          <p className="text-gray-700 mt-3 text-base max-w-2xl mx-auto">
+            Review and respond to urgent health alerts for elderly residents. Take immediate action as needed and document all interventions for compliance and safety.
+          </p>
+        </div>
         <div className="overflow-x-auto">
           {alerts.length === 0 ? (
-            <p className="text-gray-500 italic">No recent alerts.</p>
+            <div className="text-center py-16">
+              <p className="text-gray-400 italic text-lg">No recent alerts.</p>
+            </div>
           ) : (
-            <table className="min-w-full border-collapse border border-gray-300">
+            <table className="min-w-full border-separate border-spacing-y-2 text-sm">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="border px-4 py-2 text-left">Elder</th>
-                  <th className="border px-4 py-2 text-left">Message</th>
-                  <th className="border px-4 py-2 text-left">Severity</th>
-                  <th className="border px-4 py-2 text-left">Time</th>
-                  <th className="border px-4 py-2 text-left">Status</th>
-                  <th className="border px-4 py-2 text-left">Actions</th>
+                <tr className="bg-gradient-to-r from-red-100 to-yellow-100 text-gray-900">
+                  <th className="border px-4 py-2 text-left font-bold rounded-tl-xl">Elder</th>
+                  <th className="border px-4 py-2 text-left font-bold">Message</th>
+                  <th className="border px-4 py-2 text-left font-bold">Severity</th>
+                  <th className="border px-4 py-2 text-left font-bold">Time</th>
+                  <th className="border px-4 py-2 text-left font-bold">Status</th>
+                  <th className="border px-4 py-2 text-center font-bold">Contact Emergency Services</th>
+                  <th className="border px-4 py-2 text-center font-bold">Notify Next of Kin</th>
+                  <th className="border px-4 py-2 text-center font-bold rounded-tr-xl">Document Emergency Details</th>
                 </tr>
               </thead>
               <tbody>
                 {alerts.map(alert => (
-                  <tr key={alert.id} className="hover:bg-gray-50">
-                    <td className="border px-4 py-2">{alert.elder}</td>
-                    <td className="border px-4 py-2">{alert.message}</td>
-                    <td className="border px-4 py-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityStyle(alert.severity)}`}>
+                  <tr key={alert.id} className="bg-white shadow rounded-xl hover:shadow-lg transition-all">
+                    <td className="border px-4 py-2 font-semibold text-gray-800 align-middle">{alert.elder}</td>
+                    <td className="border px-6 py-2 text-gray-700 align-middle whitespace-pre-line">{alert.message}</td>
+                    <td className="border px-4 py-2 align-middle">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold shadow ${getSeverityStyle(alert.severity)}`}>
                         {alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)}
                       </span>
                     </td>
-                    <td className="border px-4 py-2">{alert.time}</td>
-                    <td className="border px-4 py-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    <td className="border px-4 py-2 text-gray-600 align-middle">{alert.time}</td>
+                    <td className="border px-4 py-2 align-middle">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold shadow ${
                         alert.status === 'New'
                           ? 'bg-blue-100 text-blue-700'
                           : alert.status === 'Reviewed'
                           ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-green-100 text-green-700'
+                          : alert.status === 'Responded'
+                          ? 'bg-green-100 text-green-700'
+                          : alert.status === 'Emergency Contacted'
+                          ? 'bg-red-200 text-red-800'
+                          : alert.status === 'Next of Kin Notified'
+                          ? 'bg-purple-100 text-purple-700'
+                          : alert.status === 'Documented'
+                          ? 'bg-gray-200 text-gray-700'
+                          : 'bg-gray-100 text-gray-700'
                       }`}>
                         {alert.status}
                       </span>
                     </td>
-                    <td className="border px-4 py-2 space-x-2">
-                      {alert.status === 'New' && (
-                        <button
-                          onClick={() => handleStatusChange(alert.id, 'Reviewed')}
-                          className="px-3 py-1 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded text-sm"
-                        >
-                          Mark Reviewed
-                        </button>
-                      )}
-                      {alert.status !== 'Responded' && (
-                        <button
-                          onClick={() => handleStatusChange(alert.id, 'Responded')}
-                          className="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded text-sm"
-                        >
-                          Respond
-                        </button>
-                      )}
+                    <td className="border px-4 py-2 text-center align-middle">
+                      <button
+                        onClick={() => contactEmergencyServices(alert)}
+                        className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 font-semibold shadow-md transition-all text-xs focus:outline-none focus:ring-2 focus:ring-red-400"
+                        title="Contact Emergency Services"
+                      >
+                        <svg className="w-3 h-3 inline-block mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-1.414 1.414A9 9 0 015.636 18.364l-1.414-1.414M15 7h6m0 0v6" /></svg>
+                        Contact
+                      </button>
+                    </td>
+                    <td className="border px-4 py-2 text-center align-middle">
+                      <button
+                        onClick={() => notifyNextOfKin(alert)}
+                        className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 font-semibold shadow-md transition-all text-xs focus:outline-none focus:ring-2 focus:ring-green-400"
+                        title="Notify Next of Kin"
+                      >
+                        <svg className="w-3 h-3 inline-block mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h2m2-4h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V6a2 2 0 012-2z" /></svg>
+                        Notify
+                      </button>
+                    </td>
+                    <td className="border px-4 py-2 text-center align-middle">
+                      <button
+                        onClick={() => documentEmergencyDetails(alert)}
+                        className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-gray-800 font-semibold shadow-md transition-all text-xs focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        title="Document Emergency Details"
+                      >
+                        <svg className="w-3 h-3 inline-block mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
+                        Document
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -108,6 +163,6 @@ const AlertsManagement = () => {
       </div>
     </RoleLayout>
   );
-};
+}
 
 export default AlertsManagement;
