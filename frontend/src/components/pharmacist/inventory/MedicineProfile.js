@@ -29,7 +29,7 @@ const Badge = ({ text, type }) => {
 
 const MedicineProfile = () => {
   const { id } = useParams();
-  const { items, deleteItem } = useContext(InventoryContext);
+  const { items, setItems } = useContext(InventoryContext);
   const navigate = useNavigate();
 
   const medicine = items.find(item => item.id === parseInt(id));
@@ -47,15 +47,11 @@ const MedicineProfile = () => {
     );
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     const confirm = window.confirm(`Are you sure you want to delete "${medicine.name}" from inventory?`);
     if (confirm) {
-      try {
-        await deleteItem(medicine.id);
-        navigate('/pharmacist/inventory');
-      } catch (error) {
-        alert('Error deleting item: ' + error.message);
-      }
+      setItems(prev => prev.filter(item => item.id !== medicine.id));
+      navigate('/pharmacist/inventory');
     }
   };
 
