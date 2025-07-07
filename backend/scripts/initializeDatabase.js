@@ -230,7 +230,7 @@ const initializeUsers = async () => {
         console.log(`✅ Created ${userData.role}: ${userData.firstName} ${userData.lastName} (${userData.email})`);
         
         // Test password immediately after creation
-        const passwordTest = await user.comparePassword(userData.password);
+        const passwordTest = await user.validatePassword(userData.password);
         console.log(`🔐 Password test for ${userData.email}: ${passwordTest ? '✅' : '❌'}`);
         
         // Create welcome notification
