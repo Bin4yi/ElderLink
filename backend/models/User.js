@@ -1,7 +1,7 @@
 // backend/models/User.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
 const bcrypt = require('bcryptjs');
+const sequelize = require('../config/database');
 
 const User = sequelize.define('User', {
   id: {
@@ -48,7 +48,6 @@ const User = sequelize.define('User', {
     allowNull: false
   },
   
-  // Updated role with mental health consultant
   role: {
     type: DataTypes.ENUM(
       'admin',                      // 👑 Boss
@@ -84,6 +83,11 @@ const User = sequelize.define('User', {
   specialization: {
     type: DataTypes.STRING,
     allowNull: true // e.g., "Geriatric Psychology", "Dementia Care", "Anxiety Disorders"
+  },
+  
+  profileImage: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   tableName: 'Users',
@@ -92,6 +96,14 @@ const User = sequelize.define('User', {
   hooks: {
     beforeCreate: async (user) => {
       if (user.password) {
+        console.log('🔐 Hashing password for new user:', user.email);
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(user.password, salt);
+      }
+    },
+    beforeUpdate: async (user) => {
+      if (user.changed('password')) {
+        console.log('🔐 Hashing updated password for user:', user.email);
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(user.password, salt);
       }
@@ -99,8 +111,22 @@ const User = sequelize.define('User', {
   }
 });
 
-User.prototype.validatePassword = async function(password) {
-  return await bcrypt.compare(password, this.password);
+// FIXED: Add instance method for password comparison
+User.prototype.comparePassword = async function(candidatePassword) {
+  try {
+    console.log('🔐 Validating password for user:', this.email);
+    const isValid = await bcrypt.compare(candidatePassword, this.password);
+    console.log('🔐 Password validation result:', isValid ? '✅ Valid' : '❌ Invalid');
+    return isValid;
+  } catch (error) {
+    console.error('❌ Password validation error:', error);
+    return false;
+  }
+};
+
+// FIXED: Add alternative method name for compatibility
+User.prototype.validatePassword = async function(candidatePassword) {
+  return this.comparePassword(candidatePassword);
 };
 
 module.exports = User;
