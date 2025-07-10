@@ -88,6 +88,32 @@ const User = sequelize.define('User', {
   profileImage: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  
+  // Add these new fields for admin functionality
+  resetToken: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  
+  resetTokenExpiry: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  
+  mustChangePassword: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true // New users must change password on first login
+  },
+  
+  lastPasswordChange: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  
+  tempPasswordExpiry: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   tableName: 'Users',
@@ -99,13 +125,19 @@ const User = sequelize.define('User', {
         console.log('🔐 Hashing password for new user:', user.email);
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(user.password, salt);
+        user.lastPasswordChange = new Date();
+        // Set temp password expiry to 7 days from now
+        user.tempPasswordExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       }
     },
     beforeUpdate: async (user) => {
-      if (user.changed('password')) {
+      if (user.changed('password') && user.password) {
         console.log('🔐 Hashing updated password for user:', user.email);
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(user.password, salt);
+        user.lastPasswordChange = new Date();
+        user.mustChangePassword = false;
+        user.tempPasswordExpiry = null;
       }
     }
   }

@@ -44,6 +44,8 @@ try {
   const subscriptionRoutes = require('./routes/subscription');
   const elderRoutes = require('./routes/elder');
   const notificationRoutes = require('./routes/notification');
+  const adminUserRoutes = require('./routes/adminUserRoutes');
+  const adminStatsRoutes = require('./routes/adminStatsRoutes');
 
   // Verify routes are properly exported
   if (typeof authRoutes !== 'function') {
@@ -58,12 +60,20 @@ try {
   if (typeof notificationRoutes !== 'function') {
     throw new Error('notificationRoutes is not a valid router');
   }
+  if (typeof adminUserRoutes !== 'function') {
+    throw new Error('adminUserRoutes is not a valid router');
+  }
+  if (typeof adminStatsRoutes !== 'function') {
+    throw new Error('adminStatsRoutes is not a valid router');
+  }
 
   // API Routes
   app.use('/api/auth', authRoutes);
   app.use('/api/subscriptions', subscriptionRoutes);
   app.use('/api/elders', elderRoutes);
   app.use('/api/notifications', notificationRoutes);
+  app.use('/api/admin', adminUserRoutes);
+  app.use('/api/admin', adminStatsRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);
