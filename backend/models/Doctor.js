@@ -1,4 +1,4 @@
-// backend/models/Doctor.js (Updated with User relationship)
+// backend/models/Doctor.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -13,11 +13,10 @@ const Doctor = sequelize.define('Doctor', {
     allowNull: false,
     unique: true,
     references: {
-      model: 'users', // Reference to your existing User table
+      model: 'Users', // Use capital 'Users' (the actual table name)
       key: 'id'
     }
   },
-  // Basic info will come from User table, but we can override if needed
   specialization: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -56,7 +55,6 @@ const Doctor = sequelize.define('Doctor', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
-  // Medical specific fields
   medicalSchool: {
     type: DataTypes.STRING,
     allowNull: true
@@ -84,16 +82,14 @@ const Doctor = sequelize.define('Doctor', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  // Professional details
   npiNumber: {
     type: DataTypes.STRING,
-    allowNull: true // National Provider Identifier
+    allowNull: true
   },
   deaNumber: {
     type: DataTypes.STRING,
-    allowNull: true // Drug Enforcement Administration number
+    allowNull: true
   },
-  // Status tracking
   verificationStatus: {
     type: DataTypes.ENUM('Pending', 'Verified', 'Rejected'),
     defaultValue: 'Pending'
@@ -106,11 +102,10 @@ const Doctor = sequelize.define('Doctor', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'users',
+      model: 'Users', // Use capital 'Users'
       key: 'id'
     }
   },
-  // Sync tracking
   syncedAt: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW
