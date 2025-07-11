@@ -18,6 +18,10 @@ import AdminDashboard from './components/admin/dashboard/AdminDashboard';
 
 // Doctor Components  
 import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
+import PatientList from './components/doctor/patients/PatientList';
+import AppointmentList from './components/doctor/appointments/AppointmentList';
+import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
+
 
 // Family Components
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
@@ -56,6 +60,12 @@ function App() {
               
               {/* Staff routes */}
               <Route path="/staff/care" element={<CareManagement />} />
+
+              {/* Doctor routes */}
+              <Route path="/doctor/patients" element={<PatientList />} />
+              <Route path="/doctor/appointments" element={<AppointmentList />} />
+              <Route path="/doctor/consultations" element={<ConsultationHistory />} />
+              
               
             </Routes>
             
