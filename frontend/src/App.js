@@ -21,6 +21,8 @@ import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
 import PatientList from './components/doctor/patients/PatientList';
 import AppointmentList from './components/doctor/appointments/AppointmentList';
 import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
+import MedicalRecords from './components/doctor/records/MedicalRecords';
+
 
 
 // Family Components
@@ -65,6 +67,7 @@ function App() {
               <Route path="/doctor/patients" element={<PatientList />} />
               <Route path="/doctor/appointments" element={<AppointmentList />} />
               <Route path="/doctor/consultations" element={<ConsultationHistory />} />
+              <Route path="/doctor/records" element={<MedicalRecords />} />
               
               
             </Routes>
