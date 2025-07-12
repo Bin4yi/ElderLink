@@ -10,8 +10,8 @@ const {
   ElderMedicalHistory 
 } = require('../models');
 const { Op } = require('sequelize');
-const ZoomService = require('../services/zoomService');
-const NotificationService = require('../services/notificationService');
+// const ZoomService = require('../services/zoomService');
+// const NotificationService = require('../services/notificationService');
 
 class DoctorAppointmentController {
   
@@ -89,11 +89,14 @@ class DoctorAppointmentController {
   // Approve or reject appointment
   static async reviewAppointment(req, res) {
     try {
-      const { appointmentId } = req.params;
+      const { id } = req.params; // ✅ CHANGED: from appointmentId to id
       const { action, doctorNotes, rejectionReason } = req.body;
+
+      console.log('🔄 Reviewing appointment:', { id, action, doctorNotes });
 
       if (!action || !['approve', 'reject'].includes(action)) {
         return res.status(400).json({ 
+          success: false,
           message: 'Action must be either "approve" or "reject"' 
         });
       }
@@ -105,13 +108,16 @@ class DoctorAppointmentController {
 
       if (!doctor) {
         return res.status(404).json({ 
+          success: false,
           message: 'Doctor profile not found' 
         });
       }
 
+      console.log('🔍 Looking for appointment:', { appointmentId: id, doctorId: doctor.id });
+
       const appointment = await Appointment.findOne({
         where: { 
-          id: appointmentId,
+          id: id, // ✅ USING: id instead of appointmentId
           doctorId: doctor.id,
           status: 'pending'
         },
@@ -128,10 +134,14 @@ class DoctorAppointmentController {
       });
 
       if (!appointment) {
+        console.log('❌ Appointment not found or cannot be reviewed');
         return res.status(404).json({ 
+          success: false,
           message: 'Appointment not found or cannot be reviewed' 
         });
       }
+
+      console.log('✅ Found appointment:', appointment.id);
 
       let updateData = {
         doctorNotes,
@@ -142,51 +152,43 @@ class DoctorAppointmentController {
         updateData.rejectionReason = rejectionReason;
       }
 
-      // If approving, generate Zoom meeting
+      // If approving, you could generate Zoom meeting here
       if (action === 'approve') {
-        try {
-          const zoomMeeting = await ZoomService.createMeeting({
-            topic: `Medical Consultation - ${appointment.elder.firstName} ${appointment.elder.lastName}`,
-            start_time: appointment.appointmentDate,
-            duration: appointment.duration,
-            agenda: appointment.reason
-          });
-
-          updateData.zoomMeetingId = zoomMeeting.id;
-          updateData.zoomJoinUrl = zoomMeeting.join_url;
-          updateData.zoomPassword = zoomMeeting.password;
-        } catch (zoomError) {
-          console.error('Zoom meeting creation failed:', zoomError);
-          // Continue without Zoom - can be handled separately
-        }
+        console.log('✅ Appointment approved');
+        // updateData.zoomMeetingId = 'mock_zoom_id';
+        // updateData.zoomJoinUrl = 'https://zoom.us/j/mock_meeting';
       }
 
       await appointment.update(updateData);
 
-      // Send notification to family member
-      const notificationType = action === 'approve' ? 'approval' : 'rejection';
-      const notificationTitle = action === 'approve' 
-        ? 'Appointment Approved' 
-        : 'Appointment Rejected';
-      const notificationMessage = action === 'approve'
-        ? `Your appointment for ${appointment.elder.firstName} ${appointment.elder.lastName} has been approved`
-        : `Your appointment for ${appointment.elder.firstName} ${appointment.elder.lastName} has been rejected. Reason: ${rejectionReason}`;
+      console.log('✅ Appointment updated successfully');
 
-      await NotificationService.createAppointmentNotification({
-        appointmentId: appointment.id,
-        recipientId: appointment.familyMemberId,
-        type: notificationType,
-        title: notificationTitle,
-        message: notificationMessage
-      });
+      // Mock notification creation
+      console.log('📧 Notification would be sent to family member:', appointment.familyMember?.email);
 
       res.json({
+        success: true,
         message: `Appointment ${action}d successfully`,
-        appointment
+        appointment: await appointment.reload({
+          include: [
+            {
+              model: Elder,
+              as: 'elder'
+            },
+            {
+              model: User,
+              as: 'familyMember'
+            }
+          ]
+        })
       });
     } catch (error) {
-      console.error('Review appointment error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Review appointment error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
     }
   }
 

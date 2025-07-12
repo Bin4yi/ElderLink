@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast';
 
 // Providers
 import { AuthProvider } from './context/AuthContext';
-import { SubscriptionProvider } from './context/SubscriptionContext'; // ADD THIS
+import { SubscriptionProvider } from './context/SubscriptionContext';
 
 // Components
 import Landing from './pages/Landing';
@@ -23,10 +23,9 @@ import AppointmentManagement from './components/doctor/appointments/AppointmentM
 import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
 import MedicalRecords from './components/doctor/records/MedicalRecords';
 
-
-
 // Family Components
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
+import AppointmentBooking from './components/family/dashboard/appointmentBooking'; // ADD THIS IMPORT
 
 // Pharmacy Components
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
@@ -42,7 +41,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <SubscriptionProvider> {/* ADD THIS WRAPPER */}
+        <SubscriptionProvider>
           <div className="App">
             <Routes>
               <Route path="/" element={<Landing />} />
@@ -60,6 +59,9 @@ function App() {
               {/* NEW: Elder routes */}
               <Route path="/elder/dashboard" element={<ElderDashboard />} />
               
+              {/* Family routes - ADD THIS */}
+              <Route path="/family/appointmentBooking" element={<AppointmentBooking />} />
+              
               {/* Staff routes */}
               <Route path="/staff/care" element={<CareManagement />} />
 
@@ -68,7 +70,6 @@ function App() {
               <Route path="/doctor/appointments" element={<AppointmentManagement />} />
               <Route path="/doctor/consultations" element={<ConsultationHistory />} />
               <Route path="/doctor/records" element={<MedicalRecords />} />
-              
               
             </Routes>
             
@@ -96,7 +97,7 @@ function App() {
               }}
             />
           </div>
-        </SubscriptionProvider> {/* CLOSE THE WRAPPER */}
+        </SubscriptionProvider>
       </AuthProvider>
     </Router>
   );

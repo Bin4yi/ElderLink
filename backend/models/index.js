@@ -246,7 +246,7 @@ ElderMedicalHistory.belongsTo(User, {
 // Reverse associations for Elder Medical History
 Elder.hasMany(ElderMedicalHistory, {
   foreignKey: 'elderId',
-  as: 'medicalHistory'
+  as: 'medicalHistoryRecords' // Changed alias to avoid conflict
 });
 
 User.hasMany(ElderMedicalHistory, {

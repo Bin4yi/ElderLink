@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Stethoscope, AlertCircle, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { appointmentService } from '../../services/appointment';
-import { elderService } from '../../services/elder';
+import { appointmentService } from '../../../services/appointment'; // ✅ FIXED: Changed from '../../services/appointment'
+import { elderService } from '../../../services/elder'; // ✅ FIXED: Changed from '../../services/elder'
 
 const AppointmentBooking = ({ onBack, onSuccess }) => {
   const [step, setStep] = useState(1);
@@ -41,10 +41,35 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
 
   const loadDoctors = async () => {
     try {
+      console.log('🔄 Loading doctors...');
       const response = await appointmentService.getAvailableDoctors();
-      setDoctors(response.doctors || []);
+      console.log('✅ Doctors API response:', response);
+      
+      if (response && response.doctors) {
+        setDoctors(response.doctors);
+        console.log(`✅ Set ${response.doctors.length} doctors`);
+      } else {
+        console.warn('⚠️ No doctors in response:', response);
+        setDoctors([]);
+      }
     } catch (error) {
-      toast.error('Failed to load doctors');
+      console.error('❌ Error loading doctors:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // Show more specific error message
+      if (error.response?.status === 404) {
+        toast.error('Doctors endpoint not found. Please check backend routes.');
+      } else if (error.response?.status === 500) {
+        toast.error('Server error loading doctors. Please try again.');
+      } else {
+        toast.error(`Failed to load doctors: ${error.message}`);
+      }
+      
+      setDoctors([]);
     }
   };
 
