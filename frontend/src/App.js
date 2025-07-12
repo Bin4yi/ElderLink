@@ -19,7 +19,7 @@ import AdminDashboard from './components/admin/dashboard/AdminDashboard';
 // Doctor Components  
 import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
 import PatientList from './components/doctor/patients/PatientList';
-import AppointmentList from './components/doctor/appointments/AppointmentList';
+import AppointmentManagement from './components/doctor/appointments/AppointmentManagement';
 import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
 import MedicalRecords from './components/doctor/records/MedicalRecords';
 
@@ -65,7 +65,7 @@ function App() {
 
               {/* Doctor routes */}
               <Route path="/doctor/patients" element={<PatientList />} />
-              <Route path="/doctor/appointments" element={<AppointmentList />} />
+              <Route path="/doctor/appointments" element={<AppointmentManagement />} />
               <Route path="/doctor/consultations" element={<ConsultationHistory />} />
               <Route path="/doctor/records" element={<MedicalRecords />} />
               
