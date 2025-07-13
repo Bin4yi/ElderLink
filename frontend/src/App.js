@@ -25,7 +25,7 @@ import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
 
 // Family
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
-import AppointmentBooking from './components/family/dashboard/appointmentBooking'; // ADD THIS IMPORT
+import AppointmentList from './components/family/appointments/AppointmentList'; // ADD THIS IMPORT
 
 // Pharmacy
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
@@ -83,7 +83,7 @@ function App() {
               <Route path="/elder/dashboard" element={<ElderDashboard />} />
               
               {/* Family routes - ADD THIS */}
-              <Route path="/family/appointmentBooking" element={<AppointmentBooking />} />
+              <Route path="/family/appointments" element={<AppointmentList />} />
               
               {/* Staff routes */}
               <Route path="/staff/care" element={<CareManagement />} />
