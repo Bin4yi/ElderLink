@@ -6,8 +6,6 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { InventoryProvider } from './context/InventoryContext';
-
-// Providers
 import { SubscriptionProvider } from './context/SubscriptionContext';
 
 // Components
@@ -15,21 +13,21 @@ import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
-
-// ADD: Import Login component
 import Login from './components/auth/Login';
 
-// Admin Components
-import AdminDashboard from './components/admin/dashboard/AdminDashboard'; // Use the existing one from pages
+// Admin
+import AdminDashboard from './components/admin/dashboard/AdminDashboard';
 import UserManagement from './components/admin/UserManagement';
+import AdminPortal from './pages/AdminPortal';
 
-// Doctor Components  
+// Doctor
 import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
 
-// Family Components
+// Family
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
+import AppointmentList from './components/family/appointments/AppointmentList';
 
-// Pharmacy Components
+// Pharmacy
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
 import MedicationManagement from './components/pharmacist/medications/MedicationManagement';
 import DeliverySchedule from './components/pharmacist/delivery/DeliverySchedule';
@@ -39,7 +37,7 @@ import AddNewItem from './components/pharmacist/inventory/AddNewItem';
 import PharmacyProfile from './components/pharmacist/profile/Pharmacyprofile';
 import MedicineProfile from './components/pharmacist/inventory/MedicineProfile';
 
-// Staff Components
+// Staff
 import StaffDashboard from './components/staff/dashboard/StaffDashboard';
 import AlertsManagement from './components/staff/alerts/AlertsManagement';
 import HealthMonitoring from './components/staff/monitoring/HealthMonitoring';
@@ -47,11 +45,8 @@ import CareManagement from './components/staff/care/CareManagement';
 import Report from './components/staff/reports/Report';
 import Profilestaff from './components/staff/profile/Profilestaff';
 
-// Elder Components
+// Elder
 import ElderDashboard from './components/Elder/dashboard/Elder';
-
-// ADD: Import AdminPortal from pages
-import AdminPortal from './pages/AdminPortal';
 
 const theme = createTheme({
   palette: {
@@ -74,51 +69,51 @@ function App() {
             <SubscriptionProvider>
               <div className="App">
                 <Routes>
+                  {/* Public Routes */}
                   <Route path="/" element={<Landing />} />
+                  <Route path="/login" element={<Login />} />
+
+                  {/* Common */}
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/settings" element={<Settings />} />
-                  
-                  {/* Role-specific dashboards */}
-                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                  <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
-                  <Route path="/family/dashboard" element={<FamilyDashboard />} />
-                  <Route path="/pharmacist/dashboard" element={<PharmacyDashboard />} />
 
-                  {/* Staff routes */}
+                  {/* Admin */}
+                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  <Route path="/admin/users" element={<UserManagement />} />
+                  <Route path="/admin-portal" element={<AdminPortal />} />
+
+                  {/* Doctor */}
+                  <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+
+                  {/* Family */}
+                  <Route path="/family/dashboard" element={<FamilyDashboard />} />
+                  <Route path="/family/appointments" element={<AppointmentList />} />
+
+                  {/* Pharmacist */}
+                  <Route path="/pharmacist/dashboard" element={<PharmacyDashboard />} />
+                  <Route path="/pharmacist/medications" element={<MedicationManagement />} />
+                  <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
+                  <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
+                  <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
+                  <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
+                  <Route path="/pharmacist/inventory/:id" element={<MedicineProfile />} />
+                  <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
+
+                  {/* Staff */}
                   <Route path="/staff/dashboard" element={<StaffDashboard />} />
                   <Route path="/staff/care" element={<CareManagement />} />
                   <Route path="/staff/alerts" element={<AlertsManagement />} />
                   <Route path="/staff/monitoring" element={<HealthMonitoring />} />
                   <Route path="/staff/reports" element={<Report />} />
                   <Route path="/staff/profile" element={<Profilestaff />} />
-               
-                  <Route path="/pharmacist/medications" element={<MedicationManagement />} />
-                  <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
-                  <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
-                  <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
-                  <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
-                  <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
-                  <Route path="/pharmacist/inventory/:id" element={<MedicineProfile />} />
 
-                  {/* Elder routes */}
+                  {/* Elder */}
                   <Route path="/elder/dashboard" element={<ElderDashboard />} />
-                  
-                  {/* Admin User Management route */}
-                  <Route path="/admin/users" element={<UserManagement />} />
-
-                  {/* Admin Portal routes - FIX: Use AdminPortal component */}
-                  <Route path="/admin-portal" element={<AdminPortal />} />
-                  
-                  {/* Public routes - FIX: Use Login component */}
-                  <Route path="/login" element={<Login />} />
-                  
-                  {/* Redirect root to landing */}
-                  {/* <Route path="/" element={<Navigate to="/landing" replace />} /> */}
                 </Routes>
-                
+
                 {/* Toast notifications */}
-                <Toaster 
+                <Toaster
                   position="top-right"
                   reverseOrder={false}
                   gutter={8}
