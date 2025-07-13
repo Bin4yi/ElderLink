@@ -27,7 +27,13 @@ import PharmacyDashboard from "./components/pharmacist/dashboard/PharmacyDashboa
 
 //Mental Health Consultant Components
 import MentalHealthDashboard from "./components/mental-health/dashboard/MentalHealthDashboard";
-
+import MentalHealthProfile from "./components/mental-health/profile/profile";
+import MentalHealthClients from "./components/mental-health/pations/clients";
+import ProgressReport from "./components/mental-health/p-reports/p-report";
+import TreatmentPlans from "./components/mental-health/t-plans/t-plans";
+import MentalHealthAssessments from "./components/mental-health/assessments/assessments";
+import MentalHealthResources from "./components/mental-health/m-resources/resources";
+import MentalHealthTherapySessions from "./components/mental-health/sessions/sessions";
 // Staff Components
 import StaffDashboard from "./components/staff/dashboard/StaffDashboard";
 import PatientManagement from "./components/staff/care-management/PatientManagement";
@@ -80,6 +86,37 @@ function App() {
 
               {/* Staff routes */}
               <Route path="/staff/care" element={<CareManagement />} />
+
+              {/* Mental Health Profile Route */}
+              <Route
+                path="/mental-health/profile"
+                element={<MentalHealthProfile />}
+              />
+
+              <Route
+                path="/mental-health/clients"
+                element={<MentalHealthClients />}
+              />
+              <Route
+                path="/mental-health/progress-reports"
+                element={<ProgressReport />}
+              />
+              <Route
+                path="/mental-health/treatment-plans"
+                element={<TreatmentPlans />}
+              />
+              <Route
+                path="/mental-health/assessments"
+                element={<MentalHealthAssessments />}
+              />
+              <Route
+                path="/mental-health/resources"
+                element={<MentalHealthResources />}
+              />
+              <Route
+                path="/mental-health/therapy-sessions"
+                element={<MentalHealthTherapySessions />}
+              />
             </Routes>
 
             {/* Toast notifications */}
