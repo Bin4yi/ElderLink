@@ -5,6 +5,7 @@ class AppointmentService {
   
   // Family Member Appointment Services
   
+  
   // Get available doctors
   async getAvailableDoctors() {
     try {
