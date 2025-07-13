@@ -25,7 +25,7 @@ import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
 
 // Family
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
-import AppointmentList from './components/family/appointments/AppointmentList';
+import AppointmentBooking from './components/family/dashboard/appointmentBooking'; // ADD THIS IMPORT
 
 // Pharmacy
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
@@ -64,81 +64,63 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <Router>
-          <InventoryProvider>
-            <SubscriptionProvider>
-              <div className="App">
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/login" element={<Login />} />
+        <SubscriptionProvider>
+          <div className="App">
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+              
+              {/* Role-specific dashboards */}
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+              <Route path="/family/dashboard" element={<FamilyDashboard />} />
+              <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
+              <Route path="/staff/dashboard" element={<StaffDashboard />} />
+              
+              {/* NEW: Elder routes */}
+              <Route path="/elder/dashboard" element={<ElderDashboard />} />
+              
+              {/* Family routes - ADD THIS */}
+              <Route path="/family/appointmentBooking" element={<AppointmentBooking />} />
+              
+              {/* Staff routes */}
+              <Route path="/staff/care" element={<CareManagement />} />
 
-                  {/* Common */}
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/settings" element={<Settings />} />
-
-                  {/* Admin */}
-                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                  <Route path="/admin/users" element={<UserManagement />} />
-                  <Route path="/admin-portal" element={<AdminPortal />} />
-
-                  {/* Doctor */}
-                  <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
-
-                  {/* Family */}
-                  <Route path="/family/dashboard" element={<FamilyDashboard />} />
-                  <Route path="/family/appointments" element={<AppointmentList />} />
-
-                  {/* Pharmacist */}
-                  <Route path="/pharmacist/dashboard" element={<PharmacyDashboard />} />
-                  <Route path="/pharmacist/medications" element={<MedicationManagement />} />
-                  <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
-                  <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
-                  <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
-                  <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
-                  <Route path="/pharmacist/inventory/:id" element={<MedicineProfile />} />
-                  <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
-
-                  {/* Staff */}
-                  <Route path="/staff/dashboard" element={<StaffDashboard />} />
-                  <Route path="/staff/care" element={<CareManagement />} />
-                  <Route path="/staff/alerts" element={<AlertsManagement />} />
-                  <Route path="/staff/monitoring" element={<HealthMonitoring />} />
-                  <Route path="/staff/reports" element={<Report />} />
-                  <Route path="/staff/profile" element={<Profilestaff />} />
-
-                  {/* Elder */}
-                  <Route path="/elder/dashboard" element={<ElderDashboard />} />
-                </Routes>
-
-                {/* Toast notifications */}
-                <Toaster
-                  position="top-right"
-                  reverseOrder={false}
-                  gutter={8}
-                  containerClassName=""
-                  containerStyle={{}}
-                  toastOptions={{
-                    className: '',
-                    duration: 4000,
-                    style: {
-                      background: '#363636',
-                      color: '#fff',
-                    },
-                    success: {
-                      duration: 3000,
-                      theme: {
-                        primary: 'green',
-                        secondary: 'black',
-                      },
-                    },
-                  }}
-                />
-              </div>
-            </SubscriptionProvider>
-          </InventoryProvider>
-        </Router>
+              {/* Doctor routes */}
+              <Route path="/doctor/patients" element={<PatientList />} />
+              <Route path="/doctor/appointments" element={<AppointmentManagement />} />
+              <Route path="/doctor/consultations" element={<ConsultationHistory />} />
+              <Route path="/doctor/records" element={<MedicalRecords />} />
+              
+            </Routes>
+            
+            {/* Toast notifications */}
+            <Toaster 
+              position="top-right"
+              reverseOrder={false}
+              gutter={8}
+              containerClassName=""
+              containerStyle={{}}
+              toastOptions={{
+                className: '',
+                duration: 4000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+                success: {
+                  duration: 3000,
+                  theme: {
+                    primary: 'green',
+                    secondary: 'black',
+                  },
+                },
+              }}
+            />
+          </div>
+        </SubscriptionProvider>
       </AuthProvider>
     </ThemeProvider>
   );
