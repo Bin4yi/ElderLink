@@ -14,6 +14,10 @@ const eldersData = [
       'Hypertension',
       'Osteoporosis',
       'Mild cognitive impairment',
+      'Chronic pain in lower back',
+      'Anxiety and depression',
+      'High cholesterol',
+
     ],
     careActivities: [
       { id: 1, time: '08:00 AM', elder: 'Margaret Thompson', activity: 'Morning medication check', status: 'completed' },
@@ -294,7 +298,7 @@ const CareManagement = () => {
             <div className="space-y-8">
               <div className="flex flex-col md:flex-row md:gap-8">
                 {/* Elder Details (single assigned elder) */}
-                <div className="md:w-1/2">
+                <div className="md:w-1/3">
                   <h2 className="text-2xl font-bold text-blue-800 flex items-center gap-2">
                     <FileText size={22} className="text-blue-600" />
                     <span>{selectedElder.name}</span>
@@ -314,7 +318,7 @@ const CareManagement = () => {
                   </div>
                 </div>
                 {/* Daily Care Activities */}
-                <div className="md:w-1/2 mt-8 md:mt-0">
+                <div className="md:w-2/3 mt-8 md:mt-0">
                   <h3 className="text-xl font-semibold text-blue-800 mb-3 flex items-center gap-2">
                     <ClipboardList size={20} className="text-blue-600" />
                     Care Activities
@@ -322,7 +326,7 @@ const CareManagement = () => {
                   {selectedElder.careActivities.length === 0 ? (
                     <p className="text-gray-500">No care activities assigned for today.</p>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {selectedElder.careActivities.map(activity => (
                         <div
                           key={activity.id}
@@ -334,7 +338,7 @@ const CareManagement = () => {
                               : 'bg-gray-50 border-gray-200'
                           }`}
                         >
-                          <div>
+                          <div className="flex-1 pr-4">
                             <div className="font-medium">{activity.activity}</div>
                             <div className="text-xs text-gray-500">{activity.date}</div>
                             <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-opacity-30 font-medium capitalize">
