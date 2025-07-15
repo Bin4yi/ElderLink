@@ -13,7 +13,6 @@ export const getRoleMenuItems = (role) => {
         { path: '/family/dashboard', icon: Home, label: 'Dashboard' },
         { path: '/family/elders', icon: Heart, label: 'My Elders' },
         { path: '/family/subscriptions', icon: Package, label: 'Subscriptions' },
-        { path: '/family/appointments', icon: Calendar, label: 'Appointments' },
         { path: '/family/health-reports', icon: Activity, label: 'Health Reports' },
         { path: '/family/profile', icon: User, label: 'Profile' },
         { path: '/family/settings', icon: Settings, label: 'Settings' }
