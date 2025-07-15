@@ -44,8 +44,13 @@ try {
   const subscriptionRoutes = require('./routes/subscription');
   const elderRoutes = require('./routes/elder');
   const notificationRoutes = require('./routes/notification');
+
   const appointmentRoutes = require('./routes/appointments');
   const doctorAppointmentRoutes = require('./routes/doctorAppointments'); // ✅ ADD THIS LINE
+
+  const adminUserRoutes = require('./routes/adminUserRoutes');
+  const adminStatsRoutes = require('./routes/adminStatsRoutes');
+
 
   // Verify routes are properly exported
   if (typeof authRoutes !== 'function') {
@@ -60,11 +65,19 @@ try {
   if (typeof notificationRoutes !== 'function') {
     throw new Error('notificationRoutes is not a valid router');
   }
+
   if (typeof appointmentRoutes !== 'function') {
     throw new Error('appointmentRoutes is not a valid router');
   }
   if (typeof doctorAppointmentRoutes !== 'function') { // ✅ ADD THIS CHECK
     throw new Error('doctorAppointmentRoutes is not a valid router');
+
+  if (typeof adminUserRoutes !== 'function') {
+    throw new Error('adminUserRoutes is not a valid router');
+  }
+  if (typeof adminStatsRoutes !== 'function') {
+    throw new Error('adminStatsRoutes is not a valid router');
+
   }
 
   // API Routes
@@ -72,8 +85,12 @@ try {
   app.use('/api/subscriptions', subscriptionRoutes);
   app.use('/api/elders', elderRoutes);
   app.use('/api/notifications', notificationRoutes);
+
   app.use('/api/appointments', appointmentRoutes);
   app.use('/api/doctor', doctorAppointmentRoutes); // ✅ ADD THIS LINE
+
+  app.use('/api/admin', adminUserRoutes);
+  app.use('/api/admin', adminStatsRoutes)
 
   console.log('✅ All routes loaded successfully');
 } catch (error) {

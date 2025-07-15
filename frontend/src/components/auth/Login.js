@@ -39,7 +39,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
         redirectPath = '/staff/dashboard';
         break;
       case 'pharmacist':
-        redirectPath = '/pharmacy/dashboard';
+        redirectPath = '/pharmacist/dashboard';
         break;
       case 'family_member':
         redirectPath = '/family/dashboard';
