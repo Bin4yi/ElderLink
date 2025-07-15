@@ -6,8 +6,6 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { InventoryProvider } from './context/InventoryContext';
-
-// Providers
 import { SubscriptionProvider } from './context/SubscriptionContext';
 
 // Components
@@ -16,18 +14,24 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 
-// ADD: Import Login component
+// Auth Components
 import Login from './components/auth/Login';
 
 // Admin Components
-import AdminDashboard from './components/admin/dashboard/AdminDashboard'; // Use the existing one from pages
+import AdminDashboard from './components/admin/dashboard/AdminDashboard';
 import UserManagement from './components/admin/UserManagement';
+import AdminPortal from './pages/AdminPortal';
 
 // Doctor Components  
 import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
+import PatientList from './components/doctor/patients/PatientList';
+import AppointmentManagement from './components/doctor/appointments/AppointmentManagement';
+import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
+import MedicalRecords from './components/doctor/records/MedicalRecords';
 
 // Family Components
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
+import AppointmentList from './components/family/appointments/AppointmentList';
 
 // Pharmacy Components
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
@@ -50,9 +54,6 @@ import Profilestaff from './components/staff/profile/Profilestaff';
 // Elder Components
 import ElderDashboard from './components/Elder/dashboard/Elder';
 
-// ADD: Import AdminPortal from pages
-import AdminPortal from './pages/AdminPortal';
-
 const theme = createTheme({
   palette: {
     primary: {
@@ -74,17 +75,42 @@ function App() {
             <SubscriptionProvider>
               <div className="App">
                 <Routes>
+                  {/* Public routes */}
                   <Route path="/" element={<Landing />} />
+                  <Route path="/login" element={<Login />} />
+                  
+                  {/* General routes */}
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/settings" element={<Settings />} />
                   
-                  {/* Role-specific dashboards */}
+                  {/* Admin routes */}
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  <Route path="/admin/users" element={<UserManagement />} />
+                  <Route path="/admin-portal" element={<AdminPortal />} />
+                  
+                  {/* Doctor routes */}
                   <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+                  <Route path="/doctor/patients" element={<PatientList />} />
+                  <Route path="/doctor/appointments" element={<AppointmentManagement />} />
+                  <Route path="/doctor/consultations" element={<ConsultationHistory />} />
+                  <Route path="/doctor/records" element={<MedicalRecords />} />
+                  
+                  {/* Family routes */}
                   <Route path="/family/dashboard" element={<FamilyDashboard />} />
+                  <Route path="/family/appointments" element={<AppointmentList />} />
+                  
+                  {/* Pharmacy/Pharmacist routes */}
+                  <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
                   <Route path="/pharmacist/dashboard" element={<PharmacyDashboard />} />
-
+                  <Route path="/pharmacist/medications" element={<MedicationManagement />} />
+                  <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
+                  <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
+                  <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
+                  <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
+                  <Route path="/pharmacist/inventory/:id" element={<MedicineProfile />} />
+                  <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
+                  
                   {/* Staff routes */}
                   <Route path="/staff/dashboard" element={<StaffDashboard />} />
                   <Route path="/staff/care" element={<CareManagement />} />
@@ -92,29 +118,9 @@ function App() {
                   <Route path="/staff/monitoring" element={<HealthMonitoring />} />
                   <Route path="/staff/reports" element={<Report />} />
                   <Route path="/staff/profile" element={<Profilestaff />} />
-               
-                  <Route path="/pharmacist/medications" element={<MedicationManagement />} />
-                  <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
-                  <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
-                  <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
-                  <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
-                  <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
-                  <Route path="/pharmacist/inventory/:id" element={<MedicineProfile />} />
-
+                  
                   {/* Elder routes */}
                   <Route path="/elder/dashboard" element={<ElderDashboard />} />
-                  
-                  {/* Admin User Management route */}
-                  <Route path="/admin/users" element={<UserManagement />} />
-
-                  {/* Admin Portal routes - FIX: Use AdminPortal component */}
-                  <Route path="/admin-portal" element={<AdminPortal />} />
-                  
-                  {/* Public routes - FIX: Use Login component */}
-                  <Route path="/login" element={<Login />} />
-                  
-                  {/* Redirect root to landing */}
-                  {/* <Route path="/" element={<Navigate to="/landing" replace />} /> */}
                 </Routes>
                 
                 {/* Toast notifications */}
