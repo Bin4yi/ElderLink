@@ -29,12 +29,37 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Health check endpoint
+// Health check endpoints
 app.get('/health', (req, res) => {
   res.status(200).json({ 
-    success: true, 
+    status: 'OK', 
+    message: 'ElderLink Backend is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
     message: 'ElderLink API is running',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Add this new endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'ElderLink API is running',
+    version: '1.0.0',
+    endpoints: [
+      '/api/health',
+      '/api/auth',
+      '/api/subscriptions',
+      '/api/elders',
+      '/api/notifications',
+      '/api/admin'
+    ]
   });
 });
 
