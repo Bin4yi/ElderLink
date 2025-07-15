@@ -1,5 +1,4 @@
-// frontend/src/pages/Dashboard.js (UPDATED for multiple subscriptions + Appointment sidebar)
-
+// frontend/src/pages/Dashboard.js (UPDATED for multiple subscriptions)
 import React, { useState, useEffect } from 'react';
 import { Plus, Users, CreditCard, Bell, Calendar, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -12,7 +11,6 @@ import AddElder from '../elder/AddElder';
 import ElderList from '../elder/ElderList';
 import ElderProfile from '../elder/ElderProfile';
 import SubscriptionStatus from '../subscription/SubscriptionStatus';
-import AppointmentList from '../appointments/AppointmentList';
 
 // Services
 import { subscriptionService } from '../../../services/subscription';
@@ -29,7 +27,7 @@ const FamilyDashboard = () => {
   const [currentView, setCurrentView] = useState('overview');
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  
   const { user } = useAuth();
 
   useEffect(() => {
@@ -44,7 +42,12 @@ const FamilyDashboard = () => {
         elderService.getElders(),
         subscriptionService.getAvailableSubscriptions()
       ]);
-
+      
+      console.log('Dashboard data loaded:');
+      console.log('- Subscriptions:', subscriptionsData.subscriptions?.length || 0);
+      console.log('- Elders:', eldersData.elders?.length || 0);
+      console.log('- Available subscriptions:', availableSubsData.availableSubscriptions?.length || 0);
+      
       setSubscriptions(subscriptionsData.subscriptions || []);
       setElders(eldersData.elders || []);
       setAvailableSubscriptions(availableSubsData.availableSubscriptions || []);
@@ -56,6 +59,7 @@ const FamilyDashboard = () => {
     }
   };
 
+  // Simple subscription checking without context
   const hasValidSubscription = () => {
     return subscriptions.some(sub => 
       sub.status === 'active' && 
@@ -74,6 +78,7 @@ const FamilyDashboard = () => {
   };
 
   const handleSubscriptionSuccess = (subscription) => {
+    console.log('New subscription created:', subscription);
     setSubscriptions(prev => [subscription, ...prev]);
     loadDashboardData();
     setCurrentView('overview');
@@ -81,6 +86,7 @@ const FamilyDashboard = () => {
   };
 
   const handleElderAdded = (elder) => {
+    console.log('Elder added:', elder);
     setElders(prev => [elder, ...prev]);
     setCurrentView('overview');
     loadDashboardData();
@@ -93,17 +99,20 @@ const FamilyDashboard = () => {
   };
 
   const handleAddElderToSubscription = (subscription) => {
+    console.log('Adding elder to subscription:', subscription);
     setSelectedSubscription(subscription);
     setCurrentView('add-elder');
   };
 
   const handleAddNewPackage = () => {
+    console.log('Adding new package');
     setCurrentView('packages');
   };
 
   const handleScheduleCheckup = () => {
     requireSubscription(
       () => {
+        console.log('Scheduling checkup');
         toast.success('Checkup scheduling feature coming soon!');
       },
       'You need an active subscription to schedule checkups'
@@ -115,6 +124,10 @@ const FamilyDashboard = () => {
       sub.status === 'active' && 
       new Date(sub.endDate) > new Date()
     );
+  };
+
+  const getSubscriptionsWithElders = () => {
+    return subscriptions.filter(sub => sub.elder);
   };
 
   const getSubscriptionsWithoutElders = () => {
@@ -189,19 +202,6 @@ const FamilyDashboard = () => {
               ← Back to Dashboard
             </button>
             <ElderProfile elder={selectedElder} />
-          </div>
-        );
-
-      case 'appointments':
-        return (
-          <div className="space-y-6">
-            <button
-              onClick={() => setCurrentView('overview')}
-              className="text-red-500 hover:text-red-600 font-medium"
-            >
-              ← Back to Dashboard
-            </button>
-            <AppointmentList />
           </div>
         );
       
@@ -378,20 +378,9 @@ const FamilyDashboard = () => {
     }
   };
 
-  // Sidebar items array including Appointment section
-  const sidebarItems = [
-    { key: 'overview', label: 'Dashboard', icon: Users, onClick: () => setCurrentView('overview') },
-    { key: 'appointments', label: 'Appointments', icon: Calendar, onClick: () => setCurrentView('appointments') },
-    { key: 'packages', label: 'Packages', icon: CreditCard, onClick: () => setCurrentView('packages') },
-    { key: 'add-elder', label: 'Add Elder', icon: Plus, onClick: handleAddElderClick }
-  ];
-
+  // Changed: Using RoleLayout like doctor dashboard for consistent sidebar style
   return (
-    <RoleLayout
-      title="Family Dashboard"
-      sidebarItems={sidebarItems}
-      currentView={currentView}
-    >
+    <RoleLayout title="Family Dashboard">
       {renderContent()}
     </RoleLayout>
   );
