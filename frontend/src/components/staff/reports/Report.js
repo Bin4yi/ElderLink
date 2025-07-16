@@ -7,8 +7,7 @@ const Report = () => {
   const [form, setForm] = useState({
     elderName: '',
     date: '',
-    careManagement: '',
-    healthMonitoring: '',
+    weeklyProgress: '',
   });
 
   // Handle form input changes
@@ -19,9 +18,9 @@ const Report = () => {
   // Add new activity
   const handleAdd = (e) => {
     e.preventDefault();
-    if (!form.elderName || !form.date || !form.careManagement || !form.healthMonitoring) return;
+    if (!form.elderName || !form.date || !form.weeklyProgress) return;
     setActivities([...activities, { ...form }]);
-    setForm({ elderName: '', date: '', careManagement: '', healthMonitoring: '' });
+    setForm({ elderName: '', date: '', weeklyProgress: '' });
   };
 
   // Delete all activities for a given elder and week
@@ -82,9 +81,7 @@ const Report = () => {
         acts.forEach((activity) => {
           doc.text(`  ${activity.date}`, 12, y);
           y += 7;
-          doc.text(`    Care Management: ${activity.careManagement}`, 14, y);
-          y += 7;
-          doc.text(`    Health Monitoring: ${activity.healthMonitoring}`, 14, y);
+          doc.text(`    Weekly Progress: ${activity.weeklyProgress}`, 14, y);
           y += 10;
           if (y > 270) {
             doc.addPage();
@@ -127,18 +124,10 @@ const Report = () => {
             required
           />
           <input
-            name="careManagement"
-            value={form.careManagement}
+            name="weeklyProgress"
+            value={form.weeklyProgress}
             onChange={handleChange}
-            placeholder="Care Management"
-            className="border p-2 rounded"
-            required
-          />
-          <input
-            name="healthMonitoring"
-            value={form.healthMonitoring}
-            onChange={handleChange}
-            placeholder="Health Monitoring"
+            placeholder="Weekly Progress"
             className="border p-2 rounded"
             required
           />
@@ -182,10 +171,7 @@ const Report = () => {
                   <li key={i}>
                     <span className="font-medium">{activity.date}:</span>
                     <div>
-                      <span className="font-medium">Care Management:</span> {activity.careManagement}
-                    </div>
-                    <div>
-                      <span className="font-medium">Health Monitoring:</span> {activity.healthMonitoring}
+                      <span className="font-medium">Weekly Progress:</span> {activity.weeklyProgress}
                     </div>
                   </li>
                 ))}

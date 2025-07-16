@@ -41,8 +41,9 @@ export const getRoleMenuItems = (role) => {
   case 'staff':
       return [
         { path: '/staff/dashboard', icon: Home, label: 'Dashboard' },
-{ path: '/staff/care', icon: Heart, label: 'Care Management' },
-{ path: '/staff/monitoring', icon: Monitor, label: 'Health Monitoring' },
+        { path: '/staff/care', icon: Heart, label: 'Care Management' },
+         { path: '/staff/mental', icon: Heart, label: 'Mental Specialist Plans' },
+        { path: '/staff/monitoring', icon: Monitor, label: 'Health Monitoring' },
         { path: '/staff/alerts', icon: AlertTriangle, label: 'Alerts' },
         { path: '/staff/reports', icon: FileText, label: 'Reports' },
         { path: '/staff/profile', icon: User, label: 'Profile' }
