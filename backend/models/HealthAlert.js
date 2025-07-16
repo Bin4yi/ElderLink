@@ -4,12 +4,12 @@ const sequelize = require('../config/database');
 
 const HealthAlert = sequelize.define('HealthAlert', {
   id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     primaryKey: true,
-    autoIncrement: true
+    defaultValue: DataTypes.UUIDV4
   },
   elderId: {
-    type: DataTypes.UUID, // FIXED: Changed to UUID to match Elder model
+    type: DataTypes.UUID,
     allowNull: false,
     references: {
       model: 'Elders',
@@ -17,7 +17,7 @@ const HealthAlert = sequelize.define('HealthAlert', {
     }
   },
   healthMonitoringId: {
-    type: DataTypes.INTEGER, // This stays INTEGER as HealthMonitoring uses INTEGER for its ID
+    type: DataTypes.UUID, // Changed from INTEGER to UUID
     allowNull: true,
     references: {
       model: 'health_monitoring',
@@ -25,59 +25,50 @@ const HealthAlert = sequelize.define('HealthAlert', {
     }
   },
   alertType: {
-    type: DataTypes.ENUM('vital_abnormal', 'medication_missed', 'emergency', 'routine_check'),
+    type: DataTypes.STRING(50),
     allowNull: false
   },
   severity: {
     type: DataTypes.ENUM('low', 'medium', 'high', 'critical'),
-    allowNull: false
+    allowNull: false,
+    defaultValue: 'medium'
   },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  description: {
+  message: {
     type: DataTypes.TEXT,
     allowNull: false
   },
-  vitals: {
-    type: DataTypes.JSON,
+  triggerValue: {
+    type: DataTypes.STRING(100),
     allowNull: true
   },
-  isResolved: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
+  normalRange: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  status: {
+    type: DataTypes.ENUM('active', 'acknowledged', 'resolved'),
+    allowNull: false,
+    defaultValue: 'active'
+  },
+  acknowledgedAt: {
+    type: DataTypes.DATE,
+    allowNull: true
   },
   resolvedAt: {
     type: DataTypes.DATE,
     allowNull: true
   },
   resolvedBy: {
-    type: DataTypes.UUID, // FIXED: Changed to UUID to match User model
+    type: DataTypes.UUID,
     allowNull: true,
     references: {
       model: 'Users',
       key: 'id'
     }
-  },
-  resolutionNotes: {
-    type: DataTypes.TEXT,
-    allowNull: true
   }
 }, {
   tableName: 'health_alerts',
-  timestamps: true,
-  indexes: [
-    {
-      fields: ['elderId', 'isResolved']
-    },
-    {
-      fields: ['severity']
-    },
-    {
-      fields: ['alertType']
-    }
-  ]
+  timestamps: true
 });
 
 module.exports = HealthAlert;

@@ -1,15 +1,14 @@
-// backend/models/HealthMonitoring.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const HealthMonitoring = sequelize.define('HealthMonitoring', {
   id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     primaryKey: true,
-    autoIncrement: true
+    defaultValue: DataTypes.UUIDV4
   },
   elderId: {
-    type: DataTypes.UUID, // ✅ FIXED: Changed to UUID to match Elder model
+    type: DataTypes.UUID,
     allowNull: false,
     references: {
       model: 'Elders',
@@ -17,8 +16,8 @@ const HealthMonitoring = sequelize.define('HealthMonitoring', {
     }
   },
   staffId: {
-    type: DataTypes.UUID, // ✅ FIXED: Changed to UUID to match User model
-    allowNull: false,
+    type: DataTypes.UUID,
+    allowNull: true,
     references: {
       model: 'Users',
       key: 'id'
@@ -54,7 +53,7 @@ const HealthMonitoring = sequelize.define('HealthMonitoring', {
     }
   },
   temperature: {
-    type: DataTypes.DECIMAL(4, 2),
+    type: DataTypes.DECIMAL(5, 1),
     allowNull: true,
     validate: {
       min: 95.0,
@@ -62,7 +61,7 @@ const HealthMonitoring = sequelize.define('HealthMonitoring', {
     }
   },
   weight: {
-    type: DataTypes.DECIMAL(5, 2),
+    type: DataTypes.DECIMAL(6, 1),
     allowNull: true,
     validate: {
       min: 50.0,
@@ -89,12 +88,9 @@ const HealthMonitoring = sequelize.define('HealthMonitoring', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  status: {
-    type: DataTypes.ENUM('scheduled', 'in-progress', 'completed', 'missed'),
-    defaultValue: 'scheduled'
-  },
   alertLevel: {
     type: DataTypes.ENUM('normal', 'warning', 'critical'),
+    allowNull: false,
     defaultValue: 'normal'
   },
   completedAt: {
@@ -103,18 +99,7 @@ const HealthMonitoring = sequelize.define('HealthMonitoring', {
   }
 }, {
   tableName: 'health_monitoring',
-  timestamps: true,
-  indexes: [
-    {
-      fields: ['elderId', 'monitoringDate']
-    },
-    {
-      fields: ['staffId']
-    },
-    {
-      fields: ['status']
-    }
-  ]
+  timestamps: true
 });
 
 module.exports = HealthMonitoring;

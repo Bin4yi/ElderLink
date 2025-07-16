@@ -5,6 +5,17 @@ const { authenticate, authorize } = require('../middleware/auth');
 const { HealthMonitoring, User, Elder } = require('../models');
 const { Op } = require('sequelize');
 
+// Import the controller
+const {
+  createHealthMonitoring,
+  getAllHealthMonitoring,
+  getTodaysSchedule,
+  getTodaysRecords, // Add this import
+  getHealthMonitoringById,
+  updateHealthMonitoring,
+  deleteHealthMonitoring
+} = require('../controllers/healthMonitoringController');
+
 // Test route (no auth needed)
 router.get('/test', (req, res) => {
   console.log('🧪 Health monitoring test route hit');
@@ -113,5 +124,16 @@ router.get('/elder/:elderId/history', authenticate, authorize('staff'), async (r
     });
   }
 });
+
+// Use the imported controller
+router.post('/', authenticate, authorize('staff'), createHealthMonitoring);
+
+// Add other controller routes
+router.get('/', authenticate, authorize('staff'), getAllHealthMonitoring);
+router.get('/today-schedule', authenticate, authorize('staff'), getTodaysSchedule);
+router.get('/today-records', authenticate, authorize('staff'), getTodaysRecords); // Add this new route
+router.get('/:id', authenticate, authorize('staff'), getHealthMonitoringById);
+router.put('/:id', authenticate, authorize('staff'), updateHealthMonitoring);
+router.delete('/:id', authenticate, authorize('staff'), deleteHealthMonitoring);
 
 module.exports = router;

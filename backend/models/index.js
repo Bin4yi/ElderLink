@@ -1,10 +1,22 @@
-// backend/models/index.js - UPDATED VERSION
+const sequelize = require('../config/database');
+
+// Import models - make sure they're properly defined
 const User = require('./User');
 const Subscription = require('./Subscription');
 const Elder = require('./Elder');
 const Notification = require('./Notification');
 const HealthMonitoring = require('./HealthMonitoring');
 const HealthAlert = require('./HealthAlert');
+
+// Initialize all models with sequelize
+const models = {
+  User,
+  Subscription,
+  Elder,
+  Notification,
+  HealthMonitoring,
+  HealthAlert
+};
 
 // User associations
 User.hasMany(Subscription, { 
@@ -22,12 +34,18 @@ User.hasMany(Notification, {
 User.hasMany(HealthMonitoring, { 
   foreignKey: 'staffId', 
   as: 'healthMonitorings',
-  onDelete: 'CASCADE'
+  onDelete: 'SET NULL' // Changed from CASCADE to SET NULL
 });
 
 User.hasOne(Elder, {
   foreignKey: 'userId',
   as: 'elderProfile',
+  onDelete: 'SET NULL'
+});
+
+User.hasMany(HealthAlert, { 
+  foreignKey: 'resolvedBy', 
+  as: 'resolvedAlerts',
   onDelete: 'SET NULL'
 });
 
@@ -106,10 +124,6 @@ Notification.belongsTo(User, {
 });
 
 module.exports = {
-  User,
-  Subscription,
-  Elder,
-  Notification,
-  HealthMonitoring,
-  HealthAlert
+  sequelize,
+  ...models
 };

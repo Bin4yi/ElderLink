@@ -76,6 +76,11 @@ const routeConfigs = [
   { path: './routes/adminStatsRoutes', mount: '/api/admin', name: 'adminStatsRoutes' }
 ];
 
+// Import health monitoring routes
+const healthMonitoringRoutes = require('./routes/healthMonitoring');
+// Import health reports routes
+const healthReportsRoutes = require('./routes/healthReports');
+
 // Import and use routes with error checking
 try {
   routeConfigs.forEach(({ path, mount, name }) => {
@@ -89,6 +94,11 @@ try {
     // API Routes
     app.use(mount, route);
   });
+
+  // Use health monitoring routes
+  app.use('/api/health-monitoring', healthMonitoringRoutes);
+  // Use health reports routes
+  app.use('/api/health-reports', healthReportsRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);

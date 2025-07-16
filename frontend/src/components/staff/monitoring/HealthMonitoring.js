@@ -3,7 +3,7 @@ import {
   Heart, 
   Activity, 
   Thermometer, 
-  Weight, 
+  Scale, // Changed from Weight to Scale
   Moon, 
   User, 
   Calendar, 
@@ -11,7 +11,8 @@ import {
   Edit3,
   Trash2,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  FileText
 } from 'lucide-react';
 import RoleLayout from '../../common/RoleLayout';
 import { healthMonitoringService } from '../../../services/healthMonitoring';
@@ -47,7 +48,7 @@ const alertColor = (alertLevel) => {
 };
 
 const HealthMonitoring = () => {
-  const [todaySchedule, setTodaySchedule] = useState([]);
+  const [todayRecords, setTodayRecords] = useState([]);
   const [elders, setElders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -61,8 +62,7 @@ const HealthMonitoring = () => {
     weight: '',
     sleepHours: '',
     oxygenSaturation: '',
-    notes: '',
-    status: 'scheduled'
+    notes: ''
   });
 
   useEffect(() => {
@@ -72,17 +72,28 @@ const HealthMonitoring = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [scheduleData, eldersData] = await Promise.all([
-        healthMonitoringService.getTodaysSchedule(),
-        elderService.getAllEldersForStaff() // ✅ CHANGED: Use staff-specific method
+      const [recordsData, eldersData] = await Promise.all([
+        healthMonitoringService.getAllHealthMonitoring(), // Changed from getTodaysSchedule
+        elderService.getAllEldersForStaff()
       ]);
       
       console.log('📊 Health monitoring data loaded:', {
-        scheduleCount: scheduleData.data?.schedule?.length || 0,
+        recordsCount: recordsData.data?.healthMonitoring?.length || 0,
         eldersCount: eldersData.elders?.length || 0
       });
       
-      setTodaySchedule(scheduleData.data.schedule || []);
+      // Filter today's records on the frontend
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      
+      const allRecords = recordsData.data?.healthMonitoring || [];
+      const todaysRecords = allRecords.filter(record => {
+        const recordDate = new Date(record.monitoringDate);
+        return recordDate >= todayStart && recordDate < todayEnd;
+      });
+      
+      setTodayRecords(todaysRecords);
       setElders(eldersData.elders || []);
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -130,8 +141,7 @@ const HealthMonitoring = () => {
       weight: record.weight || '',
       sleepHours: record.sleepHours || '',
       oxygenSaturation: record.oxygenSaturation || '',
-      notes: record.notes || '',
-      status: record.status
+      notes: record.notes || ''
     });
     setShowCreateForm(true);
   };
@@ -159,8 +169,7 @@ const HealthMonitoring = () => {
       weight: '',
       sleepHours: '',
       oxygenSaturation: '',
-      notes: '',
-      status: 'scheduled'
+      notes: ''
     });
     setEditingRecord(null);
     setShowCreateForm(false);
@@ -201,7 +210,7 @@ const HealthMonitoring = () => {
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-                Add Monitoring
+                Add Health Record
               </button>
             </div>
           </div>
@@ -211,7 +220,7 @@ const HealthMonitoring = () => {
             <div className="bg-white rounded-lg shadow-lg p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold">
-                  {editingRecord ? 'Edit Health Monitoring' : 'Create Health Monitoring'}
+                  {editingRecord ? 'Edit Health Record' : 'Create Health Record'}
                 </h2>
                 <button
                   onClick={resetForm}
@@ -240,23 +249,6 @@ const HealthMonitoring = () => {
                           {elder.firstName} {elder.lastName}
                         </option>
                       ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Status
-                    </label>
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="scheduled">Scheduled</option>
-                      <option value="in-progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                      <option value="missed">Missed</option>
                     </select>
                   </div>
 
@@ -320,6 +312,7 @@ const HealthMonitoring = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="98.6"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Valid range: 95.0 - 110.0°F</p>
                   </div>
 
                   <div>
@@ -337,6 +330,7 @@ const HealthMonitoring = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="165"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Valid range: 50.0 - 500.0 lbs</p>
                   </div>
 
                   <div>
@@ -383,7 +377,7 @@ const HealthMonitoring = () => {
                     onChange={handleInputChange}
                     rows="3"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Additional notes about the monitoring session..."
+                    placeholder="Additional notes about the health record..."
                   />
                 </div>
 
@@ -406,26 +400,36 @@ const HealthMonitoring = () => {
             </div>
           )}
 
-          {/* Today's Schedule */}
+          {/* Today's Health Records */}
           <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Today's Health Monitoring Schedule</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <FileText className="w-5 h-5 text-blue-600" />
+              <h2 className="text-xl font-semibold">Today's Health Records for Elders</h2>
+            </div>
             
-            {todaySchedule.length === 0 ? (
+            {todayRecords.length === 0 ? (
               <div className="text-center py-8">
-                <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No health monitoring scheduled for today</p>
+                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No health records found for today</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Click "Add Health Record" to create the first record
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
-                {todaySchedule.map((record) => (
+                <div className="text-sm text-gray-600 mb-4">
+                  Showing {todayRecords.length} health record{todayRecords.length !== 1 ? 's' : ''} for today
+                </div>
+                
+                {todayRecords.map((record) => (
                   <div
                     key={record.id}
-                    className={`p-4 border rounded-lg ${statusColor(record.status)}`}
+                    className="p-4 border border-gray-200 rounded-lg bg-white hover:shadow-md transition-shadow"
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                             {record.elder?.photo ? (
                               <img
                                 src={`${process.env.REACT_APP_API_URL}/uploads/elders/${record.elder.photo}`}
@@ -433,87 +437,117 @@ const HealthMonitoring = () => {
                                 className="w-full h-full object-cover rounded-full"
                               />
                             ) : (
-                              <User className="w-5 h-5 text-gray-500" />
+                              <User className="w-6 h-6 text-gray-500" />
                             )}
                           </div>
                           <div>
-                            <h3 className="font-semibold text-lg">
+                            <h3 className="font-semibold text-lg text-gray-800">
                               {record.elder?.firstName} {record.elder?.lastName}
                             </h3>
                             <p className="text-sm text-gray-600">
-                              {new Date(record.monitoringDate).toLocaleString()}
+                              Recorded: {new Date(record.monitoringDate).toLocaleString()}
                             </p>
+                            {record.staff && (
+                              <p className="text-xs text-gray-500">
+                                By: {record.staff.firstName} {record.staff.lastName}
+                              </p>
+                            )}
                           </div>
                         </div>
 
-                        {/* Vitals Display */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                          {record.heartRate && (
-                            <div className="flex items-center gap-2">
-                              <Heart className="w-4 h-4 text-red-500" />
-                              <span className="text-sm">
-                                <strong>HR:</strong> {record.heartRate} bpm
-                              </span>
-                            </div>
-                          )}
-                          {(record.bloodPressureSystolic || record.bloodPressureDiastolic) && (
-                            <div className="flex items-center gap-2">
-                              <Activity className="w-4 h-4 text-blue-500" />
-                              <span className="text-sm">
-                                <strong>BP:</strong> {formatBloodPressure(record.bloodPressureSystolic, record.bloodPressureDiastolic)}
-                              </span>
-                            </div>
-                          )}
-                          {record.temperature && (
-                            <div className="flex items-center gap-2">
-                              <Thermometer className="w-4 h-4 text-orange-500" />
-                              <span className="text-sm">
-                                <strong>Temp:</strong> {record.temperature}°F
-                              </span>
-                            </div>
-                          )}
-                          {record.sleepHours && (
-                            <div className="flex items-center gap-2">
-                              <Moon className="w-4 h-4 text-purple-500" />
-                              <span className="text-sm">
-                                <strong>Sleep:</strong> {record.sleepHours}h
-                              </span>
-                            </div>
-                          )}
+                        {/* Health Metrics Display */}
+                        <div className="bg-gray-50 rounded-lg p-4 mb-3">
+                          <h4 className="font-medium text-gray-800 mb-3">Health Metrics</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {record.heartRate && (
+                              <div className="flex items-center gap-2">
+                                <Heart className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                <div className="text-sm">
+                                  <div className="font-medium">{record.heartRate}</div>
+                                  <div className="text-gray-500">bpm</div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {(record.bloodPressureSystolic || record.bloodPressureDiastolic) && (
+                              <div className="flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                                <div className="text-sm">
+                                  <div className="font-medium">
+                                    {formatBloodPressure(record.bloodPressureSystolic, record.bloodPressureDiastolic)}
+                                  </div>
+                                  <div className="text-gray-500">mmHg</div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {record.temperature && (
+                              <div className="flex items-center gap-2">
+                                <Thermometer className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                                <div className="text-sm">
+                                  <div className="font-medium">{record.temperature}</div>
+                                  <div className="text-gray-500">°F</div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {record.weight && (
+                              <div className="flex items-center gap-2">
+                                <Scale className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                                <div className="text-sm">
+                                  <div className="font-medium">{record.weight}</div>
+                                  <div className="text-gray-500">lbs</div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {record.sleepHours && (
+                              <div className="flex items-center gap-2">
+                                <Moon className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                                <div className="text-sm">
+                                  <div className="font-medium">{record.sleepHours}</div>
+                                  <div className="text-gray-500">hours</div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {record.oxygenSaturation && (
+                              <div className="flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-green-500 flex-shrink-0" />
+                                <div className="text-sm">
+                                  <div className="font-medium">{record.oxygenSaturation}</div>
+                                  <div className="text-gray-500">%</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {record.notes && (
-                          <div className="mt-3 p-3 bg-gray-50 rounded-md">
-                            <p className="text-sm text-gray-700">{record.notes}</p>
+                          <div className="mt-3 p-3 bg-blue-50 rounded-md">
+                            <h5 className="font-medium text-sm text-gray-700 mb-1">Notes:</h5>
+                            <p className="text-sm text-gray-600">{record.notes}</p>
                           </div>
                         )}
                       </div>
 
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${alertColor(record.alertLevel)}`}>
-                            {record.alertLevel}
-                          </span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            record.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            record.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
-                            record.status === 'missed' ? 'bg-red-100 text-red-800' :
-                            'bg-blue-100 text-blue-800'
-                          }`}>
-                            {record.status}
-                          </span>
-                        </div>
+                      <div className="flex flex-col items-end gap-2 ml-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${alertColor(record.alertLevel)}`}>
+                          {record.alertLevel.charAt(0).toUpperCase() + record.alertLevel.slice(1)}
+                        </span>
                         
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleEdit(record)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                            title="Edit record"
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(record.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded"
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                            title="Delete record"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
