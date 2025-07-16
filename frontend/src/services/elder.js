@@ -262,5 +262,47 @@ export const elderService = {
       console.error('Get elder profile error:', error);
       throw error;
     }
-  }
+  },
+
+  // NEW: Get all elders for staff (not filtered by family member)
+  getAllEldersForStaff: async () => {
+    try {
+      console.log('🏥 ElderService: Getting all elders for staff');
+      const response = await api.get('/elders/staff/all');
+      console.log('✅ ElderService: Got staff elders response:', response.data);
+      
+      // Ensure we return a consistent structure
+      return {
+        success: true,
+        elders: response.data.elders || [],
+        total: response.data.total || 0,
+        message: response.data.message || 'Success'
+      };
+    } catch (error) {
+      console.error('❌ Get all elders for staff error:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      
+      // Return empty array on error
+      return { 
+        success: false,
+        elders: [],
+        total: 0,
+        message: error.response?.data?.message || 'Failed to load elders'
+      };
+    }
+  },
+
+  // Get elder by ID
+  getElderById: async (elderId) => {
+    try {
+      console.log('🔍 ElderService: Getting elder by ID:', elderId);
+      const response = await api.get(`/elders/${elderId}`);
+      console.log('✅ ElderService: Got elder response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Get elder by ID error:', error);
+      throw error;
+    }
+  },
 };

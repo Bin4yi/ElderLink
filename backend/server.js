@@ -63,42 +63,32 @@ app.get('/api', (req, res) => {
   });
 });
 
+// Route configurations
+const routeConfigs = [
+  { path: './routes/auth', mount: '/api/auth', name: 'authRoutes' },
+  { path: './routes/elder', mount: '/api/elders', name: 'elderRoutes' },
+  { path: './routes/healthMonitoring', mount: '/api/health-monitoring', name: 'healthMonitoringRoutes' }, // ✅ MAKE SURE THIS EXISTS
+  { path: './routes/subscription', mount: '/api/subscriptions', name: 'subscriptionRoutes' },
+  { path: './routes/notification', mount: '/api/notifications', name: 'notificationRoutes' },
+  // { path: './routes/doctorAppointments', mount: '/api/doctor', name: 'doctorAppointmentRoutes' },
+  // { path: './routes/appointments', mount: '/api/appointments', name: 'appointmentRoutes' },
+  { path: './routes/adminUserRoutes', mount: '/api/admin', name: 'adminUserRoutes' },
+  { path: './routes/adminStatsRoutes', mount: '/api/admin', name: 'adminStatsRoutes' }
+];
+
 // Import and use routes with error checking
 try {
-  const authRoutes = require('./routes/auth');
-  const subscriptionRoutes = require('./routes/subscription');
-  const elderRoutes = require('./routes/elder');
-  const notificationRoutes = require('./routes/notification');
-  const adminUserRoutes = require('./routes/adminUserRoutes');
-  const adminStatsRoutes = require('./routes/adminStatsRoutes');
-
-  // Verify routes are properly exported
-  if (typeof authRoutes !== 'function') {
-    throw new Error('authRoutes is not a valid router');
-  }
-  if (typeof subscriptionRoutes !== 'function') {
-    throw new Error('subscriptionRoutes is not a valid router');
-  }
-  if (typeof elderRoutes !== 'function') {
-    throw new Error('elderRoutes is not a valid router');
-  }
-  if (typeof notificationRoutes !== 'function') {
-    throw new Error('notificationRoutes is not a valid router');
-  }
-  if (typeof adminUserRoutes !== 'function') {
-    throw new Error('adminUserRoutes is not a valid router');
-  }
-  if (typeof adminStatsRoutes !== 'function') {
-    throw new Error('adminStatsRoutes is not a valid router');
-  }
-
-  // API Routes
-  app.use('/api/auth', authRoutes);
-  app.use('/api/subscriptions', subscriptionRoutes);
-  app.use('/api/elders', elderRoutes);
-  app.use('/api/notifications', notificationRoutes);
-  app.use('/api/admin', adminUserRoutes);
-  app.use('/api/admin', adminStatsRoutes);
+  routeConfigs.forEach(({ path, mount, name }) => {
+    const route = require(path);
+    
+    // Verify routes are properly exported
+    if (typeof route !== 'function') {
+      throw new Error(`${name} is not a valid router`);
+    }
+    
+    // API Routes
+    app.use(mount, route);
+  });
 
 } catch (error) {
   console.error('Error loading routes:', error);

@@ -464,6 +464,52 @@ const addElderWithAuth = async (req, res) => {
   }
 };
 
+// NEW: Get all elders for staff (health monitoring, care management, etc.)
+const getAllEldersForStaff = async (req, res) => {
+  try {
+    console.log('🏥 Staff user requesting all elders:', req.user.id);
+    
+    const elders = await Elder.findAll({
+      include: [
+        {
+          model: Subscription,
+          as: 'subscription',
+          attributes: ['id', 'plan', 'status', 'startDate', 'endDate'],
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'firstName', 'lastName', 'email']
+            }
+          ]
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'email', 'isActive'],
+          required: false
+        }
+      ],
+      order: [['firstName', 'ASC'], ['lastName', 'ASC']]
+    });
+
+    console.log(`✅ Found ${elders.length} elders for staff`);
+    
+    res.json({ 
+      success: true,
+      elders,
+      total: elders.length,
+      message: 'Elders retrieved successfully for staff'
+    });
+  } catch (error) {
+    console.error('❌ Get all elders for staff error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error' 
+    });
+  }
+};
+
 module.exports = { 
   addElder, 
   getElders, 
@@ -473,5 +519,6 @@ module.exports = {
   createElderLogin,
   toggleElderAccess,
   getElderProfile,
-  addElderWithAuth // NEW: Add this export
+  addElderWithAuth,
+  getAllEldersForStaff // NEW: Export this
 };

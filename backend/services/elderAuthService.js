@@ -1,5 +1,5 @@
-const { User, Elder, Subscription } = require('../models'); // FIXED: Import from models directory
-const bcrypt = require('bcryptjs');
+// backend/services/elderAuthService.js - Fix the getElderByUserId method
+const { User, Elder, Subscription } = require('../models');
 
 class ElderAuthService {
   // Create login credentials for an elder
@@ -20,7 +20,7 @@ class ElderAuthService {
       const user = await User.create({
         firstName: elder.firstName,
         lastName: elder.lastName,
-        email: username, // Use username as email
+        email: username,
         password: password,
         phone: elder.phone,
         role: 'elder',
@@ -63,7 +63,7 @@ class ElderAuthService {
     }
   }
 
-  // Get elder by user ID
+  // Get elder by user ID - FIXED VERSION
   static async getElderByUserId(userId) {
     try {
       console.log('🔍 ElderAuthService: Getting elder for userId:', userId);
@@ -77,9 +77,16 @@ class ElderAuthService {
             attributes: ['id', 'firstName', 'lastName', 'email', 'role', 'isActive']
           },
           {
-            model: Subscription, // FIXED: Now properly imported
+            model: Subscription,
             as: 'subscription',
-            attributes: ['id', 'plan', 'status', 'startDate', 'endDate', 'amount']
+            attributes: ['id', 'plan', 'status', 'startDate', 'endDate', 'amount'],
+            include: [
+              {
+                model: User,
+                as: 'user',
+                attributes: ['id', 'firstName', 'lastName', 'email']
+              }
+            ]
           }
         ]
       });
@@ -101,5 +108,8 @@ class ElderAuthService {
     }
   }
 }
+
+
+
 
 module.exports = ElderAuthService;

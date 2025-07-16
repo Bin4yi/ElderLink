@@ -1,10 +1,12 @@
-// backend/models/index.js - Complete models file
+// backend/models/index.js - UPDATED VERSION
 const User = require('./User');
 const Subscription = require('./Subscription');
 const Elder = require('./Elder');
 const Notification = require('./Notification');
+const HealthMonitoring = require('./HealthMonitoring');
+const HealthAlert = require('./HealthAlert');
 
-// Existing associations
+// User associations
 User.hasMany(Subscription, { 
   foreignKey: 'userId', 
   as: 'subscriptions',
@@ -17,6 +19,19 @@ User.hasMany(Notification, {
   onDelete: 'CASCADE'
 });
 
+User.hasMany(HealthMonitoring, { 
+  foreignKey: 'staffId', 
+  as: 'healthMonitorings',
+  onDelete: 'CASCADE'
+});
+
+User.hasOne(Elder, {
+  foreignKey: 'userId',
+  as: 'elderProfile',
+  onDelete: 'SET NULL'
+});
+
+// Subscription associations
 Subscription.belongsTo(User, { 
   foreignKey: 'userId', 
   as: 'user' 
@@ -28,16 +43,10 @@ Subscription.hasOne(Elder, {
   onDelete: 'CASCADE'
 });
 
+// Elder associations
 Elder.belongsTo(Subscription, { 
   foreignKey: 'subscriptionId', 
   as: 'subscription' 
-});
-
-// NEW: Elder-User associations
-User.hasOne(Elder, {
-  foreignKey: 'userId',
-  as: 'elderProfile',
-  onDelete: 'SET NULL'
 });
 
 Elder.belongsTo(User, {
@@ -45,6 +54,52 @@ Elder.belongsTo(User, {
   as: 'user'
 });
 
+Elder.hasMany(HealthMonitoring, { 
+  foreignKey: 'elderId', 
+  as: 'healthMonitorings',
+  onDelete: 'CASCADE'
+});
+
+Elder.hasMany(HealthAlert, { 
+  foreignKey: 'elderId', 
+  as: 'healthAlerts',
+  onDelete: 'CASCADE'
+});
+
+// HealthMonitoring associations
+HealthMonitoring.belongsTo(Elder, { 
+  foreignKey: 'elderId', 
+  as: 'elder' 
+});
+
+HealthMonitoring.belongsTo(User, { 
+  foreignKey: 'staffId', 
+  as: 'staff' 
+});
+
+HealthMonitoring.hasMany(HealthAlert, { 
+  foreignKey: 'healthMonitoringId', 
+  as: 'alerts',
+  onDelete: 'CASCADE'
+});
+
+// HealthAlert associations
+HealthAlert.belongsTo(Elder, { 
+  foreignKey: 'elderId', 
+  as: 'elder' 
+});
+
+HealthAlert.belongsTo(HealthMonitoring, { 
+  foreignKey: 'healthMonitoringId', 
+  as: 'healthMonitoring' 
+});
+
+HealthAlert.belongsTo(User, { 
+  foreignKey: 'resolvedBy', 
+  as: 'resolver' 
+});
+
+// Notification associations
 Notification.belongsTo(User, { 
   foreignKey: 'userId', 
   as: 'user' 
@@ -54,5 +109,7 @@ module.exports = {
   User,
   Subscription,
   Elder,
-  Notification
+  Notification,
+  HealthMonitoring,
+  HealthAlert
 };
