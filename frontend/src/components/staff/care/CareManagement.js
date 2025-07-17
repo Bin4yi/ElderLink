@@ -1,7 +1,7 @@
 // src/components/staff/care/CareManagement.js
 import React, { useState, useEffect } from 'react';
 import RoleLayout from '../../common/RoleLayout';
-import { FileText, CheckCircle2, ClipboardList, User, Calendar, Clock, AlertCircle, Heart, Activity, Thermometer } from 'lucide-react';
+import { FileText, CheckCircle2, ClipboardList, User, Calendar, Clock, AlertCircle, Heart, Activity, Thermometer, Shield } from 'lucide-react';
 import { elderService } from '../../../services/elder';
 import { healthMonitoringService } from '../../../services/healthMonitoring';
 import toast from 'react-hot-toast';
@@ -46,22 +46,37 @@ const CareManagement = () => {
       setLoading(true);
       setError(null);
       
+      console.log('🔍 Loading assigned elders for staff...');
       const response = await elderService.getAllEldersForStaff();
       
-      if (response && Array.isArray(response.elders)) {
+      console.log('📊 Response received:', response);
+      
+      if (response && response.success && Array.isArray(response.elders)) {
         setElders(response.elders);
         if (response.elders.length > 0) {
           setSelectedElder(response.elders[0]);
         }
+        
+        console.log('✅ Loaded', response.elders.length, 'assigned elders');
+        
+        if (response.elders.length === 0) {
+          toast.info('No elders are currently assigned to you');
+        }
       } else {
         setElders([]);
-        setError('No elders data received');
+        setError('No assigned elders found');
+        toast.info('No elders are currently assigned to you');
       }
     } catch (error) {
-      console.error('Failed to load elders:', error);
-      setError('Failed to load elders');
+      console.error('❌ Failed to load assigned elders:', error);
+      setError('Failed to load assigned elders');
       setElders([]);
-      toast.error('Failed to load elders');
+      
+      if (error.response?.status === 403) {
+        toast.error('You can only view elders assigned to you');
+      } else {
+        toast.error('Failed to load assigned elders');
+      }
     } finally {
       setLoading(false);
     }
@@ -71,24 +86,36 @@ const CareManagement = () => {
     try {
       setLoadingHealth(true);
       
+      console.log('🔍 Loading health history for elder:', elderId);
       const response = await healthMonitoringService.getElderHealthHistory(elderId, 7);
       
-      if (response && response.data && Array.isArray(response.data)) {
+      console.log('📊 Health history response:', response);
+      
+      if (response && response.success && response.data && Array.isArray(response.data)) {
         setHealthHistory(response.data);
+        console.log('✅ Loaded', response.data.length, 'health records');
       } else {
         setHealthHistory([]);
+        console.log('ℹ️ No health history found');
       }
     } catch (error) {
-      console.error('Failed to load health history:', error);
+      console.error('❌ Failed to load health history:', error);
       setHealthHistory([]);
+      
+      if (error.response?.status === 403) {
+        toast.error('You can only access health records for elders assigned to you');
+      } else {
+        toast.error('Failed to load health history');
+      }
     } finally {
       setLoadingHealth(false);
     }
   };
 
+  // ✅ Fixed: Don't clear health history, let useEffect handle the loading
   const handleElderSelect = (elder) => {
     setSelectedElder(elder);
-    setHealthHistory([]);
+    // ✅ Removed: setHealthHistory([]); - This was causing the issue
   };
 
   const getVitalIcon = (type) => {
@@ -184,20 +211,40 @@ const CareManagement = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Care Management</h1>
-            <p className="text-gray-600">
-              Manage care plans and monitor elder wellbeing
-            </p>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Shield className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">Care Management</h1>
+                <p className="text-gray-600">
+                  Manage care plans and monitor wellbeing for your assigned elders
+                </p>
+              </div>
+            </div>
+            
+            {/* Status Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-blue-600" />
+                <span className="text-blue-800 font-medium">
+                  You have {elders.length} elder{elders.length !== 1 ? 's' : ''} assigned to you
+                </span>
+              </div>
+              <p className="text-blue-600 text-sm mt-1">
+                You can only view and manage health records for elders assigned to you.
+              </p>
+            </div>
           </div>
 
           {/* Check if we have elders */}
           {!elders || elders.length === 0 ? (
             <div className="bg-white rounded-lg shadow-lg p-8">
               <div className="text-center">
-                <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Elders Available</h3>
+                <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Assigned Elders</h3>
                 <p className="text-gray-500 mb-4">
-                  There are no elders in the system to manage care for.
+                  You don't have any elders assigned to you yet. Please contact your administrator to get elder assignments.
                 </p>
                 <button
                   onClick={loadElders}
@@ -212,7 +259,10 @@ const CareManagement = () => {
               {/* Elder List */}
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-lg shadow-lg p-6">
-                  <h2 className="text-xl font-semibold mb-4">Elders ({elders.length})</h2>
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-blue-600" />
+                    Your Assigned Elders ({elders.length})
+                  </h2>
                   <div className="space-y-3">
                     {elders.map((elder) => {
                       const age = calculateAge(elder.dateOfBirth);
@@ -245,6 +295,11 @@ const CareManagement = () => {
                               <p className="text-sm text-gray-600">
                                 {age ? `${age} years old` : 'Age not available'}
                               </p>
+                              {elder.assignedDate && (
+                                <p className="text-xs text-blue-600">
+                                  Assigned: {new Date(elder.assignedDate).toLocaleDateString()}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -290,6 +345,11 @@ const CareManagement = () => {
                               'Date of birth not available'
                             )}
                           </p>
+                          {selectedElder.assignedDate && (
+                            <p className="text-sm text-blue-600 mt-1">
+                              Assigned to you on: {new Date(selectedElder.assignedDate).toLocaleDateString()}
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -311,13 +371,13 @@ const CareManagement = () => {
                         <div>
                           <h3 className="font-semibold text-gray-700 mb-2">Medical Information</h3>
                           <p className="text-sm text-gray-600">
-                            <strong>Medications:</strong> {selectedElder.currentMedications || 'None listed'}
+                            <strong>Medications:</strong> {selectedElder.currentMedications || selectedElder.medications || 'None listed'}
                           </p>
                           <p className="text-sm text-gray-600">
                             <strong>Allergies:</strong> {selectedElder.allergies || 'None listed'}
                           </p>
                           <p className="text-sm text-gray-600">
-                            <strong>Conditions:</strong> {selectedElder.chronicConditions || 'None listed'}
+                            <strong>Conditions:</strong> {selectedElder.chronicConditions || selectedElder.medicalConditions || 'None listed'}
                           </p>
                         </div>
                       </div>
@@ -327,7 +387,17 @@ const CareManagement = () => {
                     <div className="bg-white rounded-lg shadow-lg p-6">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-semibold">Recent Health Monitoring</h3>
-                        <span className="text-sm text-gray-500">Last 7 days</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500">Last 7 days</span>
+                          {/* ✅ Added refresh button */}
+                          <button
+                            onClick={() => loadHealthHistory(selectedElder.id)}
+                            className="text-blue-600 hover:text-blue-800 p-1 rounded"
+                            title="Refresh health records"
+                          >
+                            <Clock className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                       
                       {loadingHealth ? (
@@ -337,7 +407,10 @@ const CareManagement = () => {
                       ) : healthHistory.length === 0 ? (
                         <div className="text-center py-8">
                           <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                          <p className="text-gray-500">No recent health monitoring records</p>
+                          <p className="text-gray-500">No recent health monitoring records for this elder</p>
+                          <p className="text-sm text-gray-400 mt-2">
+                            Health records will appear here once monitoring sessions are completed
+                          </p>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -389,7 +462,7 @@ const CareManagement = () => {
                       <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-gray-700 mb-2">Select an Elder</h3>
                       <p className="text-gray-500">
-                        Choose an elder from the list to view their care management details.
+                        Choose an elder from your assigned list to view their care management details.
                       </p>
                     </div>
                   </div>

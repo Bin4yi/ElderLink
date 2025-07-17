@@ -49,24 +49,65 @@ const HealthReports = () => {
 
   const loadElders = async () => {
     try {
-      const response = await elderService.getAllEldersForStaff();
-      setElders(response.elders || []);
+      console.log('🔍 Loading elders for health reports...');
+      
+      const response = await elderService.getAllEldersForHealthMonitoring();
+      console.log('📊 Elders response:', response);
+      
+      if (response && response.success) {
+        // ✅ Handle both elders array and empty results
+        const eldersArray = response.elders || [];
+        setElders(eldersArray);
+        console.log('✅ Loaded', eldersArray.length, 'elders for reports');
+        
+        if (eldersArray.length === 0) {
+          toast.info('No elders found for health monitoring');
+        }
+      } else {
+        setElders([]);
+        console.log('ℹ️ No elders found for reports');
+        toast.info('No elders available for health monitoring');
+      }
     } catch (error) {
-      console.error('Failed to load elders:', error);
+      console.error('❌ Failed to load elders:', error);
+      setElders([]);
+      
+      // ✅ Better error handling
+      if (error.code === 'ERR_NETWORK') {
+        toast.error('Network error - please check your connection');
+      } else if (error.response?.status === 403) {
+        toast.error('Access denied - you may not have permission to view elders');
+      } else if (error.response?.status === 401) {
+        toast.error('Session expired - please login again');
+      } else {
+        toast.error('Failed to load elders list: ' + (error.response?.data?.message || error.message));
+      }
     }
   };
 
   const generateDailyReport = async () => {
     try {
       setLoading(true);
+      console.log('📊 Generating daily report for:', filters.date);
+      
       const response = await healthReportsService.generateDailyReport(
         filters.date,
         filters.elderId || null
       );
-      setReportData(response.data);
+      
+      console.log('✅ Daily report response:', response);
+      
+      if (response && response.success && response.data) {
+        setReportData(response.data);
+        toast.success('Daily report generated successfully');
+      } else {
+        setReportData(null);
+        toast.error('No data found for the selected date');
+      }
     } catch (error) {
-      toast.error('Failed to generate daily report');
-      console.error('Error generating daily report:', error);
+      console.error('❌ Failed to generate daily report:', error);
+      setReportData(null);
+      toast.error('Failed to generate daily report: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -75,15 +116,27 @@ const HealthReports = () => {
   const generateWeeklyReport = async () => {
     try {
       setLoading(true);
+      console.log('📊 Generating weekly report for:', filters.startDate, 'to', filters.endDate);
+      
       const response = await healthReportsService.generateWeeklyReport(
         filters.startDate,
         filters.endDate,
         filters.elderId || null
       );
-      setReportData(response.data);
+      
+      console.log('✅ Weekly report response:', response);
+      
+      if (response && response.success && response.data) {
+        setReportData(response.data);
+        toast.success('Weekly report generated successfully');
+      } else {
+        setReportData(null);
+        toast.error('No data found for the selected date range');
+      }
     } catch (error) {
-      toast.error('Failed to generate weekly report');
-      console.error('Error generating weekly report:', error);
+      console.error('❌ Failed to generate weekly report:', error);
+      setReportData(null);
+      toast.error('Failed to generate weekly report: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -92,15 +145,27 @@ const HealthReports = () => {
   const generateMonthlyReport = async () => {
     try {
       setLoading(true);
+      console.log('📊 Generating monthly report for:', filters.year, filters.month);
+      
       const response = await healthReportsService.generateMonthlyReport(
         filters.year,
         filters.month,
         filters.elderId || null
       );
-      setReportData(response.data);
+      
+      console.log('✅ Monthly report response:', response);
+      
+      if (response && response.success && response.data) {
+        setReportData(response.data);
+        toast.success('Monthly report generated successfully');
+      } else {
+        setReportData(null);
+        toast.error('No data found for the selected month');
+      }
     } catch (error) {
-      toast.error('Failed to generate monthly report');
-      console.error('Error generating monthly report:', error);
+      console.error('❌ Failed to generate monthly report:', error);
+      setReportData(null);
+      toast.error('Failed to generate monthly report: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -152,7 +217,7 @@ const HealthReports = () => {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          <p className="text-2xl font-bold text-gray-900">{value || 0}</p>
         </div>
         <div className="p-3 rounded-full" style={{ backgroundColor: `${color}20` }}>
           {icon}
@@ -456,25 +521,25 @@ const HealthReports = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {renderSummaryCard(
                   'Total Records',
-                  reportData.summary.totalRecords,
+                  reportData.summary?.totalRecords || 0,
                   <FileText className="w-6 h-6 text-blue-600" />,
                   '#3B82F6'
                 )}
                 {renderSummaryCard(
                   'Total Elders',
-                  reportData.summary.totalElders,
+                  reportData.summary?.totalElders || 0,
                   <Users className="w-6 h-6 text-green-600" />,
                   '#10B981'
                 )}
                 {renderSummaryCard(
                   'Critical Alerts',
-                  reportData.summary.criticalAlerts,
+                  reportData.summary?.criticalAlerts || 0,
                   <AlertTriangle className="w-6 h-6 text-red-600" />,
                   '#EF4444'
                 )}
                 {renderSummaryCard(
                   'Warning Alerts',
-                  reportData.summary.warningAlerts,
+                  reportData.summary?.warningAlerts || 0,
                   <AlertTriangle className="w-6 h-6 text-orange-600" />,
                   '#F59E0B'
                 )}
@@ -517,10 +582,24 @@ const HealthReports = () => {
           )}
 
           {/* No Data Message */}
-          {reportData && !loading && reportData.summary.totalRecords === 0 && (
+          {reportData && !loading && (!reportData.summary || reportData.summary.totalRecords === 0) && (
             <div className="text-center py-12">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500">No health records found for the selected period</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Try selecting a different date range or elder
+              </p>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {!reportData && !loading && (
+            <div className="text-center py-12">
+              <AlertTriangle className="w-16 h-16 text-red-300 mx-auto mb-4" />
+              <p className="text-red-500">Failed to generate report</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Please try again or check your network connection
+              </p>
             </div>
           )}
         </div>

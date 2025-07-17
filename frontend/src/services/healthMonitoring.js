@@ -1,12 +1,12 @@
 // frontend/src/services/healthMonitoring.js
-import apiClient from './api'; // Changed from named import to default import
+import api from './api';
 
 export const healthMonitoringService = {
   // Test connection
   testConnection: async () => {
     try {
       console.log('🧪 Testing health monitoring connection...');
-      const response = await apiClient.get('/health-monitoring/test');
+      const response = await api.get('/health-monitoring/test');
       console.log('✅ Health monitoring test response:', response.data);
       return response.data;
     } catch (error) {
@@ -16,24 +16,11 @@ export const healthMonitoringService = {
   },
 
   // Get all health monitoring records
-  getAllHealthMonitoring: async () => {
-    try {
-      console.log('🔍 Getting all health monitoring records...');
-      const response = await apiClient.get('/health-monitoring');
-      console.log('✅ All health monitoring records:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Failed to get all health monitoring records:', error);
-      throw error;
-    }
-  },
-
-  // Get all records (alias for compatibility)
   getAllRecords: async () => {
     try {
       console.log('🔍 Getting all health monitoring records...');
-      const response = await apiClient.get('/health-monitoring/all');
-      console.log('✅ All health monitoring records:', response.data);
+      const response = await api.get('/health-monitoring/all');
+      console.log('✅ All health monitoring records response:', response.data);
       return response.data;
     } catch (error) {
       console.error('❌ Failed to get all health monitoring records:', error);
@@ -41,12 +28,50 @@ export const healthMonitoringService = {
     }
   },
 
-  // ⭐ CRITICAL: Get elder health history
+  // Added: Method for getting all health monitoring (used in HealthMonitoring component)
+  getAllHealthMonitoring: async () => {
+    try {
+      console.log('🔍 Getting all health monitoring records...');
+      const response = await api.get('/health-monitoring/all');
+      console.log('✅ All health monitoring records response:', response.data);
+      return {
+        success: true,
+        data: {
+          healthMonitoring: response.data.data || []
+        }
+      };
+    } catch (error) {
+      console.error('❌ Failed to get all health monitoring records:', error);
+      return {
+        success: false,
+        data: {
+          healthMonitoring: []
+        }
+      };
+    }
+  },
+
+  // Get today's health monitoring records
+  getTodayRecords: async () => {
+    try {
+      console.log('🔍 Getting today\'s health monitoring records...');
+      const response = await api.get('/health-monitoring/today');
+      console.log('✅ Today\'s records response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Failed to get today\'s records:', error);
+      return { data: { records: [] } };
+    }
+  },
+
+  // Get elder health history
   getElderHealthHistory: async (elderId, days = 7) => {
     try {
       console.log('🔍 Getting health history for elder:', elderId, 'for', days, 'days');
       
-      const response = await apiClient.get(`/health-monitoring/elder/${elderId}/history?days=${days}`);
+      const response = await api.get(`/health-monitoring/elder/${elderId}/history`, {
+        params: { days }
+      });
       console.log('✅ Elder health history raw response:', response);
       console.log('✅ Elder health history data:', response.data);
       
@@ -71,37 +96,11 @@ export const healthMonitoringService = {
     }
   },
 
-  // Get today's schedule
-  getTodaysSchedule: async () => {
-    try {
-      console.log('🔍 Getting today\'s health monitoring schedule...');
-      const response = await apiClient.get('/health-monitoring/schedule/today');
-      console.log('✅ Today\'s schedule response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Failed to get today\'s schedule:', error);
-      return { data: { schedule: [] } };
-    }
-  },
-
-  // Get today's records
-  getTodaysRecords: async () => {
-    try {
-      console.log('🔍 Getting today\'s health monitoring records...');
-      const response = await apiClient.get('/health-monitoring/today-records');
-      console.log('✅ Today\'s records response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Failed to get today\'s records:', error);
-      return { data: { records: [] } };
-    }
-  },
-
   // Create health monitoring record
-  createHealthMonitoring: async (data) => {
+  createRecord: async (recordData) => {
     try {
-      console.log('📝 Creating health monitoring record:', data);
-      const response = await apiClient.post('/health-monitoring', data);
+      console.log('📝 Creating health monitoring record:', recordData);
+      const response = await api.post('/health-monitoring', recordData);
       console.log('✅ Created health monitoring record:', response.data);
       return response.data;
     } catch (error) {
@@ -110,11 +109,16 @@ export const healthMonitoringService = {
     }
   },
 
+  // Added: Alias for createRecord
+  createHealthMonitoring: async (recordData) => {
+    return await healthMonitoringService.createRecord(recordData);
+  },
+
   // Update health monitoring record
-  updateHealthMonitoring: async (id, data) => {
+  updateRecord: async (recordId, recordData) => {
     try {
-      console.log('📝 Updating health monitoring record:', id, data);
-      const response = await apiClient.put(`/health-monitoring/${id}`, data);
+      console.log('📝 Updating health monitoring record:', recordId, recordData);
+      const response = await api.put(`/health-monitoring/${recordId}`, recordData);
       console.log('✅ Updated health monitoring record:', response.data);
       return response.data;
     } catch (error) {
@@ -123,16 +127,26 @@ export const healthMonitoringService = {
     }
   },
 
+  // Added: Alias for updateRecord
+  updateHealthMonitoring: async (recordId, recordData) => {
+    return await healthMonitoringService.updateRecord(recordId, recordData);
+  },
+
   // Delete health monitoring record
-  deleteHealthMonitoring: async (id) => {
+  deleteRecord: async (recordId) => {
     try {
-      console.log('🗑️ Deleting health monitoring record:', id);
-      const response = await apiClient.delete(`/health-monitoring/${id}`);
+      console.log('🗑️ Deleting health monitoring record:', recordId);
+      const response = await api.delete(`/health-monitoring/${recordId}`);
       console.log('✅ Deleted health monitoring record:', response.data);
       return response.data;
     } catch (error) {
       console.error('❌ Failed to delete health monitoring record:', error);
       throw error;
     }
+  },
+
+  // Added: Alias for deleteRecord
+  deleteHealthMonitoring: async (recordId) => {
+    return await healthMonitoringService.deleteRecord(recordId);
   }
 };

@@ -67,19 +67,21 @@ app.get('/api', (req, res) => {
 const routeConfigs = [
   { path: './routes/auth', mount: '/api/auth', name: 'authRoutes' },
   { path: './routes/elder', mount: '/api/elders', name: 'elderRoutes' },
-  { path: './routes/healthMonitoring', mount: '/api/health-monitoring', name: 'healthMonitoringRoutes' }, // ✅ MAKE SURE THIS EXISTS
+  { path: './routes/healthMonitoring', mount: '/api/health-monitoring', name: 'healthMonitoringRoutes' },
   { path: './routes/subscription', mount: '/api/subscriptions', name: 'subscriptionRoutes' },
   { path: './routes/notification', mount: '/api/notifications', name: 'notificationRoutes' },
-  // { path: './routes/doctorAppointments', mount: '/api/doctor', name: 'doctorAppointmentRoutes' },
-  // { path: './routes/appointments', mount: '/api/appointments', name: 'appointmentRoutes' },
   { path: './routes/adminUserRoutes', mount: '/api/admin', name: 'adminUserRoutes' },
-  { path: './routes/adminStatsRoutes', mount: '/api/admin', name: 'adminStatsRoutes' }
+  { path: './routes/adminStatsRoutes', mount: '/api/admin', name: 'adminStatsRoutes' },
+  { path: './routes/staffAssignment', mount: '/api/staff-assignments', name: 'staffAssignmentRoutes' }
 ];
 
 // Import health monitoring routes
 const healthMonitoringRoutes = require('./routes/healthMonitoring');
 // Import health reports routes
 const healthReportsRoutes = require('./routes/healthReports');
+
+// Import staff assignment routes
+const staffAssignmentRoutes = require('./routes/staffAssignment');
 
 // Import and use routes with error checking
 try {
@@ -99,6 +101,8 @@ try {
   app.use('/api/health-monitoring', healthMonitoringRoutes);
   // Use health reports routes
   app.use('/api/health-reports', healthReportsRoutes);
+  // Use staff assignment routes
+  app.use('/api/staff-assignments', staffAssignmentRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);

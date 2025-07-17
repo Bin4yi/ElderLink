@@ -1,20 +1,15 @@
 // backend/routes/healthMonitoring.js
 const express = require('express');
 const router = express.Router();
-const { authenticate, authorize } = require('../middleware/auth');
-const { HealthMonitoring, User, Elder } = require('../models');
-const { Op } = require('sequelize');
-
-// Import the controller
 const {
-  createHealthMonitoring,
-  getAllHealthMonitoring,
-  getTodaysSchedule,
-  getTodaysRecords, // Add this import
-  getHealthMonitoringById,
-  updateHealthMonitoring,
-  deleteHealthMonitoring
+  getAllHealthRecords,
+  getTodayRecords,
+  getElderHealthHistory,
+  createHealthRecord,
+  updateHealthRecord,
+  deleteHealthRecord
 } = require('../controllers/healthMonitoringController');
+const { authenticate, authorize } = require('../middleware/auth');
 
 // Test route (no auth needed)
 router.get('/test', (req, res) => {
@@ -26,114 +21,22 @@ router.get('/test', (req, res) => {
   });
 });
 
-// Get all health monitoring records - FIX THE AUTHORIZATION
-router.get('/all', authenticate, authorize('staff'), async (req, res) => {
-  try {
-    console.log('🔍 Getting all health monitoring records...');
-    console.log('🔍 Request user:', req.user);
-    
-    const allRecords = await HealthMonitoring.findAll({
-      include: [
-        {
-          model: User,
-          as: 'staff',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        },
-        {
-          model: Elder,
-          as: 'elder',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        }
-      ],
-      order: [['monitoringDate', 'DESC']]
-    });
+// Get all health monitoring records (only assigned elders)
+router.get('/all', authenticate, authorize('staff'), getAllHealthRecords);
 
-    console.log('✅ Found', allRecords.length, 'health monitoring records');
+// Get today's health monitoring records (only assigned elders)
+router.get('/today', authenticate, authorize('staff'), getTodayRecords);
 
-    res.json({
-      success: true,
-      data: allRecords,
-      total: allRecords.length,
-      message: 'All health monitoring records retrieved successfully'
-    });
-  } catch (error) {
-    console.error('❌ Get all health monitoring records error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get health monitoring records',
-      error: error.message
-    });
-  }
-});
+// Get elder health history (only assigned elders)
+router.get('/elder/:elderId/history', authenticate, authorize('staff'), getElderHealthHistory);
 
-// Get elder health history - FIX THE AUTHORIZATION
-router.get('/elder/:elderId/history', authenticate, authorize('staff'), async (req, res) => {
-  try {
-    const { elderId } = req.params;
-    const { days = 7 } = req.query;
-    
-    console.log('🔍 Getting health history for elder:', elderId, 'for last', days, 'days');
-    console.log('🔍 Request user:', req.user);
-    
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - parseInt(days));
-    
-    console.log('🔍 Start date for query:', startDate);
-    
-    const healthHistory = await HealthMonitoring.findAll({
-      where: {
-        elderId: elderId,
-        monitoringDate: {
-          [Op.gte]: startDate
-        }
-      },
-      include: [
-        {
-          model: User,
-          as: 'staff',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        },
-        {
-          model: Elder,
-          as: 'elder',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        }
-      ],
-      order: [['monitoringDate', 'DESC']]
-    });
+// Create health monitoring record (only assigned elders)
+router.post('/', authenticate, authorize('staff'), createHealthRecord);
 
-    console.log('✅ Found', healthHistory.length, 'health monitoring records for elder:', elderId);
+// Update health monitoring record (only assigned elders)
+router.put('/:id', authenticate, authorize('staff'), updateHealthRecord);
 
-    res.json({
-      success: true,
-      data: healthHistory,
-      total: healthHistory.length,
-      message: 'Health history retrieved successfully'
-    });
-  } catch (error) {
-    console.error('❌ Get elder health history error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get elder health history',
-      error: error.message,
-      data: []
-    });
-  }
-});
-
-// Use the imported controller
-router.post('/', authenticate, authorize('staff'), createHealthMonitoring);
-
-// Add other controller routes
-router.get('/', authenticate, authorize('staff'), getAllHealthMonitoring);
-router.get('/today-schedule', authenticate, authorize('staff'), getTodaysSchedule);
-router.get('/today-records', authenticate, authorize('staff'), getTodaysRecords); // Add this new route
-router.get('/:id', authenticate, authorize('staff'), getHealthMonitoringById);
-router.put('/:id', authenticate, authorize('staff'), updateHealthMonitoring);
-router.delete('/:id', authenticate, authorize('staff'), deleteHealthMonitoring);
+// Delete health monitoring record (only assigned elders)
+router.delete('/:id', authenticate, authorize('staff'), deleteHealthRecord);
 
 module.exports = router;

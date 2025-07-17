@@ -1,32 +1,6 @@
-const { Elder, Subscription, User } = require('../models');
-const multer = require('multer');
-const path = require('path');
+const { Elder, User, Subscription, StaffAssignment } = require('../models');
 const ElderAuthService = require('../services/elderAuthService');
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/elders/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'), false);
-    }
-  }
-});
+const { Op } = require('sequelize');
 
 const addElder = async (req, res) => {
   try {
@@ -126,128 +100,50 @@ const addElder = async (req, res) => {
   }
 };
 
-// NEW: Create elder login credentials
-const createElderLogin = async (req, res) => {
-  try {
-    const { elderId } = req.params;
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).json({ 
-        message: 'Username and password are required' 
-      });
-    }
-
-    // Verify elder belongs to the requesting user
-    const elder = await Elder.findOne({
-      where: { id: elderId },
-      include: [{
-        model: Subscription,
-        as: 'subscription',
-        where: { userId: req.user.id }
-      }]
-    });
-
-    if (!elder) {
-      return res.status(404).json({ message: 'Elder not found' });
-    }
-
-    if (elder.hasLoginAccess) {
-      return res.status(400).json({ 
-        message: 'Elder already has login access' 
-      });
-    }
-
-    const result = await ElderAuthService.createElderLogin(elderId, username, password);
-
-    res.json({
-      message: 'Elder login created successfully',
-      elder: result.elder,
-      credentials: {
-        username: username,
-        loginUrl: '/elder/login'
-      }
-    });
-  } catch (error) {
-    console.error('Create elder login error:', error);
-    res.status(500).json({ 
-      message: error.message || 'Internal server error' 
-    });
-  }
-};
-
-// NEW: Toggle elder access
-const toggleElderAccess = async (req, res) => {
-  try {
-    const { elderId } = req.params;
-    const { hasAccess } = req.body;
-
-    // Verify elder belongs to the requesting user
-    const elder = await Elder.findOne({
-      where: { id: elderId },
-      include: [{
-        model: Subscription,
-        as: 'subscription',
-        where: { userId: req.user.id }
-      }]
-    });
-
-    if (!elder) {
-      return res.status(404).json({ message: 'Elder not found' });
-    }
-
-    const updatedElder = await ElderAuthService.toggleElderAccess(elderId, hasAccess);
-
-    res.json({
-      message: `Elder access ${hasAccess ? 'enabled' : 'disabled'} successfully`,
-      elder: updatedElder
-    });
-  } catch (error) {
-    console.error('Toggle elder access error:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-// NEW: Get elder profile (for elder dashboard)
-const getElderProfile = async (req, res) => {
-  try {
-    // Get elder associated with the logged-in user
-    const elder = await ElderAuthService.getElderByUserId(req.user.id);
-
-    if (!elder) {
-      return res.status(404).json({ message: 'Elder profile not found' });
-    }
-
-    res.json({ elder });
-  } catch (error) {
-    console.error('Get elder profile error:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
 const getElders = async (req, res) => {
   try {
-    const elders = await Elder.findAll({
+    console.log('🔍 Getting elders for user:', req.user.id);
+    
+    // Get all subscriptions for this user
+    const subscriptions = await Subscription.findAll({
+      where: { userId: req.user.id },
       include: [
         {
-          model: Subscription,
-          as: 'subscription',
-          where: { userId: req.user.id },
-          attributes: ['id', 'plan', 'status', 'startDate', 'endDate']
-        },
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'email', 'isActive'],
-          required: false
+          model: Elder,
+          as: 'elder',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'email', 'isActive'],
+              required: false
+            }
+          ]
         }
       ]
     });
 
-    res.json({ elders });
+    console.log('Found subscriptions:', subscriptions.length);
+
+    // Extract elders from subscriptions
+    const elders = subscriptions
+      .filter(sub => sub.elder)
+      .map(sub => sub.elder);
+
+    console.log('✅ Found', elders.length, 'elders');
+
+    res.json({ 
+      success: true,
+      elders,
+      count: elders.length,
+      message: 'Elders retrieved successfully'
+    });
   } catch (error) {
-    console.error('Get elders error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('❌ Get elders error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error' 
+    });
   }
 };
 
@@ -319,7 +215,128 @@ const updateElder = async (req, res) => {
   }
 };
 
-// NEW: Add elder with authentication
+const createElderLogin = async (req, res) => {
+  try {
+    const { elderId } = req.params;
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ 
+        message: 'Username and password are required' 
+      });
+    }
+
+    // Verify elder belongs to the requesting user
+    const elder = await Elder.findOne({
+      where: { id: elderId },
+      include: [{
+        model: Subscription,
+        as: 'subscription',
+        where: { userId: req.user.id }
+      }]
+    });
+
+    if (!elder) {
+      return res.status(404).json({ message: 'Elder not found' });
+    }
+
+    // Use the elder auth service to create login
+    const result = await ElderAuthService.createElderLogin(elderId, username, password);
+
+    res.json({
+      message: 'Login credentials created successfully',
+      elder: result.elder,
+      loginCreated: true
+    });
+  } catch (error) {
+    console.error('Create elder login error:', error);
+    
+    if (error.message === 'Username already exists') {
+      return res.status(400).json({ message: error.message });
+    }
+    
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const toggleElderAccess = async (req, res) => {
+  try {
+    const { elderId } = req.params;
+    const { hasAccess } = req.body;
+
+    // Verify elder belongs to the requesting user
+    const elder = await Elder.findOne({
+      where: { id: elderId },
+      include: [{
+        model: Subscription,
+        as: 'subscription',
+        where: { userId: req.user.id }
+      }]
+    });
+
+    if (!elder) {
+      return res.status(404).json({ message: 'Elder not found' });
+    }
+
+    // Use the elder auth service to toggle access
+    const result = await ElderAuthService.toggleElderAccess(elderId, hasAccess);
+
+    res.json({
+      message: hasAccess ? 'Access enabled' : 'Access disabled',
+      elder: result.elder
+    });
+  } catch (error) {
+    console.error('Toggle elder access error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const getElderProfile = async (req, res) => {
+  try {
+    console.log('🔍 Getting elder profile for user:', req.user.id);
+    
+    // Find the elder record associated with this user
+    const elder = await Elder.findOne({
+      where: { userId: req.user.id },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'isActive']
+        },
+        {
+          model: Subscription,
+          as: 'subscription',
+          attributes: ['id', 'plan', 'status', 'startDate', 'endDate']
+        }
+      ]
+    });
+
+    if (!elder) {
+      console.log('❌ Elder profile not found for user:', req.user.id);
+      return res.status(404).json({
+        success: false,
+        message: 'Elder profile not found'
+      });
+    }
+
+    console.log('✅ Found elder profile:', elder.id);
+
+    res.json({
+      success: true,
+      elder: elder,
+      message: 'Elder profile retrieved successfully'
+    });
+  } catch (error) {
+    console.error('❌ Get elder profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get elder profile',
+      error: error.message
+    });
+  }
+};
+
 const addElderWithAuth = async (req, res) => {
   try {
     console.log('=== ADD ELDER WITH AUTH CONTROLLER ===');
@@ -464,12 +481,34 @@ const addElderWithAuth = async (req, res) => {
   }
 };
 
-// NEW: Get all elders for staff (health monitoring, care management, etc.)
-const getAllEldersForStaff = async (req, res) => {
+// ✅ For health monitoring - staff can see all elders for reports
+const getAllEldersForHealthMonitoring = async (req, res) => {
   try {
-    console.log('🏥 Staff user requesting all elders:', req.user.id);
+    const staffId = req.user.id;
+    console.log('🏥 Staff requesting all elders for health monitoring:', staffId);
     
+    // Get all elders (for health monitoring purposes - staff can view all elders for reports)
     const elders = await Elder.findAll({
+      attributes: [
+        'id', 
+        'firstName', 
+        'lastName', 
+        'dateOfBirth', 
+        'gender', 
+        'phone', 
+        'address',
+        'emergencyContact',
+        'medicalHistory',        // ✅ Fixed: use medicalHistory instead of medicalConditions
+        'currentMedications',    // ✅ Fixed: use currentMedications instead of medications
+        'allergies',
+        'chronicConditions',     // ✅ Added: chronic conditions
+        'bloodType',            // ✅ Added: blood type
+        'doctorName',           // ✅ Added: doctor information
+        'doctorPhone',
+        'insuranceProvider',
+        'insuranceNumber',
+        'createdAt'
+      ],
       include: [
         {
           model: Subscription,
@@ -479,7 +518,7 @@ const getAllEldersForStaff = async (req, res) => {
             {
               model: User,
               as: 'user',
-              attributes: ['id', 'firstName', 'lastName', 'email']
+              attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
             }
           ]
         },
@@ -493,32 +532,145 @@ const getAllEldersForStaff = async (req, res) => {
       order: [['firstName', 'ASC'], ['lastName', 'ASC']]
     });
 
-    console.log(`✅ Found ${elders.length} elders for staff`);
+    console.log(`✅ Found ${elders.length} elders for health monitoring`);
     
-    res.json({ 
+    res.json({
       success: true,
-      elders,
+      elders: elders,
       total: elders.length,
-      message: 'Elders retrieved successfully for staff'
+      message: 'Elders retrieved successfully for health monitoring'
     });
   } catch (error) {
-    console.error('❌ Get all elders for staff error:', error);
-    res.status(500).json({ 
+    console.error('❌ Get all elders for health monitoring error:', error);
+    res.status(500).json({
       success: false,
-      message: 'Internal server error' 
+      message: 'Internal server error'
     });
   }
 };
 
-module.exports = { 
-  addElder, 
-  getElders, 
-  getElderById, 
-  updateElder, 
-  upload,
+// ✅ For care management - staff can only see assigned elders
+const getAssignedEldersForStaff = async (req, res) => {
+  try {
+    const staffId = req.user.id;
+    console.log('🏥 Staff requesting assigned elders:', staffId);
+    
+    // Get all active assignments for this staff member
+    const assignments = await StaffAssignment.findAll({
+      where: {
+        staffId: staffId,
+        isActive: true
+      },
+      attributes: ['elderId', 'assignedDate']
+    });
+
+    console.log('📋 Found assignments:', assignments.length);
+
+    if (assignments.length === 0) {
+      return res.json({
+        success: true,
+        elders: [],
+        total: 0,
+        message: 'No elders assigned to this staff member'
+      });
+    }
+
+    // Get elder IDs from assignments
+    const elderIds = assignments.map(assignment => assignment.elderId);
+    console.log('👥 Elder IDs to fetch:', elderIds);
+
+    // Get the assigned elders
+    const elders = await Elder.findAll({
+      where: {
+        id: {
+          [Op.in]: elderIds
+        }
+      },
+      attributes: [
+        'id', 
+        'firstName', 
+        'lastName', 
+        'dateOfBirth', 
+        'gender', 
+        'phone', 
+        'address',
+        'emergencyContact',
+        'medicalHistory',        // ✅ Fixed: use medicalHistory instead of medicalConditions
+        'currentMedications',    // ✅ Fixed: use currentMedications instead of medications
+        'allergies',
+        'chronicConditions',     // ✅ Added: chronic conditions
+        'bloodType',            // ✅ Added: blood type
+        'doctorName',           // ✅ Added: doctor information
+        'doctorPhone',
+        'insuranceProvider',
+        'insuranceNumber',
+        'createdAt'
+      ],
+      include: [
+        {
+          model: Subscription,
+          as: 'subscription',
+          attributes: ['id', 'plan', 'status', 'startDate', 'endDate'],
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+            }
+          ]
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'email', 'isActive'],
+          required: false
+        }
+      ],
+      order: [['firstName', 'ASC'], ['lastName', 'ASC']]
+    });
+
+    // Add assignment date to each elder
+    const eldersWithAssignmentInfo = elders.map(elder => {
+      const assignment = assignments.find(a => a.elderId === elder.id);
+      return {
+        ...elder.toJSON(),
+        assignedDate: assignment ? assignment.assignedDate : null
+      };
+    });
+
+    console.log(`✅ Found ${eldersWithAssignmentInfo.length} assigned elders for staff`);
+    
+    res.json({
+      success: true,
+      elders: eldersWithAssignmentInfo,
+      total: eldersWithAssignmentInfo.length,
+      message: 'Assigned elders retrieved successfully'
+    });
+  } catch (error) {
+    console.error('❌ Get assigned elders for staff error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// ✅ Alias for backward compatibility - use assigned elders for general staff operations
+const getAllEldersForStaff = async (req, res) => {
+  // For general staff operations, use assigned elders
+  return await getAssignedEldersForStaff(req, res);
+};
+
+module.exports = {
+  addElder,
+  getElders,
+  getElderById,
+  updateElder,
   createElderLogin,
   toggleElderAccess,
   getElderProfile,
   addElderWithAuth,
-  getAllEldersForStaff // NEW: Export this
+  getAllEldersForStaff,
+  getAssignedEldersForStaff,
+  getAllEldersForHealthMonitoring
 };
