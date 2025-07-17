@@ -24,12 +24,42 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-const authorize = (...roles) => {
+const authorize = (allowedRoles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    try {
+      console.log('🔍 Authorization check:', {
+        userRole: req.user?.role,
+        allowedRoles: allowedRoles,
+        userInfo: req.user
+      });
+
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated'
+        });
+      }
+
+      // Handle both string and array of roles
+      const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+      
+      if (!roles.includes(req.user.role)) {
+        console.log('❌ Access denied - user role:', req.user.role, 'allowed roles:', roles);
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Insufficient permissions.'
+        });
+      }
+
+      console.log('✅ Authorization successful for role:', req.user.role);
+      next();
+    } catch (error) {
+      console.error('❌ Authorization error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Authorization error'
+      });
     }
-    next();
   };
 };
 

@@ -15,19 +15,50 @@ import {
   Clock
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import {
+  Box,
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Tabs,
+  Tab,
+  Container,
+  Grid,
+  Card,
+  CardContent
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import UserManagement from '../UserManagement';
+import api from '../../../services/api'; // Use the same API import as UserManagement
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,
+    activeUsers: 0,
+    inactiveUsers: 0,
+    totalElders: 0,
+    activeElders: 0,
+    totalSubscriptions: 0,
     activeSubscriptions: 0,
+    expiredSubscriptions: 0,
     totalRevenue: 0,
     pendingApprovals: 0,
     systemAlerts: 0,
-    eldersCared: 0
+    usersByRole: [],
+    recentRegistrations: 0
   });
   const [recentActivities, setRecentActivities] = useState([]);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState(0);
+  const navigate = useNavigate();
+
+  const tabs = [
+    { label: 'Overview', component: <DashboardOverview stats={stats} navigate={navigate} recentActivities={recentActivities} /> },
+    { label: 'User Management', component: <UserManagement /> },
+    { label: 'System Settings', component: <SystemSettings /> },
+  ];
 
   useEffect(() => {
     loadDashboardData();
@@ -35,30 +66,149 @@ const AdminDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      // Simulate API calls - replace with actual API calls
-      setTimeout(() => {
-        setStats({
-          totalUsers: 1247,
-          activeSubscriptions: 892,
-          totalRevenue: 45680,
-          pendingApprovals: 23,
-          systemAlerts: 5,
-          eldersCared: 756
-        });
-        
+      setLoading(true);
+      console.log('🔄 Loading admin dashboard data using same routes as UserManagement...');
+      
+      // Use the same API routes as UserManagement.js
+      const [usersResponse, statsResponse] = await Promise.all([
+        api.get('/admin/users?limit=1'), // Just get pagination info
+        api.get('/admin/users/stats')    // Same stats endpoint as UserManagement
+      ]);
+
+      console.log('✅ Raw Users response:', usersResponse);
+      console.log('✅ Raw Stats response:', statsResponse);
+      console.log('✅ Users response data:', usersResponse.data);
+      console.log('✅ Stats response data:', statsResponse.data);
+
+      // Extract data from the same structure as UserManagement
+      const userData = usersResponse.data?.data || usersResponse.data;
+      const statsData = statsResponse.data?.stats || statsResponse.data;
+
+      console.log('📊 Extracted userData:', userData);
+      console.log('📊 Extracted statsData:', statsData);
+      console.log('📊 Pagination:', userData?.pagination);
+      console.log('📊 Total from pagination:', userData?.pagination?.total);
+
+      // Debug: Check different possible paths for total users
+      const possibleTotals = {
+        'userData.pagination.total': userData?.pagination?.total,
+        'userData.total': userData?.total,
+        'statsData.total': statsData?.total,
+        'statsData.totalUsers': statsData?.totalUsers,
+        'statsData.totalActive + totalInactive': (statsData?.totalActive || 0) + (statsData?.totalInactive || 0),
+        'usersResponse.data.pagination.total': usersResponse.data?.pagination?.total,
+        'usersResponse.data.data.pagination.total': usersResponse.data?.data?.pagination?.total
+      };
+      
+      console.log('🔍 Possible total values:', possibleTotals);
+
+      // Try multiple ways to get the total users count
+      let totalUsers = 0;
+      
+      // Method 1: From pagination
+      if (userData?.pagination?.total) {
+        totalUsers = userData.pagination.total;
+        console.log('✅ Using pagination total:', totalUsers);
+      }
+      // Method 2: Direct from response
+      else if (usersResponse.data?.pagination?.total) {
+        totalUsers = usersResponse.data.pagination.total;
+        console.log('✅ Using direct pagination total:', totalUsers);
+      }
+      // Method 3: From stats
+      else if (statsData?.total) {
+        totalUsers = statsData.total;
+        console.log('✅ Using stats total:', totalUsers);
+      }
+      // Method 4: Sum of active + inactive
+      else if (statsData?.totalActive !== undefined && statsData?.totalInactive !== undefined) {
+        totalUsers = (statsData.totalActive || 0) + (statsData.totalInactive || 0);
+        console.log('✅ Using sum of active + inactive:', totalUsers);
+      }
+      // Method 5: Count users array length if available
+      else if (userData?.users && Array.isArray(userData.users)) {
+        // This won't be accurate with pagination, but better than 0
+        totalUsers = userData.users.length;
+        console.log('⚠️ Using users array length (not accurate):', totalUsers);
+      }
+
+      // Use the same data structure as UserManagement
+      const finalStats = {
+        totalUsers: totalUsers,
+        activeUsers: statsData?.totalActive || 0,
+        inactiveUsers: statsData?.totalInactive || 0,
+        totalElders: statsData?.byRole?.find(r => r.role === 'elder')?.count || 0,
+        activeElders: statsData?.byRole?.find(r => r.role === 'elder')?.count || 0,
+        totalSubscriptions: 0, // Not available in current stats
+        activeSubscriptions: 0, // Not available in current stats
+        expiredSubscriptions: 0, // Not available in current stats
+        totalRevenue: 0, // Not available in current stats
+        pendingApprovals: statsData?.totalInactive || 0,
+        systemAlerts: 3, // Hardcoded for now
+        usersByRole: statsData?.byRole || [],
+        recentRegistrations: statsData?.recentRegistrations || 0
+      };
+
+      console.log('✅ Final stats object:', finalStats);
+      setStats(finalStats);
+
+      // Get recent activities from recent users
+      if (userData?.users && userData.users.length > 0) {
+        setRecentActivities(
+          userData.users.slice(0, 5).map((user, index) => ({
+            id: `user-${user.id}`,
+            type: 'user_registration',
+            message: `User: ${user.firstName} ${user.lastName} (${user.role})`,
+            time: new Date(user.createdAt).toLocaleString()
+          }))
+        );
+      } else {
         setRecentActivities([
-          { id: 1, type: 'user', message: 'New family member registered', time: '2 minutes ago' },
-          { id: 2, type: 'subscription', message: 'Premium plan subscribed', time: '15 minutes ago' },
-          { id: 3, type: 'alert', message: 'System maintenance completed', time: '1 hour ago' },
-          { id: 4, type: 'approval', message: 'Doctor verification pending', time: '2 hours ago' },
+          { id: 1, type: 'system', message: 'System running normally', time: 'Now' }
         ]);
-        
-        setLoading(false);
-      }, 1000);
+      }
+
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      console.error('❌ Failed to load dashboard data:', error);
+      console.error('❌ Error details:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      
+      // Fallback: Set zeros but show the dashboard
+      setStats({
+        totalUsers: 0,
+        activeUsers: 0,
+        inactiveUsers: 0,
+        totalElders: 0,
+        activeElders: 0,
+        totalSubscriptions: 0,
+        activeSubscriptions: 0,
+        expiredSubscriptions: 0,
+        totalRevenue: 0,
+        pendingApprovals: 0,
+        systemAlerts: 0,
+        usersByRole: [],
+        recentRegistrations: 0
+      });
+      
+      setRecentActivities([
+        { id: 1, type: 'error', message: `Failed to load system data: ${error.message}`, time: 'Just now' }
+      ]);
+    } finally {
       setLoading(false);
     }
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  const handleRefreshData = () => {
+    console.log('🔄 Refreshing dashboard data...');
+    loadDashboardData();
   };
 
   if (loading) {
@@ -67,187 +217,327 @@ const AdminDashboard = () => {
 
   return (
     <RoleLayout title="Admin Dashboard">
-      <div className="space-y-8">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-8 text-white">
-          <h1 className="text-3xl font-bold mb-2">
-            Welcome back, {user?.firstName}!
-          </h1>
-          <p className="text-white/80">
-            Monitor and manage the entire ElderLink system from your control center
-          </p>
-        </div>
+      <Box>
+        {/* Top Navigation */}
+        <AppBar position="static">
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              🏥 ElderLink Admin Portal
+            </Typography>
+            <Typography variant="body2" sx={{ mr: 2 }}>
+              Welcome, {user?.firstName}!
+            </Typography>
+            <Button color="inherit" onClick={handleRefreshData} sx={{ mr: 1 }}>
+              Refresh
+            </Button>
+            <Button color="inherit" onClick={handleLogout}>
+              Logout
+            </Button>
+          </Toolbar>
+        </AppBar>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <Users className="w-10 h-10 text-blue-500 mr-4" />
-              <div>
-                <p className="text-sm text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</p>
-                <p className="text-xs text-green-500">+12% this month</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <Package className="w-10 h-10 text-green-500 mr-4" />
-              <div>
-                <p className="text-sm text-gray-600">Active Plans</p>
-                <p className="text-2xl font-bold">{stats.activeSubscriptions}</p>
-                <p className="text-xs text-green-500">+8% this month</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <DollarSign className="w-10 h-10 text-yellow-500 mr-4" />
-              <div>
-                <p className="text-sm text-gray-600">Revenue</p>
-                <p className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</p>
-                <p className="text-xs text-green-500">+15% this month</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <UserCheck className="w-10 h-10 text-purple-500 mr-4" />
-              <div>
-                <p className="text-sm text-gray-600">Elders Cared</p>
-                <p className="text-2xl font-bold">{stats.eldersCared}</p>
-                <p className="text-xs text-green-500">+5% this month</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <Clock className="w-10 h-10 text-orange-500 mr-4" />
-              <div>
-                <p className="text-sm text-gray-600">Pending</p>
-                <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
-                <p className="text-xs text-yellow-500">Needs attention</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <AlertTriangle className="w-10 h-10 text-red-500 mr-4" />
-              <div>
-                <p className="text-sm text-gray-600">System Alerts</p>
-                <p className="text-2xl font-bold">{stats.systemAlerts}</p>
-                <p className="text-xs text-red-500">Requires review</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <button className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                <Users className="w-6 h-6 text-blue-500" />
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Manage Users</h3>
-            <p className="text-gray-600">Add, edit, or remove system users</p>
-          </button>
-
-          <button className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                <Package className="w-6 h-6 text-green-500" />
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Package Management</h3>
-            <p className="text-gray-600">Configure care packages and pricing</p>
-          </button>
-
-          <button className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                <BarChart3 className="w-6 h-6 text-purple-500" />
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">View Analytics</h3>
-            <p className="text-gray-600">Monitor system performance and usage</p>
-          </button>
-
-          <button className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
-                <Shield className="w-6 h-6 text-red-500" />
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">System Settings</h3>
-            <p className="text-gray-600">Configure system-wide settings</p>
-          </button>
-        </div>
-
-        {/* Recent Activity & System Health */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-            <div className="space-y-4">
-              {recentActivities.map(activity => (
-                <div key={activity.id} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg">
-                  <div className={`w-3 h-3 rounded-full ${
-                    activity.type === 'user' ? 'bg-blue-500' :
-                    activity.type === 'subscription' ? 'bg-green-500' :
-                    activity.type === 'alert' ? 'bg-yellow-500' : 'bg-purple-500'
-                  }`}></div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-900">{activity.message}</p>
-                    <p className="text-xs text-gray-500">{activity.time}</p>
-                  </div>
-                </div>
+        {/* Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Container maxWidth="xl">
+            <Tabs value={activeTab} onChange={handleTabChange}>
+              {tabs.map((tab, index) => (
+                <Tab key={index} label={tab.label} />
               ))}
-            </div>
-          </div>
+            </Tabs>
+          </Container>
+        </Box>
 
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">System Health</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Server Status</span>
-                <span className="flex items-center text-green-600">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                  Online
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Database</span>
-                <span className="flex items-center text-green-600">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                  Connected
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Payment Gateway</span>
-                <span className="flex items-center text-green-600">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                  Active
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Notification Service</span>
-                <span className="flex items-center text-yellow-600">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
-                  Delayed
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Tab Content */}
+        <Container maxWidth="xl" sx={{ mt: 2 }}>
+          {tabs[activeTab].component}
+        </Container>
+      </Box>
     </RoleLayout>
   );
 };
+
+// Enhanced dashboard overview component
+const DashboardOverview = ({ stats, navigate, recentActivities }) => (
+  <Box p={3}>
+    <Typography variant="h4" gutterBottom>
+      Admin Dashboard Overview
+    </Typography>
+    
+
+    
+    {/* Statistics Cards - Same as UserManagement stats */}
+    <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid item xs={12} sm={6} md={4}>
+        <Card 
+          sx={{ 
+            bgcolor: 'primary.main', 
+            color: 'white',
+            cursor: 'pointer',
+            '&:hover': { bgcolor: 'primary.dark' }
+          }}
+          onClick={() => navigate('/admin/users')}
+        >
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h6">Total Users</Typography>
+                <Typography variant="h4">{(stats.totalUsers || 0).toLocaleString()}</Typography>
+                <Typography variant="caption">
+                  Click to manage users
+                </Typography>
+              </Box>
+              <Users size={40} />
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+      
+      <Grid item xs={12} sm={6} md={4}>
+        <Card sx={{ bgcolor: 'success.main', color: 'white' }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h6">Active Users</Typography>
+                <Typography variant="h4">{(stats.activeUsers || 0).toLocaleString()}</Typography>
+                <Typography variant="caption">
+                  {stats.inactiveUsers || 0} inactive
+                </Typography>
+              </Box>
+              <UserCheck size={40} />
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+      
+      <Grid item xs={12} sm={6} md={4}>
+        <Card sx={{ bgcolor: 'info.main', color: 'white' }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h6">Doctors</Typography>
+                <Typography variant="h4">
+                  {stats.usersByRole?.find(r => r.role === 'doctor')?.count || 0}
+                </Typography>
+                <Typography variant="caption">
+                  Medical professionals
+                </Typography>
+              </Box>
+              <Package size={40} />
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+      
+      <Grid item xs={12} sm={6} md={4}>
+        <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h6">Care Staff</Typography>
+                <Typography variant="h4">
+                  {stats.usersByRole?.find(r => r.role === 'staff')?.count || 0}
+                </Typography>
+                <Typography variant="caption">
+                  Support personnel
+                </Typography>
+              </Box>
+              <Clock size={40} />
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+      
+      <Grid item xs={12} sm={6} md={4}>
+        <Card sx={{ bgcolor: 'error.main', color: 'white' }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h6">Pending Approvals</Typography>
+                <Typography variant="h4">{stats.pendingApprovals || 0}</Typography>
+                <Typography variant="caption">
+                  Inactive users
+                </Typography>
+              </Box>
+              <AlertTriangle size={40} />
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+      
+      <Grid item xs={12} sm={6} md={4}>
+        <Card sx={{ bgcolor: 'secondary.main', color: 'white' }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h6">Elders</Typography>
+                <Typography variant="h4">{(stats.totalElders || 0).toLocaleString()}</Typography>
+                <Typography variant="caption">
+                  Registered elders
+                </Typography>
+              </Box>
+              <Activity size={40} />
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
+
+    {/* Role Distribution - Same as UserManagement */}
+    {stats.usersByRole && stats.usersByRole.length > 0 && (
+      <Box mb={4}>
+        <Typography variant="h5" gutterBottom>
+          User Distribution by Role
+        </Typography>
+        <Grid container spacing={2}>
+          {stats.usersByRole.map((roleData) => (
+            <Grid item xs={12} sm={6} md={3} key={roleData.role}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" color="primary">
+                    {roleData.role.charAt(0).toUpperCase() + roleData.role.slice(1).replace('_', ' ')}
+                  </Typography>
+                  <Typography variant="h4">
+                    {roleData.count}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    users
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+    )}
+
+    {/* Quick Actions and Recent Activities */}
+    <Grid container spacing={3}>
+      <Grid item xs={12} md={8}>
+        <Box mb={4}>
+          <Typography variant="h5" gutterBottom>
+            Quick Actions
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item>
+              <Button
+                variant="contained"
+                startIcon={<Users />}
+                onClick={() => navigate('/admin/users')}
+                size="large"
+              >
+                Manage Users ({(stats.totalUsers || 0).toLocaleString()})
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button
+                variant="outlined"
+                startIcon={<UserCheck />}
+                size="large"
+              >
+                Active Users ({(stats.activeUsers || 0).toLocaleString()})
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button
+                variant="outlined"
+                startIcon={<BarChart3 />}
+                size="large"
+              >
+                View Analytics
+              </Button>
+            </Grid>
+            {stats.pendingApprovals > 0 && (
+              <Grid item>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  startIcon={<Clock />}
+                  size="large"
+                >
+                  Review Approvals ({stats.pendingApprovals})
+                </Button>
+              </Grid>
+            )}
+          </Grid>
+        </Box>
+      </Grid>
+      
+      <Grid item xs={12} md={4}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Recent Activities
+            </Typography>
+            <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+              {recentActivities && recentActivities.length > 0 ? (
+                recentActivities.map((activity) => (
+                  <Box key={activity.id} sx={{ mb: 2, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="body2" color="text.primary">
+                      {activity.message}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {activity.time}
+                    </Typography>
+                  </Box>
+                ))
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No recent activities
+                </Typography>
+              )}
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
+
+    <Box mt={4}>
+      <Typography variant="body1" color="text.secondary">
+        Dashboard data loaded from the same endpoints as User Management. All statistics are real-time.
+      </Typography>
+    </Box>
+  </Box>
+);
+
+// System Settings component
+const SystemSettings = () => (
+  <Box p={3}>
+    <Typography variant="h4" gutterBottom>
+      System Settings
+    </Typography>
+    <Grid container spacing={3}>
+      <Grid item xs={12} md={6}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Email Configuration
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Configure SMTP settings for system emails
+            </Typography>
+            <Button variant="outlined" sx={{ mt: 2 }}>
+              Configure Email
+            </Button>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Database Management
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Backup and restore database settings
+            </Typography>
+            <Button variant="outlined" sx={{ mt: 2 }}>
+              Manage Database
+            </Button>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
+  </Box>
+);
 
 export default AdminDashboard;

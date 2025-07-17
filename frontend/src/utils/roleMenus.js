@@ -13,6 +13,7 @@ export const getRoleMenuItems = (role) => {
         { path: '/family/dashboard', icon: Home, label: 'Dashboard' },
         { path: '/family/elders', icon: Heart, label: 'My Elders' },
         { path: '/family/subscriptions', icon: Package, label: 'Subscriptions' },
+        { path: '/family/appointments', icon: Calendar, label: 'Appointments' },
         { path: '/family/health-reports', icon: Activity, label: 'Health Reports' },
         { path: '/family/profile', icon: User, label: 'Profile' },
         { path: '/family/settings', icon: Settings, label: 'Settings' }
@@ -37,10 +38,11 @@ export const getRoleMenuItems = (role) => {
         { path: '/doctor/profile', icon: User, label: 'Profile' }
       ];
 
-    case 'staff':
+  case 'staff':
       return [
         { path: '/staff/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/staff/caret', icon: Heart, label: 'Care Management' },
+        { path: '/staff/care', icon: Heart, label: 'Care Management' },
+         { path: '/staff/mental', icon: Heart, label: 'Mental Specialist Plans' },
         { path: '/staff/monitoring', icon: Monitor, label: 'Health Monitoring' },
         { path: '/staff/alerts', icon: AlertTriangle, label: 'Alerts' },
         { path: '/staff/reports', icon: FileText, label: 'Reports' },
@@ -49,12 +51,12 @@ export const getRoleMenuItems = (role) => {
 
     case 'pharmacist':
       return [
-        { path: '/pharmacy/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/pharmacy/medications', icon: Pill, label: 'Medications' },
-        { path: '/pharmacy/prescriptions', icon: FileText, label: 'Prescriptions' },
-        { path: '/pharmacy/delivery', icon: Truck, label: 'Delivery' },
-        { path: '/pharmacy/inventory', icon: Package, label: 'Inventory' },
-        { path: '/pharmacy/profile', icon: User, label: 'Profile' }
+        { path: '/pharmacist/dashboard', icon: Home, label: 'Dashboard' },
+        { path: '/pharmacist/medications', icon: Pill, label: 'Medications' },
+        { path: '/pharmacist/prescriptions', icon: FileText, label: 'Prescriptions' },
+        { path: '/pharmacist/delivery', icon: Truck, label: 'Delivery' },
+        { path: '/pharmacist/inventory', icon: Package, label: 'Inventory' },
+        { path: '/pharmacist/profile', icon: User, label: 'Profile' }
       ];
 
     // NEW: Mental Health Consultant Menu

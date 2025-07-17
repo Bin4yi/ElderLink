@@ -1,7 +1,9 @@
-// src/pages/AdminPortal.js
-import React, { useState } from "react";
-import { Eye, EyeOff, Loader, Shield } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+
+import React, { useState } from 'react';
+import { Eye, EyeOff, Loader, Shield } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import UserManagement from '../components/admin/UserManagement';
 
 const AdminPortal = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +13,16 @@ const AdminPortal = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [showDashboard, setShowDashboard] = useState(false);
+  const { login, user } = useAuth();
+  const navigate = useNavigate();
+
+  // If user is already logged in and is admin, show dashboard
+  React.useEffect(() => {
+    if (user && user.role === 'admin') {
+      setShowDashboard(true);
+    }
+  }, [user]);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -64,20 +75,31 @@ const AdminPortal = () => {
     }
   };
 
+  // If showing dashboard, render UserManagement
+  if (showDashboard && user?.role === 'admin') {
+    return <UserManagement />;
+  }
+
+  // Otherwise show login form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
             <Shield className="w-8 h-8 text-blue-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Staff Portal
-          </h1>
-          <p className="text-gray-600">
-            Sign in to access the ElderLink staff dashboard
-          </p>
+// <<<<<<< sandaru
+//           <h1 className="text-3xl font-bold text-gray-900 mb-2">
+//             Staff Portal
+//           </h1>
+//           <p className="text-gray-600">
+//             Sign in to access the ElderLink staff dashboard
+//           </p>
+// =======
+          <h1 className="text-3xl font-bold text-white mb-2">Admin Portal</h1>
+          <p className="text-blue-100">Sign in to access the ElderLink admin dashboard</p>
+
         </div>
 
         {/* Login Form */}
@@ -99,9 +121,9 @@ const AdminPortal = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="admin@elderlink.com"
                 required
-                autoComplete="email"
-                placeholder="Enter your work email"
+                disabled={isLoading}
               />
             </div>
 
@@ -116,14 +138,15 @@ const AdminPortal = () => {
                   value={formData.password}
                   onChange={handleChange}
                   className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  autoComplete="current-password"
                   placeholder="Enter your password"
+                  required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -145,13 +168,14 @@ const AdminPortal = () => {
                   <span>Signing in...</span>
                 </>
               ) : (
-                <span>Sign In</span>
+                <span>Sign In to Admin Portal</span>
               )}
             </button>
           </form>
 
           {/* Sample Credentials for Development */}
           <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+// <<<<<<< sandaru
             <h4 className="text-sm font-medium text-gray-700 mb-2">
               Sample Credentials (Development):
             </h4>
@@ -176,6 +200,19 @@ const AdminPortal = () => {
             ← Back to ElderLink Home
           </a>
         </div>
+// =======
+//             <h4 className="text-sm font-medium text-gray-700 mb-2">Sample Admin Credentials:</h4>
+//             <div className="text-xs text-gray-600 space-y-1">
+//               <div 
+//                 className="cursor-pointer hover:bg-gray-100 p-2 rounded"
+//                 onClick={() => setFormData({email: 'admin@elderlink.com', password: 'Admin@123456'})}
+//               >
+//                 <strong>Admin:</strong> admin@elderlink.com / Admin@123456
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+// >>>>>>> main
       </div>
     </div>
   );

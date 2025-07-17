@@ -52,7 +52,7 @@ const Navbar = ({ onSignIn, onSignUp }) => {
                       user?.role === 'admin' ? '/admin/dashboard' :
                       user?.role === 'doctor' ? '/doctor/dashboard' :
                       user?.role === 'staff' ? '/staff/dashboard' :
-                      user?.role === 'pharmacist' ? '/pharmacy/dashboard' :
+                      user?.role === 'pharmacist' ? '/pharmacist/dashboard' :
                       '/dashboard'
                     }
                     className="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg"

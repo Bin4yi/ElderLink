@@ -1,7 +1,7 @@
 // backend/models/User.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
 const bcrypt = require('bcryptjs');
+const sequelize = require('../config/database');
 
 const User = sequelize.define('User', {
   id: {
@@ -9,23 +9,22 @@ const User = sequelize.define('User', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  
   firstName: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
+      notEmpty: true,
       len: [2, 50]
     }
   },
-  
   lastName: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
+      notEmpty: true,
       len: [2, 50]
     }
   },
-  
   email: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -34,7 +33,6 @@ const User = sequelize.define('User', {
       isEmail: true
     }
   },
-  
   password: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -42,65 +40,108 @@ const User = sequelize.define('User', {
       len: [6, 100]
     }
   },
-  
   phone: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true,
+    validate: {
+      len: [10, 15]
+    }
   },
-  
-  // Updated role with mental health consultant
   role: {
     type: DataTypes.ENUM(
-      'admin',                      // 👑 Boss
-      'family_member',              // 👨‍👩‍👧‍👦 Family
-      'doctor',                     // 👨‍⚕️ Doctor
-      'staff',                      // 👥 Care worker
-      'elder',                      // 👴 Elderly person
-      'pharmacist',                 // 💊 Pharmacist
-      'mental_health_consultant'    // 🧠 Mental Health Consultant - NEW!
+      'admin',
+      'family_member',
+      'doctor',
+      'staff',
+      'elder',
+      'pharmacist',
+      'mental_health_consultant'
     ),
     allowNull: false,
     defaultValue: 'family_member'
   },
-  
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
-  
-  // Additional fields for mental health consultants
   licenseNumber: {
     type: DataTypes.STRING,
-    allowNull: true, // Only required for professionals
-    validate: {
-      isLicenseValid(value) {
-        if (this.role === 'mental_health_consultant' && !value) {
-          throw new Error('License number is required for mental health consultants');
-        }
-      }
-    }
+    allowNull: true
   },
-  
   specialization: {
     type: DataTypes.STRING,
-    allowNull: true // e.g., "Geriatric Psychology", "Dementia Care", "Anxiety Disorders"
+    allowNull: true
+  },
+  experience: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+    validate: {
+      min: 0,
+      max: 50
+    }
+  },
+  profileImage: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  photo: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  resetToken: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  resetTokenExpiry: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  mustChangePassword: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  lastPasswordChange: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  tempPasswordExpiry: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   tableName: 'Users',
   timestamps: true,
-  
   hooks: {
     beforeCreate: async (user) => {
       if (user.password) {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password, salt);
+        user.password = await bcrypt.hash(user.password, 12);
+      }
+    },
+    beforeUpdate: async (user) => {
+      if (user.changed('password')) {
+        user.password = await bcrypt.hash(user.password, 12);
+        user.lastPasswordChange = new Date();
       }
     }
   }
 });
 
+// Instance methods
 User.prototype.validatePassword = async function(password) {
   return await bcrypt.compare(password, this.password);
+};
+
+// Add this alias for backward compatibility
+User.prototype.comparePassword = async function(password) {
+  return await bcrypt.compare(password, this.password);
+};
+
+User.prototype.toJSON = function() {
+  const values = Object.assign({}, this.get());
+  delete values.password;
+  delete values.resetToken;
+  return values;
 };
 
 module.exports = User;
