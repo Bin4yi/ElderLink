@@ -39,7 +39,7 @@ import MedicineProfile from './components/pharmacist/inventory/MedicineProfile';
 
 // Mental Health Consultant Components
 import MentalHealthDashboard from './components/mental-health/dashboard/MentalHealthDashboard';
-import MentalHealthProfile from './components/mental-health/profile/profile';
+import MentalHealthProfile from './components/mental-health/profile/Profile'; // ✅ Fixed: Changed from 'profile' to 'Profile'
 import MentalHealthClients from './components/mental-health/pations/clients';
 import ProgressReport from './components/mental-health/p-reports/p-report';
 import TreatmentPlans from './components/mental-health/t-plans/t-plans';

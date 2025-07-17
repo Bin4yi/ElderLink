@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Eye, EyeOff, Loader, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -63,6 +62,7 @@ const AdminPortal = () => {
           break;
         case "mental_health_consultant":
           window.location.href = "/mental-health/dashboard";
+          break;
         default:
           window.location.href = "/dashboard";
       }
@@ -89,17 +89,8 @@ const AdminPortal = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
             <Shield className="w-8 h-8 text-blue-600" />
           </div>
-// <<<<<<< sandaru
-//           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-//             Staff Portal
-//           </h1>
-//           <p className="text-gray-600">
-//             Sign in to access the ElderLink staff dashboard
-//           </p>
-// =======
           <h1 className="text-3xl font-bold text-white mb-2">Admin Portal</h1>
           <p className="text-blue-100">Sign in to access the ElderLink admin dashboard</p>
-
         </div>
 
         {/* Login Form */}
@@ -175,20 +166,13 @@ const AdminPortal = () => {
 
           {/* Sample Credentials for Development */}
           <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-// <<<<<<< sandaru
-            <h4 className="text-sm font-medium text-gray-700 mb-2">
-              Sample Credentials (Development):
-            </h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Sample Admin Credentials:</h4>
             <div className="text-xs text-gray-600 space-y-1">
-              <div>
+              <div 
+                className="cursor-pointer hover:bg-gray-100 p-2 rounded"
+                onClick={() => setFormData({email: 'admin@elderlink.com', password: 'Admin@123456'})}
+              >
                 <strong>Admin:</strong> admin@elderlink.com / Admin@123456
-              </div>
-              <div>
-                <strong>Doctor:</strong> dr.johnson@elderlink.com / Doctor@123
-              </div>
-              <div>
-                <strong>Staff:</strong> jessica.thompson@elderlink.com /
-                Staff@123
               </div>
             </div>
           </div>
@@ -200,19 +184,6 @@ const AdminPortal = () => {
             ← Back to ElderLink Home
           </a>
         </div>
-// =======
-//             <h4 className="text-sm font-medium text-gray-700 mb-2">Sample Admin Credentials:</h4>
-//             <div className="text-xs text-gray-600 space-y-1">
-//               <div 
-//                 className="cursor-pointer hover:bg-gray-100 p-2 rounded"
-//                 onClick={() => setFormData({email: 'admin@elderlink.com', password: 'Admin@123456'})}
-//               >
-//                 <strong>Admin:</strong> admin@elderlink.com / Admin@123456
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-// >>>>>>> main
       </div>
     </div>
   );
