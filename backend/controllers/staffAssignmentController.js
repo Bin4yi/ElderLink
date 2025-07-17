@@ -11,27 +11,41 @@ const getAvailableStaff = async (req, res) => {
         role: 'staff',
         isActive: true
       },
-      attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'specialization', 'experience', 'photo'],
-      include: [
-        {
-          model: Elder,
-          as: 'assignedElders',
-          through: {
-            model: StaffAssignment,
-            attributes: ['assignedAt', 'status']
-          },
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        }
+      attributes: [
+        'id', 'firstName', 'lastName', 'email', 'phone', 
+        'specialization', 'experience', 'profileImage'
+        // ✅ No alias here
       ]
     });
 
-    // Calculate current workload for each staff member
-    const staffWithWorkload = staff.map(member => ({
-      ...member.toJSON(),
-      currentWorkload: member.assignedElders?.length || 0,
-      isAvailable: (member.assignedElders?.length || 0) < 10 // Max 10 elders per staff
-    }));
+    // Process staff data
+    const staffWithWorkload = await Promise.all(
+      staff.map(async (member) => {
+        let currentWorkload = 0;
+        
+        // Try to get current workload
+        try {
+          if (StaffAssignment) {
+            currentWorkload = await StaffAssignment.count({
+              where: {
+                staffId: member.id,
+                isActive: true
+              }
+            });
+          }
+        } catch (error) {
+          console.log('⚠️ Could not count assignments, using 0');
+        }
+
+        const staffData = member.toJSON();
+        return {
+          ...staffData,
+          photo: staffData.profileImage, // ✅ Map after query
+          currentWorkload: currentWorkload,
+          isAvailable: currentWorkload < 10
+        };
+      })
+    );
 
     res.json({
       success: true,

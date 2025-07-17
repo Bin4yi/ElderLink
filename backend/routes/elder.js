@@ -106,35 +106,44 @@ router.get('/staff/all', authenticate, authorize('staff'), getAllEldersForStaff)
 // Staff routes - Get only assigned elders for care management
 router.get('/staff/assigned', authenticate, authorize('staff'), getAssignedEldersForStaff);
 
-// Get all elders for family member
+// Update the GET /elders route
 router.get('/', authenticate, authorize('family_member'), async (req, res) => {
   try {
     console.log('🔍 Getting elders for family member:', req.user.id);
     
     const elders = await Elder.findAll({
-      where: {
-        userId: req.user.id
-      },
+      include: [{
+        model: Subscription,
+        as: 'subscription',
+        where: {
+          userId: req.user.id,
+          status: 'active'
+        },
+        attributes: [
+          'id', 
+          'status'
+          // ✅ Removed planType - it doesn't exist in database
+        ]
+      }],
       attributes: [
         'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
-        'address', 'phone', 'emergencyContact', 'medicalConditions', 
-        'medications', 'allergies', 'photo', 'createdAt', 'updatedAt'
+        'address', 'phone', 'emergencyContact', 'photo', 'createdAt', 'updatedAt'
       ],
       order: [['createdAt', 'DESC']]
     });
 
-    console.log('✅ Found', elders.length, 'elders for family member');
+    console.log('✅ Found elders:', elders.length);
 
     res.json({
       success: true,
       elders: elders,
-      message: 'Elders retrieved successfully'
+      count: elders.length
     });
   } catch (error) {
     console.error('❌ Get elders error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve elders',
+      message: 'Error retrieving elders',
       error: error.message
     });
   }

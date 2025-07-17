@@ -106,19 +106,24 @@ const getElders = async (req, res) => {
     
     // Get all subscriptions for this user
     const subscriptions = await Subscription.findAll({
-      where: { userId: req.user.id },
+      where: { 
+        userId: req.user.id,
+        status: 'active'
+      },
+      attributes: [
+        'id', 
+        'status'
+        // ✅ Removed planType - it doesn't exist in database
+      ],
       include: [
         {
           model: Elder,
           as: 'elder',
-          include: [
-            {
-              model: User,
-              as: 'user',
-              attributes: ['id', 'email', 'isActive'],
-              required: false
-            }
-          ]
+          attributes: [
+            'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
+            'address', 'phone', 'emergencyContact', 'photo', 'createdAt', 'updatedAt'
+          ],
+          required: false
         }
       ]
     });
@@ -128,7 +133,13 @@ const getElders = async (req, res) => {
     // Extract elders from subscriptions
     const elders = subscriptions
       .filter(sub => sub.elder)
-      .map(sub => sub.elder);
+      .map(sub => ({
+        ...sub.elder.toJSON(),
+        subscription: {
+          id: sub.id,
+          status: sub.status
+        }
+      }));
 
     console.log('✅ Found', elders.length, 'elders');
 
@@ -142,7 +153,8 @@ const getElders = async (req, res) => {
     console.error('❌ Get elders error:', error);
     res.status(500).json({ 
       success: false,
-      message: 'Internal server error' 
+      message: 'Failed to retrieve elders',
+      error: error.message 
     });
   }
 };
