@@ -1,218 +1,216 @@
-// src/components/family/appointments/AppointmentList.js
+// frontend/src/components/family/appointments/AppointmentList.js
 import React, { useState, useEffect } from 'react';
-import RoleLayout from '../../common/RoleLayout';
-import {
-  CalendarCheck,
-  Plus,
-  RefreshCw,
-  User,
-  Stethoscope
-} from 'lucide-react';
-import AppointmentBooking from './AppointmentBooking';
+import { CalendarCheck, Clock, Repeat } from 'lucide-react';
 import { appointmentService } from '../../../services/appointment';
 import toast from 'react-hot-toast';
+import RoleLayout from '../../common/RoleLayout';
+import { useNavigate } from 'react-router-dom';
+
 
 const AppointmentList = () => {
   const [appointments, setAppointments] = useState([]);
-  const [filteredAppointments, setFilteredAppointments] = useState([]);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [doctorFilter, setDoctorFilter] = useState('all');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [showBooking, setShowBooking] = useState(false);
-  const [refresh, setRefresh] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('');
+  const [rescheduleReason, setRescheduleReason] = useState('');
 
   useEffect(() => {
-    const fetchAppointments = async () => {
-      setLoading(true);
-      try {
-        const response = await appointmentService.getAppointments();
-        if (response && response.appointments) {
-          setAppointments(response.appointments);
-        } else {
-          setAppointments([]);
-          toast.error('No appointments found or response format invalid.');
-        }
-      } catch (error) {
-        toast.error('Failed to fetch appointments');
-        console.error('Fetch error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchAppointments();
-  }, [refresh]);
+  }, []);
 
-  useEffect(() => {
-    const filtered = appointments.filter((appt) => {
-      const apptDate = new Date(appt.appointmentDate);
-      const apptDateOnly = apptDate.toISOString().split('T')[0]; // "YYYY-MM-DD"
+  const navigate = useNavigate();
 
-      const matchesStatus =
-        statusFilter === 'all' || appt.status === statusFilter;
-
-      const matchesDoctor =
-        doctorFilter === 'all' || appt.doctor?.id === doctorFilter;
-
-      const matchesDate =
-        !selectedDate || apptDateOnly === selectedDate;
-
-      return matchesStatus && matchesDoctor && matchesDate;
-    });
-
-    setFilteredAppointments(filtered);
-  }, [statusFilter, doctorFilter, selectedDate, appointments]);
-
-  const handleBookingSuccess = () => {
-    setShowBooking(false);
-    toast.success('Appointment successfully booked!');
-    setRefresh((prev) => !prev);
+  const fetchAppointments = async () => {
+    try {
+      const response = await appointmentService.getAppointments();
+      if (Array.isArray(response)) {
+        setAppointments(response);
+      } else {
+        toast.error('No appointments found or response format invalid.');
+      }
+    } catch (error) {
+      toast.error('Failed to fetch appointments.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const uniqueDoctors = [
-    ...new Map(
-      appointments.map((appt) => [appt.doctor?.id, appt.doctor])
-    ).values(),
-  ];
+  const openRescheduleModal = (id) => {
+    setSelectedAppointmentId(id);
+    setRescheduleModalOpen(true);
+  };
 
-  return (
-    <RoleLayout title="Appointments">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <CalendarCheck className="w-6 h-6" />
-            My Appointments
-          </h2>
+  const handleRescheduleSubmit = async () => {
+    if (!rescheduleDate || !rescheduleTime) {
+      toast.error('Date and time are required');
+      return;
+    }
+
+    const datetime = `${rescheduleDate}T${rescheduleTime}`;
+
+    try {
+      await appointmentService.reschedule(selectedAppointmentId, {
+        newDateTime: datetime,
+        reason: rescheduleReason,
+      });
+      toast.success('Appointment rescheduled successfully');
+      setRescheduleModalOpen(false);
+      fetchAppointments();
+    } catch (error) {
+      toast.error('Failed to reschedule appointment');
+    }
+  };
+
+  const renderAppointmentCard = (appointment) => (
+    <div
+      key={appointment.id}
+      className="border rounded p-4 shadow flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"
+    >
+      <div>
+        <p className="font-medium">
+          <CalendarCheck className="inline w-4 h-4 mr-2" />
+          {new Date(appointment.appointmentDate).toLocaleString()}
+        </p>
+        <p>
+          <Clock className="inline w-4 h-4 mr-2" />
+          <span className="capitalize">{appointment.status}</span>
+        </p>
+        <p>
+          <span className="font-medium">Doctor:</span>{' '}
+          {appointment.doctorName || 'Unknown'}
+        </p>
+        <p>
+          <span className="font-medium">Status:</span>{' '}
+          {appointment.status === 'approved' ? (
+            <span className="text-green-600 font-semibold">Approved</span>
+          ) : (
+            <span className="text-yellow-600 font-semibold">Pending</span>
+          )}
+        </p>
+      </div>
+
+      {appointment.status !== 'approved' && (
+        <div>
           <button
-            onClick={() => setShowBooking(true)}
-            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg"
+            className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+            onClick={() => openRescheduleModal(appointment.id)}
           >
-            <Plus className="w-4 h-4" />
-            Book Appointment
+            <Repeat className="inline w-4 h-4 mr-1" />
+            Reschedule
           </button>
         </div>
+      )}
+    </div>
+  );
 
-        {/* Filters */}
-        {!showBooking && (
-          <div className="bg-white rounded-lg shadow-sm p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+  const approvedAppointments = appointments.filter(
+    (a) => a.status === 'approved'
+  );
+  const pendingAppointments = appointments.filter(
+    (a) => a.status !== 'approved'
+  );
 
-            {/* Doctor Filter */}
-            <select
-              value={doctorFilter}
-              onChange={(e) => setDoctorFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg"
-            >
-              <option value="all">All Doctors</option>
-              {uniqueDoctors.map((doc) => (
-                <option key={doc.id} value={doc.id}>
-                  Dr. {doc.user?.firstName} {doc.user?.lastName}
-                </option>
-              ))}
-            </select>
+  return (
+    <RoleLayout>
+      <div className="p-4">
+        <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold">My Appointments</h2>
+        <button
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          onClick={() => navigate('/appointment-booking')}
+        >
+          📅 Book Appointment
+        </button>
+        </div>
+        {loading ? (
+          <p>Loading...</p>
+        ) : appointments.length === 0 ? (
+          <p>No appointments available.</p>
+        ) : (
+          <>
+            {/* Pending Appointments */}
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold mb-3 text-yellow-600">
+                ⏳ Pending Appointments
+              </h3>
+              {pendingAppointments.length > 0 ? (
+                <div className="space-y-4">
+                  {pendingAppointments.map((appointment) =>
+                    renderAppointmentCard(appointment)
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-600">No pending appointments.</p>
+              )}
+            </div>
 
-            {/* Exact Date Filter */}
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg"
-              placeholder="Appointment Date"
-            />
-          </div>
+            {/* Approved Appointments */}
+            <div>
+              <h3 className="text-xl font-semibold mb-3 text-green-600">
+                ✅ Approved Appointments
+              </h3>
+              {approvedAppointments.length > 0 ? (
+                <div className="space-y-4">
+                  {approvedAppointments.map((appointment) =>
+                    renderAppointmentCard(appointment)
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-600">No approved appointments.</p>
+              )}
+            </div>
+          </>
         )}
 
-        {/* Booking or Table */}
-        {showBooking ? (
-          <AppointmentBooking
-            onBack={() => setShowBooking(false)}
-            onSuccess={handleBookingSuccess}
-          />
-        ) : (
-          <div className="bg-white rounded-lg shadow w-full overflow-x-auto">
-            {loading ? (
-              <div className="text-center py-12 text-gray-400">
-                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-                Loading appointments...
+        {/* Reschedule Modal */}
+        {rescheduleModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded p-6 shadow w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">
+                Reschedule Appointment
+              </h3>
+
+              <label className="block mb-2">New Date</label>
+              <input
+                type="date"
+                className="w-full border p-2 rounded mb-4"
+                value={rescheduleDate}
+                onChange={(e) => setRescheduleDate(e.target.value)}
+              />
+
+              <label className="block mb-2">New Time</label>
+              <input
+                type="time"
+                className="w-full border p-2 rounded mb-4"
+                value={rescheduleTime}
+                onChange={(e) => setRescheduleTime(e.target.value)}
+              />
+
+              <label className="block mb-2">Reason</label>
+              <textarea
+                className="w-full border p-2 rounded mb-4"
+                value={rescheduleReason}
+                onChange={(e) => setRescheduleReason(e.target.value)}
+                placeholder="Enter reschedule reason"
+              />
+
+              <div className="flex justify-end gap-2">
+                <button
+                  className="px-4 py-2 bg-gray-300 rounded"
+                  onClick={() => setRescheduleModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 bg-blue-600 text-white rounded"
+                  onClick={handleRescheduleSubmit}
+                >
+                  Submit
+                </button>
               </div>
-            ) : filteredAppointments.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">No appointments found.</div>
-            ) : (
-              <table className="min-w-full text-sm text-gray-700">
-                <thead className="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider">
-                  <tr>
-                    <th className="px-6 py-3 text-left whitespace-nowrap">Elder</th>
-                    <th className="px-6 py-3 text-left whitespace-nowrap">Doctor</th>
-                    <th className="px-6 py-3 text-left whitespace-nowrap">Date</th>
-                    <th className="px-6 py-3 text-left whitespace-nowrap">Time</th>
-                    <th className="px-6 py-3 text-left whitespace-nowrap">Reason</th>
-                    <th className="px-6 py-3 text-left whitespace-nowrap">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAppointments.map((appt) => (
-                    <tr key={appt.id} className="border-b hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap flex items-center gap-2">
-                        {appt.elder?.photo ? (
-                          <img
-                            src={`/uploads/elders/${appt.elder.photo}`}
-                            alt="Elder"
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-5 h-5 text-gray-400" />
-                        )}
-                        <span>{appt.elder?.firstName} {appt.elder?.lastName}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap flex items-center gap-2">
-                        <Stethoscope className="w-4 h-4 text-blue-500" />
-                        <span>Dr. {appt.doctor?.user?.firstName} {appt.doctor?.user?.lastName}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {new Date(appt.appointmentDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {new Date(appt.appointmentDate).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{appt.reason}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-3 py-1 rounded-full capitalize text-sm font-medium ${
-                            appt.status === 'approved'
-                              ? 'bg-green-100 text-green-600'
-                              : appt.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-600'
-                              : appt.status === 'completed'
-                              ? 'bg-blue-100 text-blue-600'
-                              : appt.status === 'cancelled'
-                              ? 'bg-red-100 text-red-600'
-                              : 'bg-gray-200 text-gray-700'
-                          }`}
-                        >
-                          {appt.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            </div>
           </div>
         )}
       </div>
@@ -221,6 +219,8 @@ const AppointmentList = () => {
 };
 
 export default AppointmentList;
+
+
 
 
 

@@ -11,7 +11,12 @@ const AppointmentManagement = () => {
   const [filter, setFilter] = useState('all');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
-  const today = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+  // 🔁 Added state for reschedule modal and fields
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [rescheduleDateTime, setRescheduleDateTime] = useState('');
+  const [rescheduleReason, setRescheduleReason] = useState('');
+
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     loadAppointments();
@@ -43,6 +48,28 @@ const AppointmentManagement = () => {
       loadAppointments();
     } catch (error) {
       toast.error(error.response?.data?.message || `Failed to ${action} appointment`);
+    }
+  };
+
+  // 🔁 Handle Reschedule Submit
+  const handleRescheduleSubmit = async () => {
+    if (!rescheduleDateTime) {
+      toast.error('Please select date and time');
+      return;
+    }
+    try {
+      await doctorAppointmentService.rescheduleAppointment(selectedAppointment.id, {
+        newDateTime: rescheduleDateTime,
+        reason: rescheduleReason,
+      });
+      toast.success('Appointment rescheduled');
+      setShowRescheduleModal(false);
+      setSelectedAppointment(null);
+      setRescheduleDateTime('');
+      setRescheduleReason('');
+      loadAppointments();
+    } catch (err) {
+      toast.error('Failed to reschedule appointment');
     }
   };
 
@@ -122,6 +149,15 @@ const AppointmentManagement = () => {
                   className="px-4 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600"
                 >
                   Reject
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedAppointment(appointment);
+                    setShowRescheduleModal(true);
+                  }}
+                  className="px-4 py-2 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
+                >
+                  Reschedule
                 </button>
               </>
             )}
@@ -203,7 +239,7 @@ const AppointmentManagement = () => {
       </div>
 
       {/* Modal: View Appointment Details */}
-      {selectedAppointment && (
+      {selectedAppointment && !showRescheduleModal && (
         <Modal onClose={() => setSelectedAppointment(null)}>
           <h2 className="text-lg font-bold mb-4">Appointment Details</h2>
           <p><strong>Elder:</strong> {selectedAppointment.elder?.firstName} {selectedAppointment.elder?.lastName}</p>
@@ -212,6 +248,42 @@ const AppointmentManagement = () => {
           <p><strong>Reason:</strong> {selectedAppointment.reason}</p>
           <p><strong>Symptoms:</strong> {selectedAppointment.symptoms || 'N/A'}</p>
           <p><strong>Notes:</strong> {selectedAppointment.notes || 'N/A'}</p>
+        </Modal>
+      )}
+
+      {/* 🔁 Modal: Reschedule Appointment */}
+      {showRescheduleModal && (
+        <Modal onClose={() => setShowRescheduleModal(false)}>
+          <h2 className="text-lg font-bold mb-4">Reschedule Appointment</h2>
+          <label className="block mb-2 text-sm font-medium">New Date and Time:</label>
+          <input
+            type="datetime-local"
+            className="border p-2 rounded w-full mb-4"
+            value={rescheduleDateTime}
+            onChange={e => setRescheduleDateTime(e.target.value)}
+          />
+          
+          <label className="block mb-2 text-sm font-medium">Reason (optional):</label>
+          <textarea
+            rows="3"
+            className="border p-2 rounded w-full mb-4"
+            value={rescheduleReason}
+            onChange={e => setRescheduleReason(e.target.value)}
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+              onClick={() => setShowRescheduleModal(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              onClick={handleRescheduleSubmit}
+            >
+              Submit
+            </button>
+          </div>
         </Modal>
       )}
     </RoleLayout>

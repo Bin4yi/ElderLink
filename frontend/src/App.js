@@ -26,6 +26,7 @@ import MedicalRecords from './components/doctor/records/MedicalRecords';
 // Family Components
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
 import AppointmentList from './components/family/appointments/AppointmentList'; // ADD THIS IMPORT
+import Doctors from './components/family/doctors/Doctors';
 
 // Pharmacy Components
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
@@ -36,6 +37,8 @@ import CareManagement from './components/staff/care/CareManagement';
 
 // Elder Components
 import ElderDashboard from './components/Elder/dashboard/Elder';
+
+import AppointmentBooking from './components/family/appointments/AppointmentBooking';
 
 function App() {
   return (
@@ -61,6 +64,7 @@ function App() {
               
               {/* Family routes - ADD THIS */}
               <Route path="/family/appointments" element={<AppointmentList />} />
+              <Route path="/family/doctors" element={<Doctors />} />
               
               {/* Staff routes */}
               <Route path="/staff/care" element={<CareManagement />} />
@@ -70,6 +74,7 @@ function App() {
               <Route path="/doctor/appointments" element={<AppointmentManagement />} />
               <Route path="/doctor/consultations" element={<ConsultationHistory />} />
               <Route path="/doctor/records" element={<MedicalRecords />} />
+              <Route path="/appointment-booking" element={<AppointmentBooking />} />
               
             </Routes>
             

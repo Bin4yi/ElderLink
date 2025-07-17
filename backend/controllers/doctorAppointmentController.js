@@ -191,6 +191,69 @@ class DoctorAppointmentController {
       });
     }
   }
+  
+  //Reschedule appointment
+  static async rescheduleAppointment(req, res) {
+    try {
+      const { appointmentId } = req.params;
+      const { newDateTime, reason } = req.body;
+
+      if (!newDateTime) {
+        return res.status(400).json({ message: 'New date and time are required' });
+      }
+
+      const doctor = await Doctor.findOne({
+        where: { userId: req.user.id }
+      });
+
+      if (!doctor) {
+        return res.status(404).json({ message: 'Doctor profile not found' });
+      }
+
+      const appointment = await Appointment.findOne({
+        where: {
+          id: appointmentId,
+          doctorId: doctor.id
+        }
+      });
+
+      if (!appointment) {
+        return res.status(404).json({ message: 'Appointment not found or access denied' });
+      }
+
+       // ✅ Convert newDateTime string to Date object
+      const newDateObj = new Date(newDateTime);
+
+      // ✅ Update appointment date and status
+      appointment.appointmentDate = newDateObj;
+      appointment.status = 'rescheduled';
+
+      await appointment.save();
+
+      // ✅ Optionally save the reason if your model supports it
+      if (reason) {
+        appointment.reason = reason; // Make sure Appointment model has a 'reason' field
+      }
+
+      // Optionally send notification
+      await AppointmentNotification.create({
+        appointmentId: appointment.id,
+        recipientId: appointment.familyMemberId,
+        type: 'reschedule',
+        title: 'Appointment Rescheduled',
+        message: `The appointment for ${appointment.elderName || 'the elder'} has been rescheduled to ${newDateObj.toLocaleString()}`
+      });
+
+      res.json({
+        message: 'Appointment rescheduled successfully',
+        appointment
+      });
+    } catch (error) {
+      console.error('Reschedule appointment error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
 
   // Get elder's complete medical summary for doctor
   static async getElderMedicalSummary(req, res) {

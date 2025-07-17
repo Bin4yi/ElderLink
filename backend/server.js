@@ -1,4 +1,5 @@
-// backend/server.js - Updated with proper error checking
+// backend/server.js - Updated with familyDoctors route
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -45,7 +46,8 @@ try {
   const elderRoutes = require('./routes/elder');
   const notificationRoutes = require('./routes/notification');
   const appointmentRoutes = require('./routes/appointments');
-  const doctorAppointmentRoutes = require('./routes/doctorAppointments'); // ✅ ADD THIS LINE
+  const doctorAppointmentRoutes = require('./routes/doctorAppointments');
+  const familyDoctorRoutes = require('./routes/familyDoctors'); // Added familyDoctors route
 
   // Verify routes are properly exported
   if (typeof authRoutes !== 'function') {
@@ -63,8 +65,11 @@ try {
   if (typeof appointmentRoutes !== 'function') {
     throw new Error('appointmentRoutes is not a valid router');
   }
-  if (typeof doctorAppointmentRoutes !== 'function') { // ✅ ADD THIS CHECK
+  if (typeof doctorAppointmentRoutes !== 'function') {
     throw new Error('doctorAppointmentRoutes is not a valid router');
+  }
+  if (typeof familyDoctorRoutes !== 'function') {
+    throw new Error('familyDoctorsRouter is not a valid router');
   }
 
   // API Routes
@@ -73,7 +78,8 @@ try {
   app.use('/api/elders', elderRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/appointments', appointmentRoutes);
-  app.use('/api/doctor', doctorAppointmentRoutes); // ✅ ADD THIS LINE
+  app.use('/api/doctor', doctorAppointmentRoutes);
+  app.use('/api/family', familyDoctorRoutes); // Registered familyDoctors routes
 
   console.log('✅ All routes loaded successfully');
 } catch (error) {
@@ -102,7 +108,6 @@ app.set('io', io);
 app.use((error, req, res, next) => {
   console.error('Global error handler:', error);
   
-  // Handle specific error types
   if (error.name === 'SequelizeValidationError') {
     return res.status(400).json({
       success: false,
@@ -122,7 +127,6 @@ app.use((error, req, res, next) => {
     });
   }
   
-  // Default error response
   res.status(500).json({ 
     success: false,
     message: process.env.NODE_ENV === 'production' 
@@ -140,19 +144,17 @@ app.use('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // Database connection and server start
 const startServer = async () => {
   try {
-    // Test database connection
     await sequelize.authenticate();
     console.log('✅ Database connected successfully');
     
-    // Sync database models
     await sequelize.sync({ alter: true });
     console.log('✅ Database models synchronized');
     
-    // Start server
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);

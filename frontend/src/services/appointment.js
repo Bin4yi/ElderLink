@@ -42,7 +42,7 @@ class AppointmentService {
   async getAppointments(params = {}) {
     try {
       const response = await api.get('/appointments', { params });
-      return response.data;
+      return response.data.appointments || [];
     } catch (error) {
       throw this.handleError(error);
     }

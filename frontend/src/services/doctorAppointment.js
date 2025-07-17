@@ -41,6 +41,16 @@ class DoctorAppointmentService {
     }
   }
 
+   async rescheduleAppointment(appointmentId, data) {
+    try {
+      const response = await api.patch(`/doctor/appointments/${appointmentId}/reschedule`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error rescheduling appointment:', error);
+      throw error;
+    }
+  }
+
   // Get elder's medical summary
   async getElderMedicalSummary(elderId) {
     try {

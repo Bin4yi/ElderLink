@@ -27,6 +27,12 @@ router.patch('/appointments/:id/review',
   DoctorAppointmentController.reviewAppointment
 );
 
+router.patch('/appointments/:id/reschedule',
+  authenticate,
+  authorize('doctor'),
+  DoctorAppointmentController.rescheduleAppointment
+);
+
 // Get dashboard stats
 router.get('/dashboard/stats', 
   authenticate, 
