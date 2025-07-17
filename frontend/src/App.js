@@ -25,7 +25,7 @@ import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
 
 // Family
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
-import AppointmentList from './components/family/appointments/AppointmentList'; // ADD THIS IMPORT
+import AppointmentList from './components/family/appointments/AppointmentList';
 
 // Pharmacy
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
@@ -37,6 +37,16 @@ import AddNewItem from './components/pharmacist/inventory/AddNewItem';
 import PharmacyProfile from './components/pharmacist/profile/Pharmacyprofile';
 import MedicineProfile from './components/pharmacist/inventory/MedicineProfile';
 
+// Mental Health Consultant Components
+import MentalHealthDashboard from './components/mental-health/dashboard/MentalHealthDashboard';
+import MentalHealthProfile from './components/mental-health/profile/profile';
+import MentalHealthClients from './components/mental-health/pations/clients';
+import ProgressReport from './components/mental-health/p-reports/p-report';
+import TreatmentPlans from './components/mental-health/t-plans/t-plans';
+import MentalHealthAssessments from './components/mental-health/assessments/assessments';
+import MentalHealthResources from './components/mental-health/m-resources/resources';
+import MentalHealthTherapySessions from './components/mental-health/sessions/sessions';
+
 // Staff
 import StaffDashboard from './components/staff/dashboard/StaffDashboard';
 import AlertsManagement from './components/staff/alerts/AlertsManagement';
@@ -44,7 +54,8 @@ import HealthMonitoring from './components/staff/monitoring/HealthMonitoring';
 import CareManagement from './components/staff/care/CareManagement';
 import Profilestaff from './components/staff/profile/Profilestaff';
 import MentalHealthManagement from './components/staff/mental/Mental';
-import HealthReports from './components/staff/reports/HealthReports'; // Import HealthReports component
+import HealthReports from './components/staff/reports/HealthReports';
+
 // Elder
 import ElderDashboard from './components/Elder/dashboard/Elder';
 
@@ -82,11 +93,6 @@ function App() {
                   
                   {/* Doctor routes */}
                   <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
-                  {/* ✅ COMMENTED OUT: These components don't exist yet */}
-                  {/* <Route path="/doctor/patients" element={<PatientList />} /> */}
-                  {/* <Route path="/doctor/appointments" element={<AppointmentManagement />} /> */}
-                  {/* <Route path="/doctor/consultations" element={<ConsultationHistory />} /> */}
-                  {/* <Route path="/doctor/records" element={<MedicalRecords />} /> */}
                   
                   {/* Family routes */}
                   <Route path="/family/dashboard" element={<FamilyDashboard />} />
@@ -102,14 +108,24 @@ function App() {
                   <Route path="/pharmacy/profile" element={<PharmacyProfile />} />
                   <Route path="/pharmacy/medicine/:id" element={<MedicineProfile />} />
                   
+                  {/* Mental Health routes */}
+                  <Route path="/mental-health/dashboard" element={<MentalHealthDashboard />} />
+                  <Route path="/mental-health/profile" element={<MentalHealthProfile />} />
+                  <Route path="/mental-health/clients" element={<MentalHealthClients />} />
+                  <Route path="/mental-health/progress-reports" element={<ProgressReport />} />
+                  <Route path="/mental-health/treatment-plans" element={<TreatmentPlans />} />
+                  <Route path="/mental-health/assessments" element={<MentalHealthAssessments />} />
+                  <Route path="/mental-health/resources" element={<MentalHealthResources />} />
+                  <Route path="/mental-health/therapy-sessions" element={<MentalHealthTherapySessions />} />
+                  
                   {/* Staff routes */}
                   <Route path="/staff/dashboard" element={<StaffDashboard />} />
                   <Route path="/staff/alerts" element={<AlertsManagement />} />
                   <Route path="/staff/monitoring" element={<HealthMonitoring />} />
                   <Route path="/staff/care" element={<CareManagement />} />
-                  <Route path="/staff/reports" element={<HealthReports />} /> {/* Add this route */}
+                  <Route path="/staff/reports" element={<HealthReports />} />
                   <Route path="/staff/profile" element={<Profilestaff />} />
-                   <Route path="/staff/mental" element={< MentalHealthManagement/>} />
+                  <Route path="/staff/mental" element={<MentalHealthManagement />} />
                   
                   {/* Elder routes */}
                   <Route path="/elder/dashboard" element={<ElderDashboard />} />
