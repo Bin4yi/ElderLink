@@ -42,9 +42,9 @@ import StaffDashboard from './components/staff/dashboard/StaffDashboard';
 import AlertsManagement from './components/staff/alerts/AlertsManagement';
 import HealthMonitoring from './components/staff/monitoring/HealthMonitoring';
 import CareManagement from './components/staff/care/CareManagement';
-import Report from './components/staff/reports/Report';
 import Profilestaff from './components/staff/profile/Profilestaff';
 import MentalHealthManagement from './components/staff/mental/Mental';
+import HealthReports from './components/staff/reports/HealthReports'; // Import HealthReports component
 // Elder
 import ElderDashboard from './components/Elder/dashboard/Elder';
 
@@ -107,7 +107,7 @@ function App() {
                   <Route path="/staff/alerts" element={<AlertsManagement />} />
                   <Route path="/staff/monitoring" element={<HealthMonitoring />} />
                   <Route path="/staff/care" element={<CareManagement />} />
-                  <Route path="/staff/reports" element={<Report />} />
+                  <Route path="/staff/reports" element={<HealthReports />} /> {/* Add this route */}
                   <Route path="/staff/profile" element={<Profilestaff />} />
                    <Route path="/staff/mental" element={< MentalHealthManagement/>} />
                   

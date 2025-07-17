@@ -1,4 +1,4 @@
-// backend/server.js
+// backend/server.js - Updated with proper error checking
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -63,54 +63,47 @@ app.get('/api', (req, res) => {
   });
 });
 
+// Route configurations
+const routeConfigs = [
+  { path: './routes/auth', mount: '/api/auth', name: 'authRoutes' },
+  { path: './routes/elder', mount: '/api/elders', name: 'elderRoutes' },
+  { path: './routes/healthMonitoring', mount: '/api/health-monitoring', name: 'healthMonitoringRoutes' },
+  { path: './routes/subscription', mount: '/api/subscriptions', name: 'subscriptionRoutes' },
+  { path: './routes/notification', mount: '/api/notifications', name: 'notificationRoutes' },
+  { path: './routes/adminUserRoutes', mount: '/api/admin', name: 'adminUserRoutes' },
+  { path: './routes/adminStatsRoutes', mount: '/api/admin', name: 'adminStatsRoutes' },
+  { path: './routes/staffAssignment', mount: '/api/staff-assignments', name: 'staffAssignmentRoutes' }
+];
+
+// Import health monitoring routes
+const healthMonitoringRoutes = require('./routes/healthMonitoring');
+// Import health reports routes
+const healthReportsRoutes = require('./routes/healthReports');
+
+// Import staff assignment routes
+const staffAssignmentRoutes = require('./routes/staffAssignment');
+
 // Import and use routes with error checking
 try {
-  const authRoutes = require('./routes/auth');
-  const subscriptionRoutes = require('./routes/subscription');
-  const elderRoutes = require('./routes/elder');
-  const notificationRoutes = require('./routes/notification');
-  const appointmentRoutes = require('./routes/appointments');
-  const doctorAppointmentRoutes = require('./routes/doctorAppointments');
-  const adminUserRoutes = require('./routes/adminUserRoutes');
-  const adminStatsRoutes = require('./routes/adminStatsRoutes');
+  routeConfigs.forEach(({ path, mount, name }) => {
+    const route = require(path);
+    
+    // Verify routes are properly exported
+    if (typeof route !== 'function') {
+      throw new Error(`${name} is not a valid router`);
+    }
+    
+    // API Routes
+    app.use(mount, route);
+  });
 
-  // Verify routes are properly exported
-  if (typeof authRoutes !== 'function') {
-    throw new Error('authRoutes is not a valid router');
-  }
-  if (typeof subscriptionRoutes !== 'function') {
-    throw new Error('subscriptionRoutes is not a valid router');
-  }
-  if (typeof elderRoutes !== 'function') {
-    throw new Error('elderRoutes is not a valid router');
-  }
-  if (typeof notificationRoutes !== 'function') {
-    throw new Error('notificationRoutes is not a valid router');
-  }
-  if (typeof appointmentRoutes !== 'function') {
-    throw new Error('appointmentRoutes is not a valid router');
-  }
-  if (typeof doctorAppointmentRoutes !== 'function') {
-    throw new Error('doctorAppointmentRoutes is not a valid router');
-  }
-  if (typeof adminUserRoutes !== 'function') {
-    throw new Error('adminUserRoutes is not a valid router');
-  }
-  if (typeof adminStatsRoutes !== 'function') {
-    throw new Error('adminStatsRoutes is not a valid router');
-  }
+  // Use health monitoring routes
+  app.use('/api/health-monitoring', healthMonitoringRoutes);
+  // Use health reports routes
+  app.use('/api/health-reports', healthReportsRoutes);
+  // Use staff assignment routes
+  app.use('/api/staff-assignments', staffAssignmentRoutes);
 
-  // API Routes
-  app.use('/api/auth', authRoutes);
-  app.use('/api/subscriptions', subscriptionRoutes);
-  app.use('/api/elders', elderRoutes);
-  app.use('/api/notifications', notificationRoutes);
-  app.use('/api/appointments', appointmentRoutes);
-  app.use('/api/doctor', doctorAppointmentRoutes);
-  app.use('/api/admin', adminUserRoutes);
-  app.use('/api/admin', adminStatsRoutes);
-
-  console.log('✅ All routes loaded successfully');
 } catch (error) {
   console.error('Error loading routes:', error);
   process.exit(1);
