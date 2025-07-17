@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Stethoscope, AlertCircle, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import RoleLayout from '../../common/RoleLayout'; 
 import { appointmentService } from '../../../services/appointment'; // ✅ FIXED: Changed from '../../services/appointment'
 import { elderService } from '../../../services/elder'; // ✅ FIXED: Changed from '../../services/elder'
 
@@ -480,77 +481,74 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-6">
-        <button
-          onClick={onBack}
-          className="text-red-500 hover:text-red-600 font-medium mb-4"
-        >
-          ← Back to Dashboard
-        </button>
-        <h1 className="text-3xl font-bold text-gray-800">Book Appointment</h1>
-      </div>
+    <RoleLayout> {/* ✅ Wrap everything inside RoleLayout */}
+      <div className="max-w-5xl mx-auto p-6">
+        <div className="mb-6">
+          
+          <h1 className="text-3xl font-bold text-gray-800">Book Appointment</h1>
+        </div>
 
-      {renderStepIndicator()}
+        {renderStepIndicator()}
 
-      <div className="bg-white rounded-lg shadow-lg p-8">
-        {step === 1 && renderElderSelection()}
-        {step === 2 && renderDoctorSelection()}
-        {step === 3 && renderDateTimeSelection()}
-        {step === 4 && renderAppointmentDetails()}
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          {step === 1 && renderElderSelection()}
+          {step === 2 && renderDoctorSelection()}
+          {step === 3 && renderDateTimeSelection()}
+          {step === 4 && renderAppointmentDetails()}
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8 pt-6 border-t">
-          <button
-            onClick={() => setStep(Math.max(1, step - 1))}
-            disabled={step === 1}
-            className={`px-6 py-3 rounded-lg font-medium ${
-              step === 1
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Previous
-          </button>
-
-          {step < 4 ? (
+          {/* Navigation Buttons */}
+          <div className="flex justify-between mt-8 pt-6 border-t">
             <button
-              onClick={() => setStep(step + 1)}
-              disabled={!canProceedToNext()}
+              onClick={() => setStep(Math.max(1, step - 1))}
+              disabled={step === 1}
               className={`px-6 py-3 rounded-lg font-medium ${
-                canProceedToNext()
-                  ? 'bg-red-500 text-white hover:bg-red-600'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              onClick={handleBooking}
-              disabled={loading || !canProceedToNext()}
-              className={`px-8 py-3 rounded-lg font-medium ${
-                loading || !canProceedToNext()
+                step === 1
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-green-500 text-white hover:bg-green-600'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              {loading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Booking...</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-5 h-5" />
-                  <span>Book Appointment</span>
-                </div>
-              )}
+              Previous
             </button>
-          )}
+
+            {step < 4 ? (
+              <button
+                onClick={() => setStep(step + 1)}
+                disabled={!canProceedToNext()}
+                className={`px-6 py-3 rounded-lg font-medium ${
+                  canProceedToNext()
+                    ? 'bg-red-500 text-white hover:bg-red-600'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                onClick={handleBooking}
+                disabled={loading || !canProceedToNext()}
+                className={`px-8 py-3 rounded-lg font-medium ${
+                  loading || !canProceedToNext()
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-500 text-white hover:bg-green-600'
+                }`}
+              >
+                {loading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Booking...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-5 h-5" />
+                    <span>Book Appointment</span>
+                  </div>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </RoleLayout>
   );
 };
 

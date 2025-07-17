@@ -42,7 +42,7 @@ class AppointmentService {
   async getAppointments(params = {}) {
     try {
       const response = await api.get('/appointments', { params });
-      return response.data;
+      return response.data.appointments || [];
     } catch (error) {
       throw this.handleError(error);
     }
@@ -68,11 +68,11 @@ class AppointmentService {
     }
   }
 
-  // Reschedule appointment
-  async rescheduleAppointment(appointmentId, newDate, reason) {
+    // Reschedule appointment (shared for both doctor & family)
+  async rescheduleAppointment(appointmentId, { newDateTime, reason }) {
     try {
       const response = await api.put(`/appointments/${appointmentId}/reschedule`, {
-        newDate,
+        newDateTime,
         reason
       });
       return response.data;
@@ -80,6 +80,7 @@ class AppointmentService {
       throw this.handleError(error);
     }
   }
+
 
   // Get elder summary for appointment
   async getElderSummary(elderId) {

@@ -1,4 +1,5 @@
-// backend/server.js - Updated with proper error checking
+// backend/server.js - Updated with familyDoctors route
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -130,7 +131,6 @@ app.set('io', io);
 app.use((error, req, res, next) => {
   console.error('Global error handler:', error);
   
-  // Handle specific error types
   if (error.name === 'SequelizeValidationError') {
     return res.status(400).json({
       success: false,
@@ -150,7 +150,6 @@ app.use((error, req, res, next) => {
     });
   }
   
-  // Default error response
   res.status(500).json({ 
     success: false,
     message: process.env.NODE_ENV === 'production' 
@@ -168,19 +167,17 @@ app.use('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // Database connection and server start
 const startServer = async () => {
   try {
-    // Test database connection
     await sequelize.authenticate();
     console.log('✅ Database connected successfully');
     
-    // Sync database models
     await sequelize.sync({ alter: true });
     console.log('✅ Database models synchronized');
     
-    // Start server
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);

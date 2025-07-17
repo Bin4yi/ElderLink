@@ -26,6 +26,8 @@ import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
 // Family
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
 import AppointmentList from './components/family/appointments/AppointmentList';
+import Doctors from './components/family/doctors/Doctors';
+import DoctorAssignment from './components/family/doctors/DoctorAssignment'; // NEW IMPORT
 
 // Pharmacy
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
@@ -58,17 +60,6 @@ import HealthReports from './components/staff/reports/HealthReports';
 
 // Elder
 import ElderDashboard from './components/Elder/dashboard/Elder';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#667eea',
-    },
-    secondary: {
-      main: '#764ba2',
-    },
-  },
-});
 
 function App() {
   return (
@@ -117,7 +108,9 @@ function App() {
                   <Route path="/mental-health/assessments" element={<MentalHealthAssessments />} />
                   <Route path="/mental-health/resources" element={<MentalHealthResources />} />
                   <Route path="/mental-health/therapy-sessions" element={<MentalHealthTherapySessions />} />
-                  
+                  <Route path="/family/doctors" element={<Doctors />} />
+              <Route path="/family/doctor-assignment" element={<DoctorAssignment />} /> {/* NEW ROUTE */}
+              
                   {/* Staff routes */}
                   <Route path="/staff/dashboard" element={<StaffDashboard />} />
                   <Route path="/staff/alerts" element={<AlertsManagement />} />
@@ -129,6 +122,7 @@ function App() {
                   
                   {/* Elder routes */}
                   <Route path="/elder/dashboard" element={<ElderDashboard />} />
+              <Route path="/appointment-booking" element={<AppointmentBooking />} />
                 </Routes>
                 
                 {/* Toast notifications */}
