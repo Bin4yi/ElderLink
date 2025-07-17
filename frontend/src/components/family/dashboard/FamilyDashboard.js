@@ -1,7 +1,7 @@
 // frontend/src/pages/Dashboard.js (UPDATED for multiple subscriptions + Appointment sidebar)
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, CreditCard, Bell, Calendar, TrendingUp } from 'lucide-react';
+import { Plus, Users, CreditCard, Bell, Calendar, TrendingUp, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Changed: Using RoleLayout like doctor dashboard (consistent sidebar style)
@@ -13,6 +13,7 @@ import ElderList from '../elder/ElderList';
 import ElderProfile from '../elder/ElderProfile';
 import SubscriptionStatus from '../subscription/SubscriptionStatus';
 import AppointmentList from '../appointments/AppointmentList';
+import StaffAssignment from '../staff/StaffAssignment';
 
 // Services
 import { subscriptionService } from '../../../services/subscription';
@@ -141,6 +142,15 @@ const FamilyDashboard = () => {
     setCurrentView('add-elder');
   };
 
+  const handleStaffAssignment = () => {
+    requireSubscription(
+      () => {
+        setCurrentView('staff-assignment');
+      },
+      'You need an active subscription to assign staff to elders'
+    );
+  };
+
   if (loading) {
     return <Loading text="Loading dashboard..." />;
   }
@@ -202,6 +212,19 @@ const FamilyDashboard = () => {
               ← Back to Dashboard
             </button>
             <AppointmentList />
+          </div>
+        );
+
+      case 'staff-assignment':
+        return (
+          <div className="space-y-6">
+            <button
+              onClick={() => setCurrentView('overview')}
+              className="text-red-500 hover:text-red-600 font-medium"
+            >
+              ← Back to Dashboard
+            </button>
+            <StaffAssignment />
           </div>
         );
       
@@ -311,6 +334,27 @@ const FamilyDashboard = () => {
                 </div>
               )}
 
+              {/* Add Staff Assignment Card */}
+              <button 
+                onClick={handleStaffAssignment}
+                className={`bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group ${
+                  !hasValidSubscription() ? 'opacity-50' : ''
+                }`}
+              >
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                    <UserCheck className="w-6 h-6 text-purple-500" />
+                  </div>
+                  {!hasValidSubscription() && (
+                    <div className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                      Subscription Required
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Assign Staff</h3>
+                <p className="text-gray-600">Assign dedicated staff members to your elders</p>
+              </button>
+
               <button 
                 onClick={handleScheduleCheckup}
                 className={`bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group ${
@@ -382,14 +426,21 @@ const FamilyDashboard = () => {
   const sidebarItems = [
     { key: 'overview', label: 'Dashboard', icon: Users, onClick: () => setCurrentView('overview') },
     { key: 'appointments', label: 'Appointments', icon: Calendar, onClick: () => setCurrentView('appointments') },
+    { key: 'staff-assignment', label: 'Staff Assignment', icon: UserCheck, onClick: () => setCurrentView('staff-assignment') },
     { key: 'packages', label: 'Packages', icon: CreditCard, onClick: () => setCurrentView('packages') },
     { key: 'add-elder', label: 'Add Elder', icon: Plus, onClick: handleAddElderClick }
   ];
 
   return (
     <RoleLayout
-      title="Family Dashboard"
-      sidebarItems={sidebarItems}
+      role="family"
+      sidebarItems={[
+        { key: 'overview', label: 'Dashboard', icon: Users, onClick: () => setCurrentView('overview') },
+        { key: 'appointments', label: 'Appointments', icon: Calendar, onClick: () => setCurrentView('appointments') },
+        { key: 'staff-assignment', label: 'Staff Assignment', icon: UserCheck, onClick: () => setCurrentView('staff-assignment') },
+        { key: 'packages', label: 'Packages', icon: CreditCard, onClick: () => setCurrentView('packages') },
+        { key: 'add-elder', label: 'Add Elder', icon: Plus, onClick: handleAddElderClick }
+      ]}
       currentView={currentView}
     >
       {renderContent()}

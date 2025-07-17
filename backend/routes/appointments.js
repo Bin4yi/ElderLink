@@ -1,145 +1,109 @@
 // backend/routes/appointments.js
 const express = require('express');
 const router = express.Router();
+const { authenticate, authorize } = require('../middleware/auth');
 
-// Import middleware - make sure this path is correct
-const { authenticate } = require('../middleware/auth');
-
-// Import models
-const { User, Doctor, Appointment, Elder } = require('../models');
-const { Op } = require('sequelize');
-
-// Test route (no auth required for testing)
+// Test route
 router.get('/test', (req, res) => {
   res.json({
     success: true,
-    message: 'Appointments route is working',
+    message: 'Family appointments route is working',
     timestamp: new Date().toISOString()
   });
 });
 
-// Get available doctors
-router.get('/doctors', authenticate, async (req, res) => {
+// Get available doctors for appointment booking
+router.get('/doctors', authenticate, authorize('family_member'), async (req, res) => {
   try {
-    console.log('🔄 Getting available doctors...');
-    
-    // Get doctors from doctors table with user info
-    const doctors = await Doctor.findAll({
-      where: {
-        isActive: true
+    // Mock data for now - replace with actual database query
+    const doctors = [
+      {
+        id: 1,
+        specialization: 'General Medicine',
+        experience: 15,
+        consultationFee: 50,
+        rating: 4.8,
+        languages: ['English', 'Spanish'],
+        user: {
+          id: 101,
+          firstName: 'John',
+          lastName: 'Smith',
+          email: 'dr.john@elderlink.com',
+          profileImage: null
+        }
       },
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['firstName', 'lastName', 'email', 'profileImage', 'phone']
-      }]
-    });
-
-    console.log(`✅ Found ${doctors.length} doctors`);
-
-    // Transform the data for frontend
-    const doctorsList = doctors.map(doctor => ({
-      id: doctor.id,
-      userId: doctor.userId,
-      specialization: doctor.specialization,
-      experience: doctor.experience,
-      consultationFee: doctor.consultationFee,
-      licenseNumber: doctor.licenseNumber,
-      verificationStatus: doctor.verificationStatus,
-      user: {
-        firstName: doctor.user.firstName,
-        lastName: doctor.user.lastName,
-        email: doctor.user.email,
-        profileImage: doctor.user.profileImage,
-        phone: doctor.user.phone
+      {
+        id: 2,
+        specialization: 'Cardiology',
+        experience: 20,
+        consultationFee: 75,
+        rating: 4.9,
+        languages: ['English'],
+        user: {
+          id: 102,
+          firstName: 'Sarah',
+          lastName: 'Johnson',
+          email: 'dr.sarah@elderlink.com',
+          profileImage: null
+        }
       }
-    }));
+    ];
 
     res.json({
       success: true,
-      doctors: doctorsList,
-      count: doctorsList.length
+      message: 'Available doctors retrieved successfully',
+      doctors: doctors
     });
-
   } catch (error) {
-    console.error('❌ Error fetching doctors:', error);
+    console.error('Error fetching doctors:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch available doctors',
-      error: error.message
+      message: 'Failed to fetch available doctors'
     });
   }
 });
 
-// Get doctor availability
-router.get('/doctors/:doctorId/availability', authenticate, async (req, res) => {
+// Get doctor availability for specific date
+router.get('/doctors/:doctorId/availability', authenticate, authorize('family_member'), async (req, res) => {
   try {
     const { doctorId } = req.params;
     const { date } = req.query;
 
-    if (!date) {
-      return res.status(400).json({
-        success: false,
-        message: 'Date is required'
-      });
-    }
-
-    // Generate available time slots (9 AM to 5 PM, 30-minute slots)
-    const availableSlots = [];
-    const startHour = 9;
-    const endHour = 17;
-    const slotDuration = 30;
-
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += slotDuration) {
-        const timeSlot = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        availableSlots.push({
-          startTime: timeSlot,
-          endTime: `${Math.floor((hour * 60 + minute + slotDuration) / 60).toString().padStart(2, '0')}:${((hour * 60 + minute + slotDuration) % 60).toString().padStart(2, '0')}`,
-          available: true
-        });
-      }
-    }
+    // Mock availability data - replace with actual database query
+    const availableSlots = [
+      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+      '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
+    ];
 
     res.json({
       success: true,
+      message: 'Doctor availability retrieved successfully',
+      availableSlots: availableSlots,
       date: date,
-      doctorId: doctorId,
-      availableSlots: availableSlots
+      doctorId: doctorId
     });
-
   } catch (error) {
     console.error('Error fetching doctor availability:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch doctor availability',
-      error: error.message
+      message: 'Failed to fetch doctor availability'
     });
   }
 });
 
-// Book appointment
-router.post('/', authenticate, async (req, res) => {
+// Book appointment (Family member)
+router.post('/', authenticate, authorize('family_member'), async (req, res) => {
   try {
     const {
       elderId,
       doctorId,
       appointmentDate,
-      duration = 30,
-      type = 'consultation',
-      priority = 'medium',
       reason,
       symptoms,
-      notes
+      notes,
+      priority,
+      type
     } = req.body;
-
-    console.log('📝 Booking appointment:', {
-      elderId,
-      doctorId,
-      appointmentDate,
-      reason,
-      familyMemberId: req.user.id
-    });
 
     // Validate required fields
     if (!elderId || !doctorId || !appointmentDate || !reason) {
@@ -149,95 +113,208 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
-    // Create appointment
-    const appointment = await Appointment.create({
+    // Mock appointment creation - replace with actual database insertion
+    const newAppointment = {
+      id: Date.now(), // Mock ID
+      elderId,
+      doctorId,
       familyMemberId: req.user.id,
-      elderId: elderId,
-      doctorId: doctorId,
       appointmentDate: new Date(appointmentDate),
-      duration: duration,
-      type: type,
-      priority: priority,
-      reason: reason,
-      symptoms: symptoms,
-      notes: notes,
-      status: 'pending'
-    });
+      reason,
+      symptoms,
+      notes,
+      priority: priority || 'medium',
+      type: type || 'consultation',
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
 
-    console.log('✅ Appointment created:', appointment.id);
+    console.log('📅 New appointment created:', newAppointment);
 
     res.status(201).json({
       success: true,
       message: 'Appointment booked successfully',
-      appointment: appointment
+      appointment: newAppointment
     });
-
   } catch (error) {
-    console.error('❌ Error booking appointment:', error);
+    console.error('Error booking appointment:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to book appointment',
-      error: error.message
+      message: 'Failed to book appointment'
     });
   }
 });
 
-// Get appointments for current user
-router.get('/', authenticate, async (req, res) => {
+// Get family member's appointments
+router.get('/', authenticate, authorize('family_member'), async (req, res) => {
   try {
-    const { status, date, doctorId } = req.query;
-    const whereClause = {};
+    const { status, page = 1, limit = 10 } = req.query;
 
-    // Filter by family member
-    if (req.user.role === 'family_member') {
-      whereClause.familyMemberId = req.user.id;
-    }
-
-    // Additional filters
-    if (status) whereClause.status = status;
-    if (date) {
-      whereClause.appointmentDate = {
-        [Op.between]: [
-          new Date(date + 'T00:00:00.000Z'),
-          new Date(date + 'T23:59:59.999Z')
-        ]
-      };
-    }
-    if (doctorId) whereClause.doctorId = doctorId;
-
-    const appointments = await Appointment.findAll({
-      where: whereClause,
-      include: [
-        {
-          model: Elder,
-          as: 'elder',
-          attributes: ['firstName', 'lastName', 'dateOfBirth', 'gender']
+    // Mock appointments data - replace with actual database query
+    const appointments = [
+      {
+        id: 1,
+        elderId: 1,
+        doctorId: 1,
+        familyMemberId: req.user.id,
+        appointmentDate: new Date('2024-01-15T10:00:00'),
+        reason: 'Regular checkup',
+        symptoms: 'Mild fatigue',
+        notes: 'Monthly health monitoring',
+        priority: 'medium',
+        type: 'consultation',
+        status: 'approved',
+        elder: {
+          id: 1,
+          firstName: 'John',
+          lastName: 'Elder',
+          dateOfBirth: '1950-01-01',
+          gender: 'male'
         },
-        {
-          model: Doctor,
-          as: 'doctor',
-          include: [{
-            model: User,
-            as: 'user',
-            attributes: ['firstName', 'lastName', 'email', 'profileImage']
-          }]
+        doctor: {
+          id: 1,
+          specialization: 'General Medicine',
+          user: {
+            id: 101,
+            firstName: 'Dr. John',
+            lastName: 'Smith'
+          }
         }
-      ],
-      order: [['appointmentDate', 'ASC']]
-    });
+      },
+      {
+        id: 2,
+        elderId: 1,
+        doctorId: 2,
+        familyMemberId: req.user.id,
+        appointmentDate: new Date('2024-01-20T14:30:00'),
+        reason: 'Heart checkup',
+        symptoms: 'Chest discomfort',
+        notes: 'Follow-up appointment',
+        priority: 'high',
+        type: 'follow-up',
+        status: 'pending',
+        elder: {
+          id: 1,
+          firstName: 'John',
+          lastName: 'Elder',
+          dateOfBirth: '1950-01-01',
+          gender: 'male'
+        },
+        doctor: {
+          id: 2,
+          specialization: 'Cardiology',
+          user: {
+            id: 102,
+            firstName: 'Dr. Sarah',
+            lastName: 'Johnson'
+          }
+        }
+      }
+    ];
+
+    // Filter by status if provided
+    let filteredAppointments = appointments;
+    if (status && status !== 'all') {
+      filteredAppointments = appointments.filter(apt => apt.status === status);
+    }
 
     res.json({
       success: true,
-      appointments: appointments,
-      count: appointments.length
+      message: 'Appointments retrieved successfully',
+      appointments: filteredAppointments,
+      pagination: {
+        total: filteredAppointments.length,
+        page: parseInt(page),
+        pages: Math.ceil(filteredAppointments.length / limit)
+      }
     });
-
   } catch (error) {
     console.error('Error fetching appointments:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch appointments',
-      error: error.message
+      message: 'Failed to fetch appointments'
+    });
+  }
+});
+
+// Get appointment by ID
+router.get('/:appointmentId', authenticate, authorize('family_member'), async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+
+    // Mock appointment data - replace with actual database query
+    const appointment = {
+      id: parseInt(appointmentId),
+      elderId: 1,
+      doctorId: 1,
+      familyMemberId: req.user.id,
+      appointmentDate: new Date('2024-01-15T10:00:00'),
+      reason: 'Regular checkup',
+      symptoms: 'Mild fatigue',
+      notes: 'Monthly health monitoring',
+      priority: 'medium',
+      type: 'consultation',
+      status: 'approved',
+      elder: {
+        id: 1,
+        firstName: 'John',
+        lastName: 'Elder',
+        dateOfBirth: '1950-01-01',
+        gender: 'male'
+      },
+      doctor: {
+        id: 1,
+        specialization: 'General Medicine',
+        user: {
+          id: 101,
+          firstName: 'Dr. John',
+          lastName: 'Smith'
+        }
+      }
+    };
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Appointment retrieved successfully',
+      appointment: appointment
+    });
+  } catch (error) {
+    console.error('Error fetching appointment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch appointment'
+    });
+  }
+});
+
+// Cancel appointment
+router.put('/:appointmentId/cancel', authenticate, authorize('family_member'), async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const { reason } = req.body;
+
+    // Mock cancellation - replace with actual database update
+    console.log(`📅 Cancelling appointment ${appointmentId} with reason: ${reason}`);
+
+    res.json({
+      success: true,
+      message: 'Appointment cancelled successfully',
+      appointmentId: appointmentId,
+      cancellationReason: reason
+    });
+  } catch (error) {
+    console.error('Error cancelling appointment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel appointment'
     });
   }
 });
@@ -284,20 +361,3 @@ router.put('/:id/reschedule', authenticate, async (req, res) => {
 
 
 module.exports = router;
-
-
-
-
-// backend/routes/index.js (Add to main router)
-// Add these lines to your main route index file:
-
-/*
-const appointmentRoutes = require('./appointments');
-const doctorAppointmentRoutes = require('./doctorAppointments');
-
-// Family member appointment routes
-app.use('/api/appointments', appointmentRoutes);
-
-// Doctor appointment routes
-app.use('/api/doctor', doctorAppointmentRoutes);
-*/

@@ -1,54 +1,59 @@
 // src/components/auth/Login.js
-import React, { useState } from 'react';
-import { Eye, EyeOff, Loader } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { Eye, EyeOff, Loader } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Login = ({ onClose, onSwitchToRegister }) => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
     // Clear error when user starts typing
-    if (error) setError('');
+    if (error) setError("");
   };
 
   // Universal redirect function based on user role
   const redirectUserBasedOnRole = (user) => {
-    let redirectPath = '/dashboard'; // default
+    let redirectPath = "/dashboard"; // default
 
     switch (user.role) {
-      case 'admin':
-        redirectPath = '/admin/dashboard';
+      case "admin":
+        redirectPath = "/admin/dashboard";
         break;
-      case 'doctor':
-        redirectPath = '/doctor/dashboard';
+      case "doctor":
+        redirectPath = "/doctor/dashboard";
         break;
-      case 'staff':
-        redirectPath = '/staff/dashboard';
+      case "staff":
+        redirectPath = "/staff/dashboard";
         break;
-      case 'pharmacist':
-        redirectPath = '/pharmacy/dashboard';
+
+      case "pharmacist":
+        redirectPath = "/pharmacy/dashboard";
+
         break;
-      case 'family_member':
-        redirectPath = '/family/dashboard';
+      case "mental_health_consultant":
+        redirectPath = "/mental-health/dashboard";
         break;
-      case 'elder':
-        redirectPath = '/elder/dashboard';
+      case "family_member":
+        redirectPath = "/family/dashboard";
+        break;
+      case "elder":
+        redirectPath = "/elder/dashboard";
         break;
       default:
-        redirectPath = '/family/dashboard';
+        redirectPath = "/family/dashboard";
     }
 
     // Use React Router navigate instead of window.location.href
@@ -58,26 +63,26 @@ const Login = ({ onClose, onSwitchToRegister }) => {
   const handleSubmit = async (e) => {
     e.preventDefault(); // Prevent form submission and page reload
     e.stopPropagation(); // Stop event bubbling
-    
-    setError('');
+
+    setError("");
     setIsLoading(true);
 
     try {
-      console.log('Attempting login with:', formData.email);
+      console.log("Attempting login with:", formData.email);
       const response = await login(formData);
-      console.log('Login successful:', response);
-      
+      console.log("Login successful:", response);
+
       // Close modal if it exists
       if (onClose) {
         onClose();
       }
-      
+
       // Redirect based on user role
       redirectUserBasedOnRole(response.user);
-      
     } catch (error) {
-      console.error('Login error:', error);
-      const message = error.response?.data?.message || 'Login failed. Please try again.';
+      console.error("Login error:", error);
+      const message =
+        error.response?.data?.message || "Login failed. Please try again.";
       setError(message);
     } finally {
       setIsLoading(false);
@@ -116,7 +121,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
           </label>
           <div className="relative">
             <input
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleChange}
@@ -132,7 +137,11 @@ const Login = ({ onClose, onSwitchToRegister }) => {
               className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
               disabled={isLoading}
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
@@ -156,7 +165,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
         {onSwitchToRegister && (
           <div className="text-center">
             <p className="text-gray-600">
-              Don't have an account?{' '}
+              Don't have an account?{" "}
               <button
                 type="button"
                 onClick={onSwitchToRegister}
@@ -176,24 +185,61 @@ const Login = ({ onClose, onSwitchToRegister }) => {
               Sample Login Credentials (Development Only)
             </summary>
             <div className="space-y-2 text-gray-600">
-              <div className="cursor-pointer hover:bg-gray-100 p-2 rounded" 
-                   onClick={() => setFormData({email: 'admin@elderlink.com', password: 'Admin@123456'})}>
+              <div
+                className="cursor-pointer hover:bg-gray-100 p-2 rounded"
+                onClick={() =>
+                  setFormData({
+                    email: "admin@elderlink.com",
+                    password: "Admin@123456",
+                  })
+                }
+              >
                 <strong>Admin:</strong> admin@elderlink.com / Admin@123456
               </div>
-              <div className="cursor-pointer hover:bg-gray-100 p-2 rounded"
-                   onClick={() => setFormData({email: 'dr.johnson@elderlink.com', password: 'Doctor@123'})}>
+              <div
+                className="cursor-pointer hover:bg-gray-100 p-2 rounded"
+                onClick={() =>
+                  setFormData({
+                    email: "dr.johnson@elderlink.com",
+                    password: "Doctor@123",
+                  })
+                }
+              >
                 <strong>Doctor:</strong> dr.johnson@elderlink.com / Doctor@123
               </div>
-              <div className="cursor-pointer hover:bg-gray-100 p-2 rounded"
-                   onClick={() => setFormData({email: 'jessica.thompson@elderlink.com', password: 'Staff@123'})}>
-                <strong>Staff:</strong> jessica.thompson@elderlink.com / Staff@123
+              <div
+                className="cursor-pointer hover:bg-gray-100 p-2 rounded"
+                onClick={() =>
+                  setFormData({
+                    email: "jessica.thompson@elderlink.com",
+                    password: "Staff@123",
+                  })
+                }
+              >
+                <strong>Staff:</strong> jessica.thompson@elderlink.com /
+                Staff@123
               </div>
-              <div className="cursor-pointer hover:bg-gray-100 p-2 rounded"
-                   onClick={() => setFormData({email: 'pharmacist.lee@elderlink.com', password: 'Pharm@123'})}>
-                <strong>Pharmacist:</strong> pharmacist.lee@elderlink.com / Pharm@123
+              <div
+                className="cursor-pointer hover:bg-gray-100 p-2 rounded"
+                onClick={() =>
+                  setFormData({
+                    email: "pharmacist.lee@elderlink.com",
+                    password: "Pharm@123",
+                  })
+                }
+              >
+                <strong>Pharmacist:</strong> pharmacist.lee@elderlink.com /
+                Pharm@123
               </div>
-              <div className="cursor-pointer hover:bg-gray-100 p-2 rounded"
-                   onClick={() => setFormData({email: 'john.smith@example.com', password: 'Family@123'})}>
+              <div
+                className="cursor-pointer hover:bg-gray-100 p-2 rounded"
+                onClick={() =>
+                  setFormData({
+                    email: "john.smith@example.com",
+                    password: "Family@123",
+                  })
+                }
+              >
                 <strong>Family:</strong> john.smith@example.com / Family@123
               </div>
             </div>

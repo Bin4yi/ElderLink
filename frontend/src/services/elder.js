@@ -200,67 +200,189 @@ export const elderService = {
     }
   },
 
+  // Get all elders for staff (only assigned elders)
+  getAllEldersForStaff: async () => {
+    try {
+      console.log('🔍 ElderService: Getting assigned elders for staff...');
+      const response = await api.get('/elders/staff/assigned');
+      console.log('✅ ElderService: Assigned elders response:', response.data);
+      
+      return {
+        success: true,
+        elders: response.data.elders || [],
+        total: response.data.total || 0
+      };
+    } catch (error) {
+      console.error('❌ ElderService: Failed to get assigned elders:', error);
+      throw error;
+    }
+  },
+
+  // Get all elders with enhanced debugging
   getElders: async () => {
     try {
-      const response = await api.get('/elders');
-      return response.data;
-    } catch (error) {
-      console.error('Get elders error:', error);
-      return { elders: [] };
-    }
-  },
-
-  updateElder: async (elderId, elderData) => {
-    try {
-      const formData = new FormData();
+      console.log('🔍 ElderService: Getting elders...');
+      console.log('🔍 ElderService: API base URL:', api.defaults.baseURL);
       
-      Object.keys(elderData).forEach(key => {
-        if (elderData[key] !== null && elderData[key] !== undefined && elderData[key] !== '') {
-          formData.append(key, elderData[key]);
+      const response = await api.get('/elders');
+      console.log('✅ ElderService: Raw response:', response);
+      console.log('✅ ElderService: Response data:', response.data);
+      console.log('✅ ElderService: Response status:', response.status);
+      
+      // Handle different response structures
+      if (response.data) {
+        if (response.data.success && response.data.elders) {
+          console.log('✅ ElderService: Found elders in success response:', response.data.elders.length);
+          return {
+            success: true,
+            elders: response.data.elders,
+            count: response.data.count || response.data.elders.length
+          };
+        } else if (Array.isArray(response.data.elders)) {
+          console.log('✅ ElderService: Found elders in array response:', response.data.elders.length);
+          return {
+            success: true,
+            elders: response.data.elders,
+            count: response.data.elders.length
+          };
+        } else if (Array.isArray(response.data)) {
+          console.log('✅ ElderService: Found elders in direct array:', response.data.length);
+          return {
+            success: true,
+            elders: response.data,
+            count: response.data.length
+          };
+        } else {
+          console.log('⚠️ ElderService: Unexpected response structure:', response.data);
+          return {
+            success: false,
+            elders: [],
+            count: 0,
+            error: 'Unexpected response structure'
+          };
         }
-      });
+      } else {
+        console.log('❌ ElderService: No data in response');
+        return {
+          success: false,
+          elders: [],
+          count: 0,
+          error: 'No data in response'
+        };
+      }
+    } catch (error) {
+      console.error('❌ ElderService: Get elders error:', error);
+      console.error('❌ ElderService: Error response:', error.response?.data);
+      console.error('❌ ElderService: Error status:', error.response?.status);
+      
+      return {
+        success: false,
+        elders: [],
+        count: 0,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
 
-      const response = await api.put(`/elders/${elderId}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+  // Debug function to test the endpoint directly
+  debugGetElders: async () => {
+    try {
+      console.log('🧪 ElderService: Debug - Testing elders endpoint...');
+      const response = await api.get('/elders');
+      console.log('🧪 ElderService: Debug - Raw response:', response);
       return response.data;
     } catch (error) {
-      console.error('Update elder error:', error);
+      console.error('🧪 ElderService: Debug - Error:', error);
       throw error;
     }
   },
 
-  // NEW: Elder authentication methods
-  createElderLogin: async (elderId, credentials) => {
+  // Test API connection
+  testConnection: async () => {
     try {
-      const response = await api.post(`/elders/${elderId}/create-login`, credentials);
+      console.log('🧪 ElderService: Testing API connection...');
+      const response = await api.get('/auth/profile');
+      console.log('🧪 ElderService: Connection test result:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Create elder login error:', error);
+      console.error('🧪 ElderService: Connection test failed:', error);
       throw error;
     }
   },
 
-  toggleElderAccess: async (elderId, hasAccess) => {
+  // ✅ Fixed: Get all elders for health monitoring (for staff health reports)
+  getAllEldersForHealthMonitoring: async () => {
     try {
-      const response = await api.put(`/elders/${elderId}/toggle-access`, { hasAccess });
+      console.log('🔍 Getting all elders for health monitoring...');
+      
+      const response = await api.get('/elders/for-monitoring');
+      console.log('✅ All elders for health monitoring response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Toggle elder access error:', error);
+      console.error('❌ Failed to get all elders for health monitoring:', error);
+      
+      // ✅ Better error handling
+      if (error.response?.status === 404) {
+        // Return empty result for 404 instead of throwing
+        return {
+          success: true,
+          elders: [],
+          total: 0,
+          message: 'No elders found for health monitoring'
+        };
+      }
+      
       throw error;
     }
   },
 
-  // NEW: Get elder profile (for elder dashboard)
-  getElderProfile: async () => {
+  // ✅ Fixed: Get assigned elders for staff (for care management)
+  getAssignedEldersForStaff: async () => {
     try {
-      const response = await api.get('/elders/profile/me');
+      console.log('🔍 Getting assigned elders for staff...');
+      const response = await api.get('/elders/staff/assigned');
+      console.log('✅ Assigned elders for staff response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Get elder profile error:', error);
+      console.error('❌ Failed to get assigned elders for staff:', error);
+      
+      // ✅ Better error handling
+      if (error.response?.status === 404) {
+        return {
+          success: true,
+          elders: [],
+          total: 0,
+          message: 'No assigned elders found'
+        };
+      }
+      
       throw error;
     }
-  }
+  },
+
+  // ✅ Fixed: Use assigned elders for care management
+  getAllEldersForStaff: async () => {
+    try {
+      console.log('🔍 ElderService: Getting assigned elders for staff...');
+      const response = await api.get('/elders/staff/assigned');
+      console.log('✅ ElderService: Assigned elders response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ ElderService: Failed to get assigned elders:', error);
+      
+      // ✅ Better error handling
+      if (error.response?.status === 404) {
+        return {
+          success: true,
+          elders: [],
+          total: 0,
+          message: 'No assigned elders found'
+        };
+      }
+      
+      throw error;
+    }
+  },
+
+  // ...existing methods...
 };

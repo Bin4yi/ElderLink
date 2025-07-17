@@ -18,7 +18,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     if (currentPath.startsWith('/admin') || 
         currentPath.startsWith('/doctor') || 
         currentPath.startsWith('/staff') || 
-        currentPath.startsWith('/pharmacy')) {
+        currentPath.startsWith('/pharmacist')) {
       return <Navigate to="/staff" replace />;
     }
     // Otherwise redirect to main landing page
@@ -36,7 +36,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
       case 'staff':
         return <Navigate to="/staff/dashboard" replace />;
       case 'pharmacist':
-        return <Navigate to="/pharmacy/dashboard" replace />;
+        return <Navigate to="/pharmacist/dashboard" replace />;
       case 'family_member':
         return <Navigate to="/family/dashboard" replace />;
       case 'elder':
