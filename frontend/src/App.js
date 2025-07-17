@@ -27,6 +27,7 @@ import MedicalRecords from './components/doctor/records/MedicalRecords';
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
 import AppointmentList from './components/family/appointments/AppointmentList'; // ADD THIS IMPORT
 import Doctors from './components/family/doctors/Doctors';
+import DoctorAssignment from './components/family/doctors/DoctorAssignment'; // NEW IMPORT
 
 // Pharmacy Components
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
@@ -65,6 +66,7 @@ function App() {
               {/* Family routes - ADD THIS */}
               <Route path="/family/appointments" element={<AppointmentList />} />
               <Route path="/family/doctors" element={<Doctors />} />
+              <Route path="/family/doctor-assignment" element={<DoctorAssignment />} /> {/* NEW ROUTE */}
               
               {/* Staff routes */}
               <Route path="/staff/care" element={<CareManagement />} />

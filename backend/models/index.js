@@ -1,18 +1,11 @@
 // backend/models/index.js (UPDATED with appointment system)
 const User = require('./User');
-const Subscription = require('./Subscription');
 const Elder = require('./Elder');
-const Notification = require('./Notification');
+const Subscription = require('./Subscription');
 const Doctor = require('./Doctor');
-
-// NEW: Appointment system models
-const Appointment = require('./Appointment');
-const DoctorSchedule = require('./DoctorSchedule');
-const ScheduleException = require('./ScheduleException');
-const ConsultationRecord = require('./ConsultationRecord');
-const Prescription = require('./Prescription');
-const AppointmentNotification = require('./AppointmentNotification');
-const ElderMedicalHistory = require('./ElderMedicalHistory');
+const StaffAssignment = require('./StaffAssignment');
+const FamilyDoctorAssignment = require('./FamilyDoctorAssignment');
+const AssignmentHistory = require('./AssignmentHistory');
 
 // ========== EXISTING ASSOCIATIONS ==========
 
@@ -254,19 +247,66 @@ User.hasMany(ElderMedicalHistory, {
   as: 'createdMedicalRecords'
 });
 
+// Family Doctor Assignment associations
+FamilyDoctorAssignment.belongsTo(User, {
+  foreignKey: 'familyMemberId',
+  as: 'familyMember'
+});
+
+FamilyDoctorAssignment.belongsTo(Doctor, {
+  foreignKey: 'doctorId',
+  as: 'doctor'
+});
+
+FamilyDoctorAssignment.belongsTo(Elder, {
+  foreignKey: 'elderId',
+  as: 'elder'
+});
+
+FamilyDoctorAssignment.belongsTo(User, {
+  foreignKey: 'assignedBy',
+  as: 'assignedByUser'
+});
+
+// Reverse associations
+User.hasMany(FamilyDoctorAssignment, {
+  foreignKey: 'familyMemberId',
+  as: 'doctorAssignments'
+});
+
+Doctor.hasMany(FamilyDoctorAssignment, {
+  foreignKey: 'doctorId',
+  as: 'familyAssignments'
+});
+
+Elder.hasMany(FamilyDoctorAssignment, {
+  foreignKey: 'elderId',
+  as: 'doctorAssignments'
+});
+
+// Assignment History associations
+AssignmentHistory.belongsTo(FamilyDoctorAssignment, {
+  foreignKey: 'assignmentId',
+  as: 'assignment'
+});
+
+AssignmentHistory.belongsTo(User, {
+  foreignKey: 'actionBy',
+  as: 'actionByUser'
+});
+
+FamilyDoctorAssignment.hasMany(AssignmentHistory, {
+  foreignKey: 'assignmentId',
+  as: 'history'
+});
+
 // Export all models including new ones
 module.exports = {
   User,
-  Subscription,
   Elder,
-  Notification,
+  Subscription,
   Doctor,
-  // NEW: Appointment system models
-  Appointment,
-  DoctorSchedule,
-  ScheduleException,
-  ConsultationRecord,
-  Prescription,
-  AppointmentNotification,
-  ElderMedicalHistory
+  StaffAssignment,
+  FamilyDoctorAssignment,
+  AssignmentHistory
 };
