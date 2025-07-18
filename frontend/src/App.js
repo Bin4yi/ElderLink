@@ -22,6 +22,10 @@ import AdminPortal from './pages/AdminPortal';
 
 // Doctor
 import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
+import PatientList from './components/doctor/patients/PatientList';
+import AppointmentManagement from './components/doctor/appointments/AppointmentManagement';
+import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
+import MedicalRecords from './components/doctor/records/MedicalRecords';
 
 // Family
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
