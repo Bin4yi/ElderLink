@@ -4,12 +4,14 @@ import { doctorAppointmentService } from '../../../services/doctorAppointment';
 import toast from 'react-hot-toast';
 import RoleLayout from '../../common/RoleLayout';
 import Modal from '../../common/Modal'; // ✅ Make sure you have a Modal component created or use a simple custom one
+import DoctorScheduleManager from './DoctorScheduleManager';
 
 const AppointmentManagement = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [showScheduleManager, setShowScheduleManager] = useState(false);
 
   // 🔁 Added state for reschedule modal and fields
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
@@ -175,10 +177,34 @@ const AppointmentManagement = () => {
     a => !isToday(a.appointmentDate) && !(a.status === 'approved' && isFuture(a.appointmentDate))
   );
 
+  if (showScheduleManager) {
+    return (
+      <RoleLayout>
+        <div className="p-6">
+          <button
+            className="mb-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+            onClick={() => setShowScheduleManager(false)}
+          >
+            ← Back to Appointments
+          </button>
+          <DoctorScheduleManager />
+        </div>
+      </RoleLayout>
+    );
+  }
+
   return (
     <RoleLayout>
       <div className="p-6">
-        <h2 className="text-2xl font-bold mb-6">My Appointments</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">My Appointments</h2>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => setShowScheduleManager(true)}
+          >
+            Manage Availability
+          </button>
+        </div>
 
         {/* Filter buttons */}
         <div className="mb-6 flex gap-2 flex-wrap">

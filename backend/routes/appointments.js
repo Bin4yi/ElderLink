@@ -1,6 +1,7 @@
 // backend/routes/appointments.js
 const express = require('express');
 const router = express.Router();
+const AppointmentController = require('../controllers/appointmentController');
 const { authenticate, authorize } = require('../middleware/auth');
 
 // Test route
@@ -12,139 +13,16 @@ router.get('/test', (req, res) => {
   });
 });
 
-// Get available doctors for appointment booking
-router.get('/doctors', authenticate, authorize('family_member'), async (req, res) => {
-  try {
-    // Mock data for now - replace with actual database query
-    const doctors = [
-      {
-        id: 1,
-        specialization: 'General Medicine',
-        experience: 15,
-        consultationFee: 50,
-        rating: 4.8,
-        languages: ['English', 'Spanish'],
-        user: {
-          id: 101,
-          firstName: 'John',
-          lastName: 'Smith',
-          email: 'dr.john@elderlink.com',
-          profileImage: null
-        }
-      },
-      {
-        id: 2,
-        specialization: 'Cardiology',
-        experience: 20,
-        consultationFee: 75,
-        rating: 4.9,
-        languages: ['English'],
-        user: {
-          id: 102,
-          firstName: 'Sarah',
-          lastName: 'Johnson',
-          email: 'dr.sarah@elderlink.com',
-          profileImage: null
-        }
-      }
-    ];
+// Get available doctors (with specialization filter)
+router.get('/doctors', authenticate, AppointmentController.getAvailableDoctors);
 
-    res.json({
-      success: true,
-      message: 'Available doctors retrieved successfully',
-      doctors: doctors
-    });
-  } catch (error) {
-    console.error('Error fetching doctors:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch available doctors'
-    });
-  }
-});
+// Get doctor availability for a specific date
+router.get('/doctors/:doctorId/availability', authenticate, AppointmentController.getDoctorAvailability);
+router.get('/doctors/:doctorId/available-dates', authenticate, AppointmentController.getDoctorAvailableDates);
 
-// Get doctor availability for specific date
-router.get('/doctors/:doctorId/availability', authenticate, authorize('family_member'), async (req, res) => {
-  try {
-    const { doctorId } = req.params;
-    const { date } = req.query;
-
-    // Mock availability data - replace with actual database query
-    const availableSlots = [
-      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-      '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
-    ];
-
-    res.json({
-      success: true,
-      message: 'Doctor availability retrieved successfully',
-      availableSlots: availableSlots,
-      date: date,
-      doctorId: doctorId
-    });
-  } catch (error) {
-    console.error('Error fetching doctor availability:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch doctor availability'
-    });
-  }
-});
-
-// Book appointment (Family member)
-router.post('/', authenticate, authorize('family_member'), async (req, res) => {
-  try {
-    const {
-      elderId,
-      doctorId,
-      appointmentDate,
-      reason,
-      symptoms,
-      notes,
-      priority,
-      type
-    } = req.body;
-
-    // Validate required fields
-    if (!elderId || !doctorId || !appointmentDate || !reason) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: elderId, doctorId, appointmentDate, reason'
-      });
-    }
-
-    // Mock appointment creation - replace with actual database insertion
-    const newAppointment = {
-      id: Date.now(), // Mock ID
-      elderId,
-      doctorId,
-      familyMemberId: req.user.id,
-      appointmentDate: new Date(appointmentDate),
-      reason,
-      symptoms,
-      notes,
-      priority: priority || 'medium',
-      type: type || 'consultation',
-      status: 'pending',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    console.log('📅 New appointment created:', newAppointment);
-
-    res.status(201).json({
-      success: true,
-      message: 'Appointment booked successfully',
-      appointment: newAppointment
-    });
-  } catch (error) {
-    console.error('Error booking appointment:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to book appointment'
-    });
-  }
-});
+// Book appointment (with slot blocking)
+router.post('/', authenticate, authorize('family_member'), AppointmentController.bookAppointment);
+router.post('/:appointmentId/confirm-payment', authenticate, authorize('family_member'), AppointmentController.confirmPayment);
 
 // Get family member's appointments
 router.get('/', authenticate, authorize('family_member'), async (req, res) => {

@@ -1,7 +1,7 @@
 // frontend/src/services/doctorAppointment.js
 import api from './api';
 
-class DoctorAppointmentService {
+export const doctorAppointmentService = {
   // Get doctor's appointments
   async getDoctorAppointments(params = {}) {
     try {
@@ -20,7 +20,7 @@ class DoctorAppointmentService {
       console.error('Error fetching doctor appointments:', error);
       throw error;
     }
-  }
+  },
 
   // Review appointment (approve/reject)
   async reviewAppointment(appointmentId, action, notes = '') {
@@ -39,9 +39,9 @@ class DoctorAppointmentService {
       console.error('❌ Error reviewing appointment:', error);
       throw error;
     }
-  }
+  },
 
-   async rescheduleAppointment(appointmentId, data) {
+  async rescheduleAppointment(appointmentId, data) {
     try {
       const response = await api.patch(`/doctor/appointments/${appointmentId}/reschedule`, data);
       return response.data;
@@ -49,7 +49,7 @@ class DoctorAppointmentService {
       console.error('Error rescheduling appointment:', error);
       throw error;
     }
-  }
+  },
 
   // Get elder's medical summary
   async getElderMedicalSummary(elderId) {
@@ -60,7 +60,7 @@ class DoctorAppointmentService {
       console.error('Error fetching elder medical summary:', error);
       throw error;
     }
-  }
+  },
 
   // Complete appointment
   async completeAppointment(appointmentId, data) {
@@ -71,7 +71,7 @@ class DoctorAppointmentService {
       console.error('Error completing appointment:', error);
       throw error;
     }
-  }
+  },
 
   // Create prescription
   async createPrescription(appointmentId, prescriptionData) {
@@ -82,7 +82,7 @@ class DoctorAppointmentService {
       console.error('Error creating prescription:', error);
       throw error;
     }
-  }
+  },
 
   // Get consultation records
   async getConsultationRecords(params = {}) {
@@ -99,7 +99,7 @@ class DoctorAppointmentService {
       console.error('Error fetching consultation records:', error);
       throw error;
     }
-  }
+  },
 
   // Get dashboard stats
   async getDashboardStats() {
@@ -110,18 +110,13 @@ class DoctorAppointmentService {
       console.error('Error fetching dashboard stats:', error);
       throw error;
     }
-  }
+  },
 
   // Update schedule
-  async updateSchedule(scheduleData) {
-    try {
-      const response = await api.patch('/doctor/schedule', scheduleData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating schedule:', error);
-      throw error;
-    }
-  }
+  async updateSchedule(schedules) {
+    const response = await api.post('/doctor/schedule', { schedules });
+    return response.data;
+  },
 
   // Add schedule exception
   async addScheduleException(exceptionData) {
@@ -133,6 +128,4 @@ class DoctorAppointmentService {
       throw error;
     }
   }
-}
-
-export const doctorAppointmentService = new DoctorAppointmentService();
+};

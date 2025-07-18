@@ -1,10 +1,11 @@
 // frontend/src/components/appointments/AppointmentBooking.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, User, Stethoscope, AlertCircle, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import RoleLayout from '../../common/RoleLayout'; 
 import { appointmentService } from '../../../services/appointment'; // ✅ FIXED: Changed from '../../services/appointment'
 import { elderService } from '../../../services/elder'; // ✅ FIXED: Changed from '../../services/elder'
+import DoctorCalendarModal from './DoctorCalendarModal'; // Add this import
 
 const AppointmentBooking = ({ onBack, onSuccess }) => {
   const [step, setStep] = useState(1);
@@ -24,6 +25,12 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
   const [doctors, setDoctors] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [bookingTimer, setBookingTimer] = useState(900); // 15 min in seconds
+  const [appointmentId, setAppointmentId] = useState(null);
+  const [specializations, setSpecializations] = useState([]);
+  const [selectedSpecialization, setSelectedSpecialization] = useState('all');
+  const [showDoctorModal, setShowDoctorModal] = useState(false);
+  const timerRef = useRef(null);
 
   // Load initial data
   useEffect(() => {
@@ -43,11 +50,12 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
   const loadDoctors = async () => {
     try {
       console.log('🔄 Loading doctors...');
-      const response = await appointmentService.getAvailableDoctors();
+      const response = await appointmentService.getAvailableDoctors(selectedSpecialization);
       console.log('✅ Doctors API response:', response);
       
       if (response && response.doctors) {
         setDoctors(response.doctors);
+        setSpecializations(['all', ...(response.specializations || [])]);
         console.log(`✅ Set ${response.doctors.length} doctors`);
       } else {
         console.warn('⚠️ No doctors in response:', response);
@@ -97,11 +105,14 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
 
   const handleDoctorSelect = (doctor) => {
     setSelectedDoctor(doctor);
-    setSelectedTime('');
-    setAvailableSlots([]);
-    if (selectedDate) {
-      loadDoctorAvailability(doctor.id, selectedDate);
-    }
+    setShowDoctorModal(true);
+  };
+
+  const handleSlotSelect = (date, time) => {
+    setSelectedDate(date);
+    setSelectedTime(time);
+    setShowDoctorModal(false);
+    setStep(4); // Go to appointment details
   };
 
   const handleBooking = async () => {
@@ -124,14 +135,41 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
       };
 
       const response = await appointmentService.bookAppointment(bookingData);
-      
-      toast.success('Appointment booked successfully!');
-      onSuccess && onSuccess(response.appointment);
+      setAppointmentId(response.appointment.id);
+      setStep(5); // Go to payment step
+      startTimer();
     } catch (error) {
       toast.error(error.message || 'Failed to book appointment');
     } finally {
       setLoading(false);
     }
+  };
+
+  const startTimer = () => {
+    timerRef.current = setInterval(() => {
+      setBookingTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          handleExpire();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleExpire = () => {
+    toast.error('Payment window expired. Please select a slot again.');
+    setStep(2); // Go back to doctor selection
+    setSelectedTime('');
+    setAppointmentId(null);
+  };
+
+  const handlePaymentSuccess = async () => {
+    await appointmentService.confirmPayment(appointmentId);
+    clearInterval(timerRef.current);
+    toast.success('Appointment booked and payment confirmed!');
+    // ...proceed to confirmation screen...
   };
 
   const renderStepIndicator = () => (
@@ -214,9 +252,27 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
     </div>
   );
 
+  const renderSpecializationTags = () => (
+    <div className="flex flex-wrap gap-2 mb-4">
+      {specializations.map(spec => (
+        <button
+          key={spec}
+          onClick={() => {
+            setSelectedSpecialization(spec);
+            loadDoctors();
+          }}
+          className={`px-4 py-2 rounded-full border ${selectedSpecialization === spec ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+        >
+          {spec.charAt(0).toUpperCase() + spec.slice(1)}
+        </button>
+      ))}
+    </div>
+  );
+
   const renderDoctorSelection = () => (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold mb-6">Choose Doctor</h2>
+      {renderSpecializationTags()}
       {doctors.length === 0 ? (
         <div className="text-center py-12">
           <Stethoscope className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -318,14 +374,15 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
                   {availableSlots.map((slot, index) => (
                     <button
                       key={index}
-                      onClick={() => setSelectedTime(slot.startTime)}
-                      className={`p-3 text-sm border rounded-lg transition-all ${
-                        selectedTime === slot.startTime
-                          ? 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-red-300'
-                      }`}
+                      disabled={slot.status !== 'available'}
+                      className={`p-3 text-sm border rounded-lg ${
+                        slot.status === 'reserved' ? 'bg-yellow-100 text-yellow-500' : ''
+                      } ${slot.status === 'booked' ? 'bg-gray-200 text-gray-400' : ''}`}
+                      onClick={() => handleSlotSelect(selectedDate, slot.startTime)}
                     >
                       {slot.startTime}
+                      {slot.status === 'reserved' && <span className="ml-2 text-xs">(Reserved)</span>}
+                      {slot.status === 'booked' && <span className="ml-2 text-xs">(Booked)</span>}
                     </button>
                   ))}
                 </div>
@@ -547,6 +604,36 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
             )}
           </div>
         </div>
+
+        {/* Payment Step */}
+        {step === 5 && (
+          <div className="mt-8 p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4">Complete Payment</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Please complete the payment within the next{' '}
+              <span className="font-medium text-red-600">
+                {Math.floor(bookingTimer / 60)}:{(bookingTimer % 60).toString().padStart(2, '0')}
+              </span>{' '}
+              minutes to confirm your appointment.
+            </p>
+            
+            {/* Payment form/button here */}
+            <button
+              onClick={handlePaymentSuccess}
+              className="w-full px-6 py-3 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition-all"
+            >
+              Confirm Payment
+            </button>
+          </div>
+        )}
+
+        {showDoctorModal && selectedDoctor && (
+          <DoctorCalendarModal
+            doctor={selectedDoctor}
+            onClose={() => setShowDoctorModal(false)}
+            onSlotSelect={handleSlotSelect}
+          />
+        )}
       </div>
     </RoleLayout>
   );

@@ -87,6 +87,18 @@ const Appointment = sequelize.define('Appointment', {
   reminderSent: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  isBlocked: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  blockedUntil: {
+    type: DataTypes.DATE,
+    allowNull: true // Time until which the slot is blocked (15 min window)
+  },
+  paymentStatus: {
+    type: DataTypes.ENUM('pending', 'completed', 'expired'),
+    defaultValue: 'pending'
   }
 }, {
   tableName: 'Appointments',

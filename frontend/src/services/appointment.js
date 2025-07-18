@@ -7,9 +7,11 @@ class AppointmentService {
   
   
   // Get available doctors
-  async getAvailableDoctors() {
+  async getAvailableDoctors(specialization = 'all') {
     try {
-      const response = await api.get('/appointments/doctors');
+      const response = await api.get('/appointments/doctors', {
+        params: { specialization }
+      });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -329,6 +331,22 @@ class AppointmentService {
       return new Error('An unexpected error occurred');
     }
   }
+
+  // Confirm payment for appointment
+  async confirmPayment(appointmentId) {
+    try {
+      const response = await api.post(`/appointments/${appointmentId}/confirm-payment`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get doctor available dates
+  async getDoctorAvailableDates(doctorId) {
+    const response = await api.get(`/appointments/doctors/${doctorId}/available-dates`);
+    return response.data;
+  }
 }
 
 export const appointmentService = new AppointmentService();
@@ -360,5 +378,6 @@ export const {
   getPriorityColor,
   canCancelAppointment,
   canRescheduleAppointment,
-  generateTimeSlots
+  generateTimeSlots,
+  getDoctorAvailableDates
 } = appointmentService;

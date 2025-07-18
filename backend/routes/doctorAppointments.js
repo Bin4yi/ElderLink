@@ -409,4 +409,7 @@ router.post('/appointments/:appointmentId/prescriptions', authenticate, authoriz
   }
 });
 
+// Schedule appointment
+router.post('/schedule', authenticate, authorize('doctor'), DoctorAppointmentController.updateSchedule);
+
 module.exports = router;

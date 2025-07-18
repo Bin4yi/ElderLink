@@ -654,44 +654,27 @@ class DoctorAppointmentController {
   // Update doctor's schedule
   static async updateSchedule(req, res) {
     try {
-      const { schedules } = req.body;
+      const { schedules } = req.body; // [{date, startTime, endTime, isAvailable}]
+      const doctor = await Doctor.findOne({ where: { userId: req.user.id } });
+      if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
 
-      if (!schedules || !Array.isArray(schedules)) {
-        return res.status(400).json({ 
-          message: 'Schedules array is required' 
-        });
-      }
+      // Remove old schedules for these dates
+      const dates = schedules.map(s => s.date);
+      await DoctorSchedule.destroy({ where: { doctorId: doctor.id, date: dates } });
 
-      // Get doctor profile
-      const doctor = await Doctor.findOne({
-        where: { userId: req.user.id }
-      });
-
-      if (!doctor) {
-        return res.status(404).json({ 
-          message: 'Doctor profile not found' 
-        });
-      }
-
-      // Delete existing schedules
-      await DoctorSchedule.destroy({
-        where: { doctorId: doctor.id }
-      });
-
-      // Create new schedules
-      const newSchedules = schedules.map(schedule => ({
-        ...schedule,
-        doctorId: doctor.id
+      // Add new schedules
+      const newSchedules = schedules.map(s => ({
+        doctorId: doctor.id,
+        date: s.date,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        isAvailable: s.isAvailable
       }));
-
       await DoctorSchedule.bulkCreate(newSchedules);
 
-      res.json({
-        message: 'Schedule updated successfully'
-      });
+      res.json({ message: 'Schedule updated successfully' });
     } catch (error) {
-      console.error('Update schedule error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ message: 'Failed to update schedule' });
     }
   }
 
