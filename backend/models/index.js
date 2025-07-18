@@ -7,7 +7,11 @@ const Subscription = require('./Subscription');
 const HealthMonitoring = require('./HealthMonitoring');
 const Notification = require('./Notification');
 const StaffAssignment = require('./StaffAssignment'); // ✅ Changed from StaffAssignmentModel
-const DoctorAssignment = require('./DoctorAssignment'); // ✅ Add this
+const DoctorAssignment = require('./DoctorAssignment');
+const Doctor = require('./Doctor');
+const Appointment = require('./Appointment');
+const ConsultationRecord = require('./ConsultationRecord'); // ✅ Add this
+const Prescription = require('./Prescription');
 
 // Clear any existing associations to prevent conflicts
 const clearAssociations = (model) => {
@@ -29,6 +33,7 @@ User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
 User.hasMany(StaffAssignment, { foreignKey: 'staffId', as: 'staffAssignments' });
 User.hasMany(DoctorAssignment, { foreignKey: 'doctorId', as: 'doctorAssignments' }); // ✅ Add this
 User.hasMany(DoctorAssignment, { foreignKey: 'familyMemberId', as: 'familyDoctorAssignments' }); // ✅ Add this
+User.hasOne(Doctor, { foreignKey: 'userId', as: 'doctorProfile', onDelete: 'CASCADE'});
 
 // Elder associations
 Elder.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -61,6 +66,174 @@ DoctorAssignment.belongsTo(Elder, { foreignKey: 'elderId', as: 'elder' });
 DoctorAssignment.belongsTo(User, { foreignKey: 'doctorId', as: 'doctor' });
 DoctorAssignment.belongsTo(User, { foreignKey: 'familyMemberId', as: 'familyMember' });
 
+// Doctor associations
+Doctor.belongsTo(User, { foreignKey: 'userId', as: 'user'});
+Doctor.belongsTo(User, { foreignKey: 'verifiedBy', as: 'verifier'});
+
+// ========== NEW APPOINTMENT SYSTEM ASSOCIATIONS ==========
+
+// Appointment associations
+Appointment.belongsTo(User, {
+  foreignKey: 'familyMemberId',
+  as: 'familyMember'
+});
+
+Appointment.belongsTo(Elder, {
+  foreignKey: 'elderId',
+  as: 'elder'
+});
+
+Appointment.belongsTo(Doctor, {
+  foreignKey: 'doctorId',
+  as: 'doctor'
+});
+
+// Reverse associations for Appointments
+User.hasMany(Appointment, {
+  foreignKey: 'familyMemberId',
+  as: 'bookedAppointments'
+});
+
+Elder.hasMany(Appointment, {
+  foreignKey: 'elderId',
+  as: 'appointments'
+});
+
+Doctor.hasMany(Appointment, {
+  foreignKey: 'doctorId',
+  as: 'doctorAppointments'
+});
+
+// Doctor Schedule associations
+DoctorSchedule.belongsTo(Doctor, {
+  foreignKey: 'doctorId',
+  as: 'doctor'
+});
+
+Doctor.hasMany(DoctorSchedule, {
+  foreignKey: 'doctorId',
+  as: 'schedules'
+});
+
+// Schedule Exception associations
+ScheduleException.belongsTo(Doctor, {
+  foreignKey: 'doctorId',
+  as: 'doctor'
+});
+
+Doctor.hasMany(ScheduleException, {
+  foreignKey: 'doctorId',
+  as: 'scheduleExceptions'
+});
+
+// Consultation Record associations
+ConsultationRecord.belongsTo(Appointment, {
+  foreignKey: 'appointmentId',
+  as: 'appointment'
+});
+
+ConsultationRecord.belongsTo(Doctor, {
+  foreignKey: 'doctorId',
+  as: 'doctor'
+});
+
+ConsultationRecord.belongsTo(Elder, {
+  foreignKey: 'elderId',
+  as: 'elder'
+});
+
+// Reverse associations for Consultation Records
+Appointment.hasOne(ConsultationRecord, {
+  foreignKey: 'appointmentId',
+  as: 'consultationRecord'
+});
+
+Doctor.hasMany(ConsultationRecord, {
+  foreignKey: 'doctorId',
+  as: 'consultationRecords'
+});
+
+Elder.hasMany(ConsultationRecord, {
+  foreignKey: 'elderId',
+  as: 'consultationRecords'
+});
+
+// Prescription associations
+Prescription.belongsTo(ConsultationRecord, {
+  foreignKey: 'consultationId',
+  as: 'consultation'
+});
+
+Prescription.belongsTo(Doctor, {
+  foreignKey: 'doctorId',
+  as: 'doctor'
+});
+
+Prescription.belongsTo(Elder, {
+  foreignKey: 'elderId',
+  as: 'elder'
+});
+
+// Reverse associations for Prescriptions
+ConsultationRecord.hasMany(Prescription, {
+  foreignKey: 'consultationId',
+  as: 'prescriptions'
+});
+
+Doctor.hasMany(Prescription, {
+  foreignKey: 'doctorId',
+  as: 'prescriptions'
+});
+
+Elder.hasMany(Prescription, {
+  foreignKey: 'elderId',
+  as: 'prescriptions'
+});
+
+// Appointment Notification associations
+AppointmentNotification.belongsTo(Appointment, {
+  foreignKey: 'appointmentId',
+  as: 'appointment'
+});
+
+AppointmentNotification.belongsTo(User, {
+  foreignKey: 'recipientId',
+  as: 'recipient'
+});
+
+// Reverse associations for Appointment Notifications
+Appointment.hasMany(AppointmentNotification, {
+  foreignKey: 'appointmentId',
+  as: 'notifications'
+});
+
+User.hasMany(AppointmentNotification, {
+  foreignKey: 'recipientId',
+  as: 'appointmentNotifications'
+});
+
+// Elder Medical History associations
+ElderMedicalHistory.belongsTo(Elder, {
+  foreignKey: 'elderId',
+  as: 'elder'
+});
+
+ElderMedicalHistory.belongsTo(User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+
+// Reverse associations for Elder Medical History
+Elder.hasMany(ElderMedicalHistory, {
+  foreignKey: 'elderId',
+  as: 'medicalHistoryRecords' // Changed alias to avoid conflict
+});
+
+User.hasMany(ElderMedicalHistory, {
+  foreignKey: 'createdBy',
+  as: 'createdMedicalRecords'
+});
+
 module.exports = {
   sequelize,
   User,
@@ -69,5 +242,9 @@ module.exports = {
   HealthMonitoring,
   Notification,
   StaffAssignment,
-  DoctorAssignment // ✅ Add this
+  DoctorAssignment,
+  Appointment,
+  Doctor,
+  ConsultationRecord,
+  Prescription
 };
