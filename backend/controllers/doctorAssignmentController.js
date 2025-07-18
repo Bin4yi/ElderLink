@@ -208,47 +208,25 @@ class DoctorAssignmentController {
 
       console.log('🔄 Terminating assignment:', assignmentId, 'for family member:', familyMemberId);
 
-      // Find the elder with this assignment
-      const elders = await Elder.findAll({
-        where: { userId: familyMemberId }
+      // Find the assignment for this family member
+      const assignment = await DoctorAssignment.findOne({
+        where: {
+          id: assignmentId,
+          familyMemberId
+        }
       });
 
-      let targetElder = null;
-      let assignmentIndex = -1;
-
-      for (const elder of elders) {
-        const assignments = elder.doctorAssignmentData || [];  // ✅ Changed field name
-        assignmentIndex = assignments.findIndex(a => a.id === assignmentId);
-        
-        if (assignmentIndex !== -1) {
-          targetElder = elder;
-          break;
-        }
-      }
-
-      if (!targetElder || assignmentIndex === -1) {
+      if (!assignment) {
         return res.status(404).json({
           success: false,
           message: 'Assignment not found or not authorized'
         });
       }
 
-      // Update assignment status
-      const assignments = [...targetElder.doctorAssignmentData];  // ✅ Changed field name
-      assignments[assignmentIndex] = {
-        ...assignments[assignmentIndex],
-        status: 'terminated',
-        terminationDate: new Date(),
-        terminationReason: reason,
-        updatedAt: new Date()
-      };
-
-      // Update elder
-      await targetElder.update({
-        doctorAssignmentData: assignments  // ✅ Changed field name
-      });
-
-      console.log('✅ Assignment terminated');
+      assignment.status = 'terminated';
+      assignment.terminationDate = new Date();
+      assignment.terminationReason = reason;
+      await assignment.save();
 
       res.json({
         success: true,

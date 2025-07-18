@@ -49,10 +49,6 @@ router.get('/assignments/:assignmentId',
 );
 
 // Terminate assignment
-router.put('/assignments/:assignmentId/terminate', 
-  authenticate, 
-  authorize('family_member'), 
-  DoctorAssignmentController.terminateAssignment
-);
+router.put('/assignments/:assignmentId/terminate', authenticate, authorize('family_member'), DoctorAssignmentController.terminateAssignment);
 
 module.exports = router;
