@@ -87,7 +87,11 @@ function App() {
                   <Route path="/admin/portal" element={<AdminPortal />} />
                   
                   {/* Doctor routes */}
-                  <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+                  <Route path="/doctor/patients" element={<PatientList />} />
+                  <Route path="/doctor/appointments" element={<AppointmentManagement />} />
+                  <Route path="/doctor/consultations" element={<ConsultationHistory />} />
+                  <Route path="/doctor/records" element={<MedicalRecords />} />
+                  <Route path="/appointment-booking" element={<AppointmentBooking />} />
                   
                   {/* Family routes */}
                   <Route path="/family/dashboard" element={<FamilyDashboard />} />
