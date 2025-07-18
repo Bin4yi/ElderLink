@@ -319,4 +319,45 @@ router.put('/:appointmentId/cancel', authenticate, authorize('family_member'), a
   }
 });
 
+// Reschedule Appointment
+router.put('/:id/reschedule', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newDateTime, reason } = req.body;
+
+    if (!newDateTime) {
+      return res.status(400).json({ message: 'New appointment date/time is required' });
+    }
+
+    const appointment = await Appointment.findByPk(id);
+
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    // Optional: Prevent rescheduling within 24 hours
+    const now = new Date();
+    const newDate = new Date(newDateTime);
+    const hoursDiff = (newDate - now) / (1000 * 60 * 60);
+    if (hoursDiff < 24) {
+      return res.status(400).json({ message: 'Cannot reschedule less than 24 hours before appointment' });
+    }
+
+    const previousDate = appointment.appointmentDate;
+
+    // Update appointmentDate (and optionally updatedAt or add to logs)
+    appointment.appointmentDate = newDateTime;
+    await appointment.save();
+
+    // Optionally, log the reschedule action (if you have a log model/table)
+    // await AppointmentLog.create({ appointmentId: id, action: 'reschedule', previousDate, newDate: newDateTime, reason, userId: req.user.id });
+
+    res.json({ success: true, message: 'Appointment rescheduled successfully' });
+  } catch (error) {
+    console.error('❌ Reschedule error:', error);
+    res.status(500).json({ message: 'Failed to reschedule appointment' });
+  }
+});
+
+
 module.exports = router;

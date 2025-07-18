@@ -4,22 +4,26 @@ const sequelize = require('../config/database');
 const User = require('./User');
 const Elder = require('./Elder');
 const Subscription = require('./Subscription');
-const HealthMonitoring = require('./HealthMonitoring');
+const Elder = require('./Elder');
 const Notification = require('./Notification');
+
 const StaffAssignment = require('./StaffAssignment'); // ✅ Changed from StaffAssignmentModel
 const DoctorAssignment = require('./DoctorAssignment'); // ✅ Add this
 
-// Clear any existing associations to prevent conflicts
-const clearAssociations = (model) => {
-  if (model.associations) {
-    Object.keys(model.associations).forEach(alias => {
-      delete model.associations[alias];
-    });
-  }
-};
+
+// NEW: Appointment system models
+const Appointment = require('./Appointment');
+const DoctorSchedule = require('./DoctorSchedule');
+const ScheduleException = require('./ScheduleException');
+const ConsultationRecord = require('./ConsultationRecord');
+const Prescription = require('./Prescription');
+const AppointmentNotification = require('./AppointmentNotification');
+const ElderMedicalHistory = require('./ElderMedicalHistory');
+
 
 // Clear associations for all models
 [User, Elder, Subscription, HealthMonitoring, Notification, StaffAssignment, DoctorAssignment].forEach(clearAssociations);
+
 
 // User associations
 User.hasMany(Elder, { foreignKey: 'userId', as: 'elders' });
@@ -50,24 +54,98 @@ HealthMonitoring.belongsTo(Elder, { foreignKey: 'elderId', as: 'elder' });
 Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Notification.belongsTo(Elder, { foreignKey: 'elderId', as: 'elder' });
 
-// StaffAssignment associations
-StaffAssignment.belongsTo(User, { foreignKey: 'staffId', as: 'staff' });
-StaffAssignment.belongsTo(Elder, { foreignKey: 'elderId', as: 'elder' });
-StaffAssignment.belongsTo(User, { foreignKey: 'assignedBy', as: 'assignedByUser' });
-StaffAssignment.belongsTo(User, { foreignKey: 'unassignedBy', as: 'unassignedByUser' });
+// Reverse associations for Appointments
+User.hasMany(Appointment, {
+  foreignKey: 'familyMemberId',
+  as: 'bookedAppointments'
+});
+
+Elder.hasMany(Appointment, {
+  foreignKey: 'elderId',
+  as: 'appointments'
+});
+
+Doctor.hasMany(Appointment, {
+  foreignKey: 'doctorId',
+  as: 'doctorAppointments'
+});
+
+// Doctor Schedule associations
+DoctorSchedule.belongsTo(Doctor, {
+  foreignKey: 'doctorId',
+  as: 'doctor'
+});
+
+Doctor.hasMany(DoctorSchedule, {
+  foreignKey: 'doctorId',
+  as: 'schedules'
+});
+
+// Schedule Exception associations
+ScheduleException.belongsTo(Doctor, {
+  foreignKey: 'doctorId',
+  as: 'doctor'
+});
+
+Doctor.hasMany(ScheduleException, {
+  foreignKey: 'doctorId',
+  as: 'scheduleExceptions'
+});
+
+// Consultation Record associations
+ConsultationRecord.belongsTo(Appointment, {
+  foreignKey: 'appointmentId',
+  as: 'appointment'
+});
+
+ConsultationRecord.belongsTo(Doctor, {
+  foreignKey: 'doctorId',
+  as: 'doctor'
+});
+
+ConsultationRecord.belongsTo(Elder, {
+  foreignKey: 'elderId',
+  as: 'elder'
+});
+
+// Reverse associations for Consultation Records
+Appointment.hasOne(ConsultationRecord, {
+  foreignKey: 'appointmentId',
+  as: 'consultationRecord'
+});
+
+Doctor.hasMany(ConsultationRecord, {
+  foreignKey: 'doctorId',
+  as: 'consultationRecords'
+});
+
+Elder.hasMany(ConsultationRecord, {
+  foreignKey: 'elderId',
+  as: 'consultationRecords'
+});
+
+// Prescription associations
+Prescription.belongsTo(ConsultationRecord, {
+  foreignKey: 'consultationId',
+  as: 'consultation'
+});
+
 
 // DoctorAssignment associations
 DoctorAssignment.belongsTo(Elder, { foreignKey: 'elderId', as: 'elder' });
 DoctorAssignment.belongsTo(User, { foreignKey: 'doctorId', as: 'doctor' });
 DoctorAssignment.belongsTo(User, { foreignKey: 'familyMemberId', as: 'familyMember' });
 
+
 module.exports = {
   sequelize,
   User,
   Elder,
   Subscription,
-  HealthMonitoring,
+  Elder,
   Notification,
+
   StaffAssignment,
   DoctorAssignment // ✅ Add this
+
 };

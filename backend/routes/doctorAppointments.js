@@ -228,6 +228,12 @@ router.patch('/appointments/:id/review', authenticate, authorize('doctor'), asyn
   }
 });
 
+router.patch('/appointments/:id/reschedule',
+  authenticate,
+  authorize('doctor'),
+  DoctorAppointmentController.rescheduleAppointment
+);
+
 // Get dashboard stats
 router.get('/dashboard/stats', authenticate, authorize('doctor'), async (req, res) => {
   try {
