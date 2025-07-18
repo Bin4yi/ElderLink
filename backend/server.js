@@ -73,7 +73,8 @@ const routeConfigs = [
   { path: './routes/notification', mount: '/api/notifications', name: 'notificationRoutes' },
   { path: './routes/adminUserRoutes', mount: '/api/admin', name: 'adminUserRoutes' },
   { path: './routes/adminStatsRoutes', mount: '/api/admin', name: 'adminStatsRoutes' },
-  { path: './routes/staffAssignment', mount: '/api/staff-assignments', name: 'staffAssignmentRoutes' }
+  { path: './routes/staffAssignment', mount: '/api/staff-assignments', name: 'staffAssignmentRoutes' },
+  { path: './routes/doctorAssignment', mount: '/api/doctor-assignments', name: 'doctorAssignmentRoutes' }
 ];
 
 // Import health monitoring routes
@@ -83,6 +84,9 @@ const healthReportsRoutes = require('./routes/healthReports');
 
 // Import staff assignment routes
 const staffAssignmentRoutes = require('./routes/staffAssignment');
+
+// Import doctor assignment routes
+const doctorAssignmentRoutes = require('./routes/doctorAssignment');
 
 // Import and use routes with error checking
 try {
@@ -104,6 +108,8 @@ try {
   app.use('/api/health-reports', healthReportsRoutes);
   // Use staff assignment routes
   app.use('/api/staff-assignments', staffAssignmentRoutes);
+  // Use doctor assignment routes
+  app.use('/api/doctor-assignments', doctorAssignmentRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);

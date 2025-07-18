@@ -104,6 +104,11 @@ const Elder = sequelize.define('Elder', {
   hasLoginAccess: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  doctorAssignmentData: {  // ✅ Changed from doctorAssignments to doctorAssignmentData
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: []
   }
 });
 
