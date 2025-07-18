@@ -110,6 +110,7 @@ try {
   app.use('/api/staff-assignments', staffAssignmentRoutes);
   // Use doctor assignment routes
   app.use('/api/doctor-assignments', doctorAssignmentRoutes);
+  app.use('/api/appointments', require('./routes/appointments'));
 
 } catch (error) {
   console.error('Error loading routes:', error);

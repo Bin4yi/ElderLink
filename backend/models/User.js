@@ -72,23 +72,12 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  experience: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    defaultValue: 0,
-    validate: {
-      min: 0,
-      max: 50
-    }
-  },
+  
   profileImage: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  photo: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+  
   resetToken: {
     type: DataTypes.STRING,
     allowNull: true

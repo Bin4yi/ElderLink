@@ -15,8 +15,8 @@ const DoctorSchedule = sequelize.define('DoctorSchedule', {
       key: 'id'
     }
   },
-  dayOfWeek: {
-    type: DataTypes.INTEGER, // 0 (Sunday) - 6 (Saturday)
+  date: {
+    type: DataTypes.DATEONLY,
     allowNull: false
   },
   startTime: {
