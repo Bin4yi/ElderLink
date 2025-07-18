@@ -96,6 +96,7 @@ function App() {
                   {/* Family routes */}
                   <Route path="/family/dashboard" element={<FamilyDashboard />} />
                   <Route path="/family/appointments" element={<AppointmentList />} />
+                  <Route path="/family/doctors" element={<Doctors />} />
                   
                   {/* Pharmacy routes */}
                   <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
