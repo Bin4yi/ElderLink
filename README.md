@@ -601,15 +601,7 @@ CREATE TABLE Users (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- User profiles for role-specific data
-CREATE TABLE UserProfiles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES Users(id) ON DELETE CASCADE,
-  profile_type VARCHAR(50) NOT NULL,
-  profile_data JSONB, -- Flexible storage for role-specific data
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+
 ```
 
 #### Elder Care Management
