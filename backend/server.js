@@ -9,6 +9,8 @@ require('dotenv').config();
 
 const sequelize = require('./config/database');
 
+const paymentRoutes = require('./routes/payments');
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -88,6 +90,9 @@ const staffAssignmentRoutes = require('./routes/staffAssignment');
 // Import doctor assignment routes
 const doctorAssignmentRoutes = require('./routes/doctorAssignment');
 
+// Import doctor appointments routes
+const doctorAppointmentsRoutes = require('./routes/doctorAppointments');
+
 // Import and use routes with error checking
 try {
   routeConfigs.forEach(({ path, mount, name }) => {
@@ -111,6 +116,9 @@ try {
   // Use doctor assignment routes
   app.use('/api/doctor-assignments', doctorAssignmentRoutes);
   app.use('/api/appointments', require('./routes/appointments'));
+  app.use('/api/doctor', doctorAppointmentsRoutes);
+
+  app.use('/api/payments', paymentRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);

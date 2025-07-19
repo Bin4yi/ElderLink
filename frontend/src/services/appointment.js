@@ -347,6 +347,12 @@ class AppointmentService {
     const response = await api.get(`/appointments/doctors/${doctorId}/available-dates`);
     return response.data;
   }
+
+  // Create payment intent
+  async createPaymentIntent({ amount }) {
+    const response = await api.post('/payments/create-payment-intent', { amount });
+    return response.data;
+  }
 }
 
 export const appointmentService = new AppointmentService();
@@ -379,5 +385,6 @@ export const {
   canCancelAppointment,
   canRescheduleAppointment,
   generateTimeSlots,
-  getDoctorAvailableDates
+  getDoctorAvailableDates,
+  createPaymentIntent
 } = appointmentService;

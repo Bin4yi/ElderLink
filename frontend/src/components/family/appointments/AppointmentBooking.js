@@ -1,11 +1,12 @@
 // frontend/src/components/appointments/AppointmentBooking.js
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Clock, User, Stethoscope, AlertCircle, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, User, Stethoscope, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import RoleLayout from '../../common/RoleLayout'; 
-import { appointmentService } from '../../../services/appointment'; // ✅ FIXED: Changed from '../../services/appointment'
-import { elderService } from '../../../services/elder'; // ✅ FIXED: Changed from '../../services/elder'
-import DoctorCalendarModal from './DoctorCalendarModal'; // Add this import
+import RoleLayout from '../../common/RoleLayout';
+import { appointmentService } from '../../../services/appointment';
+import { elderService } from '../../../services/elder';
+import DoctorCalendarModal from './DoctorCalendarModal';
+import PaymentForm from '../subscription/PaymentForm'; // Stripe payment form
 
 const AppointmentBooking = ({ onBack, onSuccess }) => {
   const [step, setStep] = useState(1);
@@ -30,6 +31,7 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
   const [specializations, setSpecializations] = useState([]);
   const [selectedSpecialization, setSelectedSpecialization] = useState('all');
   const [showDoctorModal, setShowDoctorModal] = useState(false);
+  const [paymentIntent, setPaymentIntent] = useState(null);
   const timerRef = useRef(null);
 
   // Load initial data
@@ -49,35 +51,15 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
 
   const loadDoctors = async () => {
     try {
-      console.log('🔄 Loading doctors...');
       const response = await appointmentService.getAvailableDoctors(selectedSpecialization);
-      console.log('✅ Doctors API response:', response);
-      
       if (response && response.doctors) {
         setDoctors(response.doctors);
         setSpecializations(['all', ...(response.specializations || [])]);
-        console.log(`✅ Set ${response.doctors.length} doctors`);
       } else {
-        console.warn('⚠️ No doctors in response:', response);
         setDoctors([]);
       }
     } catch (error) {
-      console.error('❌ Error loading doctors:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      
-      // Show more specific error message
-      if (error.response?.status === 404) {
-        toast.error('Doctors endpoint not found. Please check backend routes.');
-      } else if (error.response?.status === 500) {
-        toast.error('Server error loading doctors. Please try again.');
-      } else {
-        toast.error(`Failed to load doctors: ${error.message}`);
-      }
-      
+      toast.error('Failed to load doctors');
       setDoctors([]);
     }
   };
@@ -115,17 +97,15 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
     setStep(4); // Go to appointment details
   };
 
-  const handleBooking = async () => {
+  // Step 4: Proceed to Payment (not book appointment yet)
+  const handleProceedToPayment = async () => {
     try {
       setLoading(true);
-
       if (!selectedElder || !selectedDoctor || !selectedDate || !selectedTime) {
         toast.error('Please fill in all required fields');
         return;
       }
-
       const appointmentDateTime = new Date(`${selectedDate}T${selectedTime}`);
-
       const bookingData = {
         elderId: selectedElder.id,
         doctorId: selectedDoctor.id,
@@ -133,13 +113,20 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
         duration: 30,
         ...appointmentDetails
       };
-
+      // Book appointment as "reserved" (not confirmed)
       const response = await appointmentService.bookAppointment(bookingData);
       setAppointmentId(response.appointment.id);
+
+      // Optionally: create payment intent for Stripe
+      const paymentIntentRes = await appointmentService.createPaymentIntent({
+        amount: selectedDoctor.consultationFee
+      });
+      setPaymentIntent(paymentIntentRes);
+
       setStep(5); // Go to payment step
       startTimer();
     } catch (error) {
-      toast.error(error.message || 'Failed to book appointment');
+      toast.error(error.message || 'Failed to reserve appointment');
     } finally {
       setLoading(false);
     }
@@ -163,13 +150,22 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
     setStep(2); // Go back to doctor selection
     setSelectedTime('');
     setAppointmentId(null);
+    setPaymentIntent(null);
   };
 
-  const handlePaymentSuccess = async () => {
-    await appointmentService.confirmPayment(appointmentId);
-    clearInterval(timerRef.current);
-    toast.success('Appointment booked and payment confirmed!');
-    // ...proceed to confirmation screen...
+  // Payment success: confirm appointment
+  const handlePaymentSuccess = async (paymentResult) => {
+    try {
+      await appointmentService.confirmPayment(appointmentId, {
+        paymentMethod: paymentResult.paymentMethodId,
+        transactionId: paymentResult.id
+      });
+      clearInterval(timerRef.current);
+      toast.success('Appointment booked and payment confirmed!');
+      if (onSuccess) onSuccess();
+    } catch (error) {
+      toast.error(error.message || 'Failed to confirm payment');
+    }
   };
 
   const renderStepIndicator = () => (
@@ -538,10 +534,9 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
   };
 
   return (
-    <RoleLayout> {/* ✅ Wrap everything inside RoleLayout */}
+    <RoleLayout>
       <div className="max-w-5xl mx-auto p-6">
         <div className="mb-6">
-          
           <h1 className="text-3xl font-bold text-gray-800">Book Appointment</h1>
         </div>
 
@@ -581,7 +576,7 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
               </button>
             ) : (
               <button
-                onClick={handleBooking}
+                onClick={handleProceedToPayment}
                 disabled={loading || !canProceedToNext()}
                 className={`px-8 py-3 rounded-lg font-medium ${
                   loading || !canProceedToNext()
@@ -592,12 +587,12 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
                 {loading ? (
                   <div className="flex items-center space-x-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Booking...</span>
+                    <span>Reserving...</span>
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-5 h-5" />
-                    <span>Book Appointment</span>
+                    <span>Proceed to Payment</span>
                   </div>
                 )}
               </button>
@@ -610,20 +605,18 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
           <div className="mt-8 p-6 bg-white rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-4">Complete Payment</h2>
             <p className="text-sm text-gray-500 mb-4">
-              Please complete the payment within the next{' '}
+              Please complete the payment within{' '}
               <span className="font-medium text-red-600">
                 {Math.floor(bookingTimer / 60)}:{(bookingTimer % 60).toString().padStart(2, '0')}
               </span>{' '}
               minutes to confirm your appointment.
             </p>
-            
-            {/* Payment form/button here */}
-            <button
-              onClick={handlePaymentSuccess}
-              className="w-full px-6 py-3 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition-all"
-            >
-              Confirm Payment
-            </button>
+            <PaymentForm
+              amount={selectedDoctor?.consultationFee}
+              paymentIntent={paymentIntent}
+              onSuccess={handlePaymentSuccess}
+              onBack={() => setStep(4)}
+            />
           </div>
         )}
 

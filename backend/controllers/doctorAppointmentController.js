@@ -1,4 +1,4 @@
-// backend/controllers/doctorAppointmentController.js (Doctor Side)
+// backend/controllers/DoctorAppointmentController.js (Doctor Side)
 const { 
   Appointment, 
   Elder, 
@@ -7,7 +7,8 @@ const {
   ConsultationRecord,
   Prescription,
   AppointmentNotification,
-  ElderMedicalHistory 
+  ElderMedicalHistory,
+  DoctorSchedule // <-- Add this line
 } = require('../models');
 const { Op } = require('sequelize');
 // const ZoomService = require('../services/zoomService');
@@ -658,6 +659,8 @@ class DoctorAppointmentController {
       const doctor = await Doctor.findOne({ where: { userId: req.user.id } });
       if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
 
+      console.log('Received schedule update:', req.body);
+
       // Remove old schedules for these dates
       const dates = schedules.map(s => s.date);
       await DoctorSchedule.destroy({ where: { doctorId: doctor.id, date: dates } });
@@ -674,6 +677,7 @@ class DoctorAppointmentController {
 
       res.json({ message: 'Schedule updated successfully' });
     } catch (error) {
+      console.error('Failed to update schedule:', error);
       res.status(500).json({ message: 'Failed to update schedule' });
     }
   }
