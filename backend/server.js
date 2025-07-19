@@ -67,7 +67,7 @@ app.get('/api', (req, res) => {
 // Route configurations
 const routeConfigs = [
   { path: './routes/auth', mount: '/api/auth', name: 'authRoutes' },
-  { path: './routes/elder', mount: '/api/elders', name: 'elderRoutes' },
+  { path: './routes/elder', mount: '/api/elder', name: 'elderRoutes' },
   { path: './routes/healthMonitoring', mount: '/api/health-monitoring', name: 'healthMonitoringRoutes' },
   { path: './routes/subscription', mount: '/api/subscriptions', name: 'subscriptionRoutes' },
   { path: './routes/notification', mount: '/api/notifications', name: 'notificationRoutes' },
@@ -87,6 +87,9 @@ const staffAssignmentRoutes = require('./routes/staffAssignment');
 
 // Import doctor assignment routes
 const doctorAssignmentRoutes = require('./routes/doctorAssignment');
+
+// Import elder routes
+const elderRoutes = require('./routes/elder');
 
 // Import and use routes with error checking
 try {
@@ -110,6 +113,8 @@ try {
   app.use('/api/staff-assignments', staffAssignmentRoutes);
   // Use doctor assignment routes
   app.use('/api/doctor-assignments', doctorAssignmentRoutes);
+  // Use elder routes
+  app.use('/api/elders', elderRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);

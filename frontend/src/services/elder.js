@@ -384,5 +384,27 @@ export const elderService = {
     }
   },
 
-  // ...existing methods...
+  // Get elder profile
+  getElderProfile: async () => {
+    const response = await api.get('/elder/profile');
+    return response.data;
+  },
+
+  // Get latest health monitoring data for elder
+  getLatestHealthMonitoring: async () => {
+    const response = await api.get('/health-monitoring/elder/latest');
+    return response.data;
+  },
+
+  // Get daily health report
+  getDailyHealthReport: async (date) => {
+    const response = await api.get('/health-reports/daily', { params: { date } });
+    return response.data;
+  },
+
+  // Create elder login
+  createElderLogin: async (elderId, credentials) => {
+    const response = await api.post(`/elders/${elderId}/create-login`, credentials);
+    return response.data;
+  },
 };
