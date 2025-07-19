@@ -28,6 +28,7 @@ import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
 import AppointmentList from './components/family/appointments/AppointmentList';
 import Doctors from './components/family/doctors/Doctors';
 import DoctorAssignment from './components/family/doctors/DoctorAssignment'; // NEW IMPORT
+import AppointmentBooking from './components/family/appointments/AppointmentBooking';
 
 // Pharmacy
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
@@ -60,6 +61,8 @@ import HealthReports from './components/staff/reports/HealthReports';
 
 // Elder
 import ElderDashboard from './components/Elder/dashboard/Elder';
+
+const theme = createTheme(); // Add this line
 
 function App() {
   return (
