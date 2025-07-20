@@ -443,7 +443,7 @@ const DoctorConsultationPage = () => {
               {updateStatus === 'updating' && (
                 <span className="text-blue-600 ml-2">
                   <span className="inline-block animate-spin w-3 h-3 border border-blue-600 border-t-transparent rounded-full mr-1"></span>
-                  Checking for updates...
+                  <span className="opacity-100 transition-opacity duration-200">Checking for updates...</span>
                 </span>
               )}
               {updateStatus === 'updated' && (
