@@ -198,6 +198,276 @@ const ProgressReports = () => {
     }
   };
 
+  // PDF Download Function
+  const downloadPDF = async (report) => {
+    try {
+      // Dynamically import jsPDF
+      const { jsPDF } = await import("jspdf");
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      const margin = 20;
+      let yPos = margin;
+
+      // Helper function to add text with word wrapping
+      const addWrappedText = (text, x, y, maxWidth, fontSize = 10) => {
+        doc.setFontSize(fontSize);
+        const lines = doc.splitTextToSize(text, maxWidth);
+        doc.text(lines, x, y);
+        return y + lines.length * fontSize * 0.35; // Return new Y position
+      };
+
+      // Header
+      doc.setFontSize(20);
+      doc.setFont(undefined, "bold");
+      doc.text("PROGRESS REPORT", pageWidth / 2, yPos, { align: "center" });
+      yPos += 15;
+
+      // Client Information
+      doc.setFontSize(16);
+      doc.setFont(undefined, "bold");
+      doc.text("Client Information", margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(12);
+      doc.setFont(undefined, "normal");
+      doc.text(`Client Name: ${report.clientName}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Client ID: ${report.clientId}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Report Type: ${report.reportType}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Period: ${report.period}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Date Created: ${report.dateCreated}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Status: ${report.status.toUpperCase()}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Therapist: ${report.therapist}`, margin, yPos);
+      yPos += 15;
+
+      // Overall Scores
+      doc.setFontSize(16);
+      doc.setFont(undefined, "bold");
+      doc.text("Overall Assessment", margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(12);
+      doc.setFont(undefined, "normal");
+      doc.text(
+        `Mental Health Score: ${report.mentalHealthScore} (Previous: ${report.previousScore})`,
+        margin,
+        yPos
+      );
+      yPos += 7;
+      doc.text(`Overall Progress: ${report.overallProgress}%`, margin, yPos);
+      yPos += 15;
+
+      // Key Metrics
+      doc.setFontSize(16);
+      doc.setFont(undefined, "bold");
+      doc.text("Key Metrics", margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(12);
+      doc.setFont(undefined, "normal");
+      Object.entries(report.keyMetrics).forEach(([metric, data]) => {
+        const metricName = metric.replace(/([A-Z])/g, " $1").trim();
+        const trendSymbol =
+          data.trend === "improving"
+            ? "↑"
+            : data.trend === "declining"
+            ? "↓"
+            : "→";
+        doc.text(
+          `${metricName}: ${data.current} ${trendSymbol} (Previous: ${data.previous})`,
+          margin,
+          yPos
+        );
+        yPos += 7;
+      });
+      yPos += 10;
+
+      // Check if we need a new page
+      if (yPos > pageHeight - 60) {
+        doc.addPage();
+        yPos = margin;
+      }
+
+      // Highlights
+      doc.setFontSize(16);
+      doc.setFont(undefined, "bold");
+      doc.text("Highlights", margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(11);
+      doc.setFont(undefined, "normal");
+      report.highlights.forEach((highlight, index) => {
+        yPos = addWrappedText(
+          `• ${highlight}`,
+          margin,
+          yPos,
+          pageWidth - 2 * margin,
+          11
+        );
+        yPos += 3;
+      });
+      yPos += 10;
+
+      // Areas of Concern
+      doc.setFontSize(16);
+      doc.setFont(undefined, "bold");
+      doc.text("Areas of Concern", margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(11);
+      doc.setFont(undefined, "normal");
+      report.concerns.forEach((concern, index) => {
+        yPos = addWrappedText(
+          `• ${concern}`,
+          margin,
+          yPos,
+          pageWidth - 2 * margin,
+          11
+        );
+        yPos += 3;
+      });
+      yPos += 10;
+
+      // Check if we need a new page
+      if (yPos > pageHeight - 60) {
+        doc.addPage();
+        yPos = margin;
+      }
+
+      // Recommendations
+      doc.setFontSize(16);
+      doc.setFont(undefined, "bold");
+      doc.text("Recommendations", margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(11);
+      doc.setFont(undefined, "normal");
+      report.recommendations.forEach((recommendation, index) => {
+        yPos = addWrappedText(
+          `• ${recommendation}`,
+          margin,
+          yPos,
+          pageWidth - 2 * margin,
+          11
+        );
+        yPos += 3;
+      });
+      yPos += 10;
+
+      // Next Review
+      doc.setFontSize(14);
+      doc.setFont(undefined, "bold");
+      doc.text(`Next Review Date: ${report.nextReview}`, margin, yPos);
+
+      // Footer
+      const footer = `Generated on ${new Date().toLocaleDateString()} | Confidential Medical Report`;
+      doc.setFontSize(8);
+      doc.setFont(undefined, "normal");
+      doc.text(footer, pageWidth / 2, pageHeight - 10, { align: "center" });
+
+      // Save the PDF
+      const fileName = `${report.clientName.replace(
+        /\s+/g,
+        "_"
+      )}_Progress_Report_${report.dateCreated}.pdf`;
+      doc.save(fileName);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Error generating PDF. Please try again.");
+    }
+  };
+
+  // Download All Reports as PDF
+  const downloadAllReportsPDF = async () => {
+    try {
+      const { jsPDF } = await import("jspdf");
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      const margin = 20;
+
+      // Title page
+      doc.setFontSize(24);
+      doc.setFont(undefined, "bold");
+      doc.text("PROGRESS REPORTS SUMMARY", pageWidth / 2, 50, {
+        align: "center",
+      });
+
+      doc.setFontSize(14);
+      doc.setFont(undefined, "normal");
+      doc.text(
+        `Generated on ${new Date().toLocaleDateString()}`,
+        pageWidth / 2,
+        70,
+        { align: "center" }
+      );
+      doc.text(`Total Reports: ${filteredReports.length}`, pageWidth / 2, 85, {
+        align: "center",
+      });
+
+      // Add each report
+      filteredReports.forEach((report, index) => {
+        doc.addPage();
+        let yPos = margin;
+
+        // Report header
+        doc.setFontSize(18);
+        doc.setFont(undefined, "bold");
+        doc.text(`Report ${index + 1}: ${report.clientName}`, margin, yPos);
+        yPos += 15;
+
+        // Basic info
+        doc.setFontSize(12);
+        doc.setFont(undefined, "normal");
+        doc.text(`Type: ${report.reportType}`, margin, yPos);
+        yPos += 7;
+        doc.text(`Period: ${report.period}`, margin, yPos);
+        yPos += 7;
+        doc.text(
+          `Mental Health Score: ${report.mentalHealthScore}`,
+          margin,
+          yPos
+        );
+        yPos += 7;
+        doc.text(`Overall Progress: ${report.overallProgress}%`, margin, yPos);
+        yPos += 10;
+
+        // Key metrics summary
+        doc.setFontSize(14);
+        doc.setFont(undefined, "bold");
+        doc.text("Key Metrics:", margin, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, "normal");
+        Object.entries(report.keyMetrics).forEach(([metric, data]) => {
+          const metricName = metric.replace(/([A-Z])/g, " $1").trim();
+          doc.text(
+            `${metricName}: ${data.current} (${data.trend})`,
+            margin,
+            yPos
+          );
+          yPos += 5;
+        });
+      });
+
+      doc.save(
+        `All_Progress_Reports_${new Date().toISOString().split("T")[0]}.pdf`
+      );
+    } catch (error) {
+      console.error("Error generating summary PDF:", error);
+      alert("Error generating summary PDF. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <RoleLayout active="progress-reports">
@@ -233,7 +503,10 @@ const ProgressReports = () => {
                 <Plus className="w-4 h-4" />
                 Generate Report
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <button
+                onClick={downloadAllReportsPDF}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
                 <Download className="w-4 h-4" />
                 Export All
               </button>
@@ -413,7 +686,11 @@ const ProgressReports = () => {
                       <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
                         <Edit className="w-5 h-5" />
                       </button>
-                      <button className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                      <button
+                        onClick={() => downloadPDF(report)}
+                        className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        title="Download PDF Report"
+                      >
                         <Download className="w-5 h-5" />
                       </button>
                     </div>
