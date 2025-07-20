@@ -93,6 +93,7 @@ const doctorAssignmentRoutes = require('./routes/doctorAssignment');
 // Import doctor appointments routes
 const doctorAppointmentsRoutes = require('./routes/doctorAppointments');
 
+
 // Import and use routes with error checking
 try {
   routeConfigs.forEach(({ path, mount, name }) => {
@@ -117,8 +118,10 @@ try {
   app.use('/api/doctor-assignments', doctorAssignmentRoutes);
   app.use('/api/appointments', require('./routes/appointments'));
   app.use('/api/doctor', doctorAppointmentsRoutes);
+  console.log('✅ Doctor appointments routes mounted on /api/doctor');
 
-  app.use('/api/payments', paymentRoutes);
+  app.use('/api/payments', require('./routes/payments'));
+  console.log('✅ Payment routes mounted on /api/payments');
 
 } catch (error) {
   console.error('Error loading routes:', error);

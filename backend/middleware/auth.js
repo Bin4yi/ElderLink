@@ -1,4 +1,4 @@
-// backend/middleware/auth.js (Make sure exports are correct)
+// backend/middleware/auth.js (Updated)
 const { verifyToken } = require('../config/jwt');
 const { User } = require('../models');
 
@@ -7,31 +7,44 @@ const authenticate = async (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
-      return res.status(401).json({ message: 'Access denied. No token provided.' });
+      return res.status(401).json({ 
+        success: false,
+        message: 'Access denied. No token provided.' 
+      });
     }
 
     const decoded = verifyToken(token);
     const user = await User.findByPk(decoded.id);
     
     if (!user || !user.isActive) {
-      return res.status(401).json({ message: 'Invalid token.' });
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid or inactive user token.' 
+      });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Invalid token.' });
+    console.error('❌ Authentication error:', error.message);
+    res.status(401).json({ 
+      success: false,
+      message: 'Invalid token.' 
+    });
   }
 };
 
 const authorize = (allowedRoles) => {
   return (req, res, next) => {
     try {
-      console.log('🔍 Authorization check:', {
-        userRole: req.user?.role,
-        allowedRoles: allowedRoles,
-        userInfo: req.user
-      });
+      // Reduce log verbosity - only log important events
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Authorization check:', {
+          userRole: req.user?.role,
+          allowedRoles: allowedRoles,
+          userId: req.user?.id // Don't log full user object
+        });
+      }
 
       if (!req.user) {
         return res.status(401).json({
@@ -40,7 +53,6 @@ const authorize = (allowedRoles) => {
         });
       }
 
-      // Handle both string and array of roles
       const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
       
       if (!roles.includes(req.user.role)) {
@@ -51,7 +63,10 @@ const authorize = (allowedRoles) => {
         });
       }
 
-      console.log('✅ Authorization successful for role:', req.user.role);
+      // Only log success in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Authorization successful for role:', req.user.role);
+      }
       next();
     } catch (error) {
       console.error('❌ Authorization error:', error);
@@ -63,5 +78,4 @@ const authorize = (allowedRoles) => {
   };
 };
 
-// IMPORTANT: Make sure both functions are exported
 module.exports = { authenticate, authorize };
