@@ -44,6 +44,12 @@ try {
   const subscriptionRoutes = require('./routes/subscription');
   const elderRoutes = require('./routes/elder');
   const notificationRoutes = require('./routes/notification');
+  const inventoryRoutes = require('./routes/inventoryRoutes');
+  const simplePrescriptionRoutes = require('./routes/simplePrescriptions');
+  const pharmacyDashboardRoutes = require('./routes/parmacyDashboard');
+  
+
+
 
   // Verify routes are properly exported
   if (typeof authRoutes !== 'function') {
@@ -64,6 +70,12 @@ try {
   app.use('/api/subscriptions', subscriptionRoutes);
   app.use('/api/elders', elderRoutes);
   app.use('/api/notifications', notificationRoutes);
+  app.use('/api/inventory', inventoryRoutes);
+  app.use('/api/simple-prescriptions', simplePrescriptionRoutes);
+  app.use('/api/pharmacy-dashboard', pharmacyDashboardRoutes);
+  
+
+
 
 } catch (error) {
   console.error('Error loading routes:', error);
