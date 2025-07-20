@@ -10,6 +10,7 @@ require('dotenv').config();
 const sequelize = require('./config/database');
 
 const paymentRoutes = require('./routes/payments');
+const appointmentPaymentsRoutes = require('./routes/appointmentPayments');
 
 const app = express();
 const server = http.createServer(app);
@@ -119,6 +120,7 @@ try {
   app.use('/api/doctor', doctorAppointmentsRoutes);
 
   app.use('/api/payments', paymentRoutes);
+  app.use('/api/appointment-payments', appointmentPaymentsRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);

@@ -16,6 +16,7 @@ const AppointmentNotification = require('./AppointmentNotification');
 const ElderMedicalHistory = require('./ElderMedicalHistory');
 const DoctorSchedule = require('./DoctorSchedule');
 const ScheduleException = require('./ScheduleException');
+const AppointmentPayment = require('./AppointmentPayment');
 
 // Clear any existing associations to prevent conflicts
 const clearAssociations = (model) => {
@@ -238,6 +239,18 @@ User.hasMany(ElderMedicalHistory, {
   as: 'createdMedicalRecords'
 });
 
+// AppointmentPayment associations
+AppointmentPayment.belongsTo(Appointment, {
+  foreignKey: 'appointmentId',
+  as: 'appointment'
+});
+
+// Reverse association
+Appointment.hasOne(AppointmentPayment, {
+  foreignKey: 'appointmentId',
+  as: 'payment'
+});
+
 module.exports = {
   sequelize,
   User,
@@ -254,5 +267,6 @@ module.exports = {
   AppointmentNotification,
   ElderMedicalHistory,
   DoctorSchedule,
-  ScheduleException
+  ScheduleException,
+  AppointmentPayment
 };
