@@ -64,6 +64,10 @@ try {
   if (typeof notificationRoutes !== 'function') {
     throw new Error('notificationRoutes is not a valid router');
   }
+  if (typeof inventoryRoutes !== 'function') {
+    throw new Error('inventoryRoutes is not a valid router');
+  }
+  
 
   // API Routes
   app.use('/api/auth', authRoutes);
