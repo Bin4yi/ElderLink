@@ -8,7 +8,17 @@ const path = require('path');
 const generateDailyReport = async (req, res) => {
   try {
     const { date, elderId } = req.query;
-    
+    let targetElderId = elderId;
+
+    // If user is elder, force their own elderId
+    if (req.user.role === 'elder') {
+      const elder = await Elder.findOne({ where: { userId: req.user.id } });
+      if (!elder) {
+        return res.status(404).json({ success: false, message: 'Elder profile not found' });
+      }
+      targetElderId = elder.id;
+    }
+
     console.log('📊 Generating daily report for:', { date, elderId });
     
     if (!date) {
@@ -34,8 +44,8 @@ const generateDailyReport = async (req, res) => {
     };
     
     // Add elder filter if provided
-    if (elderId) {
-      whereClause.elderId = elderId;
+    if (targetElderId) {
+      whereClause.elderId = targetElderId;
     }
     
     console.log('🔍 Where clause:', whereClause);
