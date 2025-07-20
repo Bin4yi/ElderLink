@@ -1,7 +1,7 @@
 // frontend/src/pages/Dashboard.js (UPDATED for multiple subscriptions + Appointment sidebar)
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, CreditCard, Bell, Calendar, TrendingUp, UserCheck, Stethoscope } from 'lucide-react';
+import { Plus, Users, CreditCard, Bell, Calendar, TrendingUp, UserCheck, Stethoscope, Brain } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Changed: Using RoleLayout like doctor dashboard (consistent sidebar style)
@@ -15,6 +15,7 @@ import SubscriptionStatus from '../subscription/SubscriptionStatus';
 import AppointmentList from '../appointments/AppointmentList';
 import StaffAssignment from '../staff/StaffAssignment';
 import DoctorAssignment from '../doctors/DoctorAssignment';
+import MentalHealthAssignment from '../mentalhealth/MentalHealthAssignment';
 
 // Services
 import { subscriptionService } from '../../../services/subscription';
@@ -161,6 +162,15 @@ const FamilyDashboard = () => {
     );
   };
 
+  const handleMentalHealthAssignment = () => {
+    requireSubscription(
+      () => {
+        setCurrentView('mentalhealth-assignment');
+      },
+      'You need an active subscription to assign mental health coordinators'
+    );
+  };
+
   if (loading) {
     return <Loading text="Loading dashboard..." />;
   }
@@ -248,6 +258,19 @@ const FamilyDashboard = () => {
               ← Back to Dashboard
             </button>
             <DoctorAssignment />
+          </div>
+        );
+
+      case 'mentalhealth-assignment':
+        return (
+          <div className="space-y-6">
+            <button
+              onClick={() => setCurrentView('overview')}
+              className="text-purple-500 hover:text-purple-600 font-medium"
+            >
+              ← Back to Dashboard
+            </button>
+            <MentalHealthAssignment />
           </div>
         );
       
@@ -438,6 +461,26 @@ const FamilyDashboard = () => {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Schedule Checkup</h3>
                 <p className="text-gray-600">Book a health consultation for your elder</p>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('mentalhealth-assignment')}
+                className={`bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group ${
+                  !hasValidSubscription() ? 'opacity-50' : ''
+                }`}
+              >
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                    <Brain className="w-6 h-6 text-purple-500" />
+                  </div>
+                  {!hasValidSubscription() && (
+                    <div className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                      Subscription Required
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Assign Mental Health Coordinator</h3>
+                <p className="text-gray-600">Assign mental health coordinators to support your elders</p>
               </button>
             </div>
 
