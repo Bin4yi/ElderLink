@@ -6,121 +6,76 @@ import {
   User,
   MapPin,
   Phone,
-  Plus,
   Search,
   Filter,
   Eye,
   Edit,
   MessageSquare,
   CheckCircle,
+  RotateCcw,
+  AlertCircle,
+  CalendarPlus,
+  Plus,
 } from "lucide-react";
 import RoleLayout from "../../common/RoleLayout"; // Add this import for sidebar layout
+
+const clients = [
+  {
+    id: "C001",
+    name: "Margaret Johnson",
+    phone: "+1 (555) 123-4567",
+    emergencyContact: {
+      name: "Sarah Johnson",
+      phone: "+1 (555) 123-4567",
+    },
+  },
+  {
+    id: "C002",
+    name: "Robert Chen",
+    phone: "+1 (555) 987-6543",
+    emergencyContact: {
+      name: "Lisa Chen",
+      phone: "+1 (555) 987-6543",
+    },
+  },
+  {
+    id: "C003",
+    name: "Dorothy Williams",
+    phone: "+1 (555) 456-7890",
+    emergencyContact: {
+      name: "Michael Williams",
+      phone: "+1 (555) 456-7890",
+    },
+  },
+  {
+    id: "C004",
+    name: "James Rodriguez",
+    phone: "+1 (555) 321-0987",
+    emergencyContact: {
+      name: "Maria Rodriguez",
+      phone: "+1 (555) 321-0987",
+    },
+  },
+  {
+    id: "C005",
+    name: "Sarah Thompson",
+    phone: "+1 (555) 654-3210",
+    emergencyContact: {
+      name: "David Thompson",
+      phone: "+1 (555) 654-3210",
+    },
+  },
+];
 
 const TherapySessions = () => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-
-  // Mock data
-  const mockSessions = [
-    {
-      id: 1,
-      clientName: "Margaret Johnson",
-      clientId: "C001",
-      sessionType: "Individual Therapy",
-      therapyType: "Cognitive Behavioral Therapy",
-      status: "scheduled",
-      date: "2025-01-15",
-      time: "10:00 AM",
-      duration: 60,
-      location: "Video Call",
-      zoomLink: "https://zoom.us/j/123456789",
-      sessionNumber: 13,
-      totalSessions: 20,
-      notes: "Continue working on anxiety management techniques",
-      goals: ["Reduce anxiety symptoms", "Improve sleep quality"],
-      homework: "Practice deep breathing exercises daily",
-      nextSession: "2025-01-22",
-      emergencyContact: {
-        name: "Sarah Johnson",
-        phone: "+1 (555) 123-4567",
-      },
-    },
-    {
-      id: 2,
-      clientName: "Robert Chen",
-      clientId: "C002",
-      sessionType: "Group Therapy",
-      therapyType: "Support Group",
-      status: "in_progress",
-      date: "2025-01-12",
-      time: "2:00 PM",
-      duration: 90,
-      location: "Community Room A",
-      zoomLink: null,
-      sessionNumber: 5,
-      totalSessions: 12,
-      notes: "Group session focused on social interaction",
-      goals: ["Improve social connections", "Reduce isolation"],
-      homework: "Join one community activity this week",
-      nextSession: "2025-01-19",
-      emergencyContact: {
-        name: "Lisa Chen",
-        phone: "+1 (555) 987-6543",
-      },
-    },
-    {
-      id: 3,
-      clientName: "Dorothy Williams",
-      clientId: "C003",
-      sessionType: "Crisis Intervention",
-      therapyType: "Emergency Support",
-      status: "completed",
-      date: "2025-01-10",
-      time: "11:30 AM",
-      duration: 120,
-      location: "In-Person",
-      zoomLink: null,
-      sessionNumber: 1,
-      totalSessions: 8,
-      notes: "Emergency session for crisis management",
-      goals: ["Ensure safety", "Develop safety plan"],
-      homework: "Use safety plan when feeling overwhelmed",
-      nextSession: "2025-01-13",
-      emergencyContact: {
-        name: "Michael Williams",
-        phone: "+1 (555) 456-7890",
-      },
-    },
-    {
-      id: 4,
-      clientName: "James Patterson",
-      clientId: "C004",
-      sessionType: "Family Therapy",
-      therapyType: "Family Counseling",
-      status: "scheduled",
-      date: "2025-01-16",
-      time: "3:00 PM",
-      duration: 75,
-      location: "Video Call",
-      zoomLink: "https://zoom.us/j/987654321",
-      sessionNumber: 3,
-      totalSessions: 10,
-      notes: "Include family members in therapy session",
-      goals: ["Improve family communication", "Address care concerns"],
-      homework: "Family to practice communication exercises",
-      nextSession: "2025-01-23",
-      emergencyContact: {
-        name: "Susan Patterson",
-        phone: "+1 (555) 234-5678",
-      },
-    },
-  ];
+  const [showNewSessionModal, setShowNewSessionModal] = useState(false);
 
   const sessionTypes = [
     "Individual Therapy",
@@ -144,12 +99,257 @@ const TherapySessions = () => {
     "Grief Counseling",
   ];
 
+  // Mock data with monthly session logic
+  const mockSessions = [
+    {
+      id: 1,
+      clientName: "Margaret Johnson",
+      clientId: "C001",
+      sessionType: "Individual Therapy",
+      therapyType: "Cognitive Behavioral Therapy",
+      status: "completed",
+      date: "2024-12-15",
+      time: "10:00 AM",
+      duration: 60,
+      location: "Video Call",
+      zoomLink: "https://zoom.us/j/123456789",
+      sessionNumber: 1,
+      isFirstSession: true,
+      isMonthlySession: false,
+      completedDate: "2024-12-15",
+      nextSessionDate: "2025-01-15",
+      autoScheduled: false,
+      notes: "Initial assessment and treatment plan established",
+      goals: ["Complete initial assessment", "Establish therapy goals"],
+      homework: "Complete intake forms and daily mood tracking",
+      emergencyContact: {
+        name: "Sarah Johnson",
+        phone: "+1 (555) 123-4567",
+      },
+    },
+    {
+      id: 2,
+      clientName: "Margaret Johnson",
+      clientId: "C001",
+      sessionType: "Individual Therapy",
+      therapyType: "Cognitive Behavioral Therapy",
+      status: "scheduled",
+      date: "2025-01-15",
+      time: "10:00 AM",
+      duration: 60,
+      location: "Video Call",
+      zoomLink: "https://zoom.us/j/123456789",
+      sessionNumber: 2,
+      isFirstSession: false,
+      isMonthlySession: true,
+      completedDate: "2024-12-20",
+      nextSessionDate: "2025-02-15",
+      autoScheduled: true,
+      notes: "Monthly follow-up session - review progress",
+      goals: ["Review progress from previous month", "Adjust treatment plan"],
+      homework: "Continue anxiety management techniques",
+      emergencyContact: {
+        name: "Sarah Johnson",
+        phone: "+1 (555) 123-4567",
+      },
+    },
+    {
+      id: 3,
+      clientName: "Robert Chen",
+      clientId: "C002",
+      sessionType: "Group Therapy",
+      therapyType: "Support Group",
+      status: "completed",
+      date: "2024-11-20",
+      time: "2:00 PM",
+      duration: 90,
+      location: "Community Room A",
+      zoomLink: null,
+      sessionNumber: 1,
+      isFirstSession: true,
+      isMonthlySession: false,
+      completedDate: "2024-11-20",
+      nextSessionDate: "2024-12-20",
+      autoScheduled: false,
+      notes: "First group session - introductions and ground rules",
+      goals: ["Introduce to group", "Establish comfort level"],
+      homework: "Reflect on personal goals for group therapy",
+      emergencyContact: {
+        name: "Lisa Chen",
+        phone: "+1 (555) 987-6543",
+      },
+    },
+    {
+      id: 4,
+      clientName: "Robert Chen",
+      clientId: "C002",
+      sessionType: "Group Therapy",
+      therapyType: "Support Group",
+      status: "completed",
+      date: "2024-12-20",
+      time: "2:00 PM",
+      duration: 90,
+      location: "Community Room A",
+      zoomLink: null,
+      sessionNumber: 2,
+      isFirstSession: false,
+      isMonthlySession: true,
+      completedDate: "2024-12-20",
+      nextSessionDate: "2025-01-20",
+      autoScheduled: true,
+      notes: "Monthly group session - focus on social interaction",
+      goals: ["Improve social connections", "Share experiences"],
+      homework: "Practice social skills in daily life",
+      emergencyContact: {
+        name: "Lisa Chen",
+        phone: "+1 (555) 987-6543",
+      },
+    },
+    {
+      id: 5,
+      clientName: "Robert Chen",
+      clientId: "C002",
+      sessionType: "Group Therapy",
+      therapyType: "Support Group",
+      status: "scheduled",
+      date: "2025-01-20",
+      time: "2:00 PM",
+      duration: 90,
+      location: "Community Room A",
+      zoomLink: null,
+      sessionNumber: 3,
+      isFirstSession: false,
+      isMonthlySession: true,
+      completedDate: null,
+      nextSessionDate: "2025-02-20",
+      autoScheduled: true,
+      notes: "Monthly group session - continue progress",
+      goals: ["Continue building social connections", "Address new challenges"],
+      homework: "Join one community activity this week",
+      emergencyContact: {
+        name: "Lisa Chen",
+        phone: "+1 (555) 987-6543",
+      },
+    },
+    {
+      id: 6,
+      clientName: "Dorothy Williams",
+      clientId: "C003",
+      sessionType: "Crisis Intervention",
+      therapyType: "Emergency Support",
+      status: "overdue",
+      date: "2025-01-10",
+      time: "11:30 AM",
+      duration: 120,
+      location: "In-Person",
+      zoomLink: null,
+      sessionNumber: 1,
+      isFirstSession: true,
+      isMonthlySession: false,
+      completedDate: null,
+      nextSessionDate: "2025-02-10",
+      autoScheduled: false,
+      notes: "Emergency session for crisis management",
+      goals: ["Ensure safety", "Develop safety plan"],
+      homework: "Use safety plan when feeling overwhelmed",
+      emergencyContact: {
+        name: "Michael Williams",
+        phone: "+1 (555) 456-7890",
+      },
+    },
+  ];
+
+  // Function to automatically create next monthly session
+  const createNextMonthlySession = (completedSession) => {
+    const nextSessionDate = new Date(completedSession.nextSessionDate);
+    const newSession = {
+      ...completedSession,
+      id: Date.now() + Math.random(),
+      status: "scheduled",
+      date: nextSessionDate.toISOString().split("T")[0],
+      sessionNumber: completedSession.sessionNumber + 1,
+      isFirstSession: false,
+      isMonthlySession: true,
+      completedDate: null,
+      nextSessionDate: new Date(
+        nextSessionDate.getFullYear(),
+        nextSessionDate.getMonth() + 1,
+        nextSessionDate.getDate()
+      )
+        .toISOString()
+        .split("T")[0],
+      autoScheduled: true,
+      notes: `Monthly follow-up session #${
+        completedSession.sessionNumber + 1
+      } - auto-scheduled`,
+      goals: ["Review monthly progress", "Adjust treatment plan as needed"],
+    };
+    return newSession;
+  };
+
+  // Function to check and create overdue sessions
+  const checkAndCreateOverdueSessions = () => {
+    const today = new Date();
+    const updatedSessions = [...sessions];
+
+    sessions.forEach((session) => {
+      if (session.status === "scheduled" && new Date(session.date) < today) {
+        // Mark as overdue
+        const sessionIndex = updatedSessions.findIndex(
+          (s) => s.id === session.id
+        );
+        if (sessionIndex !== -1) {
+          updatedSessions[sessionIndex].status = "overdue";
+        }
+      }
+    });
+
+    setSessions(updatedSessions);
+  };
+
+  // Function to complete a session and auto-schedule next monthly session
+  const completeSession = (sessionId) => {
+    const updatedSessions = [...sessions];
+    const sessionIndex = updatedSessions.findIndex((s) => s.id === sessionId);
+
+    if (sessionIndex !== -1) {
+      const session = updatedSessions[sessionIndex];
+
+      // Mark current session as completed
+      updatedSessions[sessionIndex] = {
+        ...session,
+        status: "completed",
+        completedDate: new Date().toISOString().split("T")[0],
+      };
+
+      // Create next monthly session if this was the first session or completed monthly session
+      if (session.isFirstSession || session.isMonthlySession) {
+        const nextSession = createNextMonthlySession(
+          updatedSessions[sessionIndex]
+        );
+        updatedSessions.push(nextSession);
+      }
+
+      setSessions(
+        updatedSessions.sort((a, b) => new Date(a.date) - new Date(b.date))
+      );
+    }
+  };
+
   useEffect(() => {
     setTimeout(() => {
-      setSessions(mockSessions);
+      setSessions(
+        mockSessions.sort((a, b) => new Date(a.date) - new Date(b.date))
+      );
       setLoading(false);
     }, 1000);
   }, []);
+
+  useEffect(() => {
+    if (sessions.length > 0) {
+      checkAndCreateOverdueSessions();
+    }
+  }, [sessions]);
 
   const filteredSessions = sessions.filter((session) => {
     const matchesSearch =
@@ -162,11 +362,11 @@ const TherapySessions = () => {
       (selectedFilter === "today" &&
         session.date === new Date().toISOString().split("T")[0]) ||
       (selectedFilter === "scheduled" && session.status === "scheduled") ||
-      (selectedFilter === "in_progress" && session.status === "in_progress") ||
       (selectedFilter === "completed" && session.status === "completed") ||
-      (selectedFilter === "individual" &&
-        session.sessionType === "Individual Therapy") ||
-      (selectedFilter === "group" && session.sessionType === "Group Therapy");
+      (selectedFilter === "overdue" && session.status === "overdue") ||
+      (selectedFilter === "first_session" && session.isFirstSession) ||
+      (selectedFilter === "monthly" && session.isMonthlySession) ||
+      (selectedFilter === "auto_scheduled" && session.autoScheduled);
 
     return matchesSearch && matchesFilter;
   });
@@ -175,14 +375,14 @@ const TherapySessions = () => {
     switch (status) {
       case "completed":
         return "bg-green-100 text-green-800";
-      case "in_progress":
-        return "bg-blue-100 text-blue-800";
       case "scheduled":
-        return "bg-yellow-100 text-yellow-800";
-      case "cancelled":
+        return "bg-blue-100 text-blue-800";
+      case "overdue":
         return "bg-red-100 text-red-800";
-      default:
+      case "cancelled":
         return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-yellow-100 text-yellow-800";
     }
   };
 
@@ -194,6 +394,15 @@ const TherapySessions = () => {
     } else {
       return <MapPin className="w-4 h-4 text-gray-600" />;
     }
+  };
+
+  const getSessionTypeIcon = (session) => {
+    if (session.isFirstSession) {
+      return <CalendarPlus className="w-4 h-4 text-purple-600" />;
+    } else if (session.isMonthlySession) {
+      return <RotateCcw className="w-4 h-4 text-blue-600" />;
+    }
+    return <Calendar className="w-4 h-4 text-gray-600" />;
   };
 
   if (loading) {
@@ -240,7 +449,7 @@ const TherapySessions = () => {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -259,18 +468,14 @@ const TherapySessions = () => {
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-blue-600" />
+                <RotateCcw className="w-6 h-6 text-blue-600" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">
-                  Today's Sessions
+                  Monthly Sessions
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {
-                    sessions.filter(
-                      (s) => s.date === new Date().toISOString().split("T")[0]
-                    ).length
-                  }
+                  {sessions.filter((s) => s.isMonthlySession).length}
                 </p>
               </div>
             </div>
@@ -284,6 +489,19 @@ const TherapySessions = () => {
                 <p className="text-sm font-medium text-gray-600">Completed</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {sessions.filter((s) => s.status === "completed").length}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Overdue</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {sessions.filter((s) => s.status === "overdue").length}
                 </p>
               </div>
             </div>
@@ -329,10 +547,11 @@ const TherapySessions = () => {
                 <option value="all">All Sessions</option>
                 <option value="today">Today</option>
                 <option value="scheduled">Scheduled</option>
-                <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
-                <option value="individual">Individual</option>
-                <option value="group">Group</option>
+                <option value="overdue">Overdue</option>
+                <option value="first_session">First Sessions</option>
+                <option value="monthly">Monthly Sessions</option>
+                <option value="auto_scheduled">Auto-Scheduled</option>
               </select>
               <input
                 type="date"
@@ -350,18 +569,37 @@ const TherapySessions = () => {
             {filteredSessions.map((session) => (
               <div
                 key={session.id}
-                className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                className={`border rounded-lg p-6 hover:shadow-md transition-shadow ${
+                  session.status === "overdue"
+                    ? "border-red-300 bg-red-50"
+                    : "border-gray-200"
+                }`}
               >
                 <div className="flex flex-col lg:flex-row gap-6">
                   {/* Session Info */}
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                          {session.clientName}
-                        </h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {session.clientName}
+                          </h3>
+                          {getSessionTypeIcon(session)}
+                          {session.autoScheduled && (
+                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              Auto-Scheduled
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-600 mb-2">
                           {session.sessionType} - {session.therapyType}
+                        </p>
+                        <p className="text-xs text-gray-500 mb-2">
+                          {session.isFirstSession
+                            ? "First Session"
+                            : session.isMonthlySession
+                            ? "Monthly Session"
+                            : "Regular Session"}
                         </p>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
@@ -387,8 +625,7 @@ const TherapySessions = () => {
                           {session.status.replace("_", " ").toUpperCase()}
                         </span>
                         <span className="text-sm text-gray-500">
-                          Session {session.sessionNumber}/
-                          {session.totalSessions}
+                          Session {session.sessionNumber}
                         </span>
                       </div>
                     </div>
@@ -422,7 +659,7 @@ const TherapySessions = () => {
                       </div>
                     </div>
 
-                    {/* Notes and Homework */}
+                    {/* Notes and Next Session */}
                     {session.notes && (
                       <div className="mb-4">
                         <h4 className="text-sm font-medium text-gray-900 mb-1">
@@ -432,29 +669,36 @@ const TherapySessions = () => {
                       </div>
                     )}
 
-                    {session.homework && (
-                      <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-900 mb-1">
-                          Homework Assignment:
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          {session.homework}
-                        </p>
-                      </div>
-                    )}
+                    {session.nextSessionDate &&
+                      session.status === "completed" && (
+                        <div className="text-sm text-green-600 font-medium">
+                          Next monthly session: {session.nextSessionDate}
+                        </div>
+                      )}
 
-                    {/* Next Session */}
-                    <div className="text-sm text-gray-500">
-                      Next session: {session.nextSession}
-                    </div>
+                    {session.nextSessionDate &&
+                      session.status === "scheduled" && (
+                        <div className="text-sm text-blue-600 font-medium">
+                          Next session scheduled: {session.nextSessionDate}
+                        </div>
+                      )}
                   </div>
 
                   {/* Actions */}
                   <div className="flex flex-col gap-3">
-                    {session.zoomLink && (
+                    {session.zoomLink && session.status === "scheduled" && (
                       <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                         <Video className="w-4 h-4" />
                         Join Call
+                      </button>
+                    )}
+                    {session.status === "scheduled" && (
+                      <button
+                        onClick={() => completeSession(session.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Complete
                       </button>
                     )}
                     <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
@@ -493,10 +737,38 @@ const TherapySessions = () => {
               </div>
 
               <form className="space-y-6">
+                {/* Client Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Client
+                  </label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <option value="">Choose a client</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name} (ID: {client.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Client
+                      Session Type
+                    </label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                      <option value="">Select session type</option>
+                      {sessionTypes.map((type, index) => (
+                        <option key={index} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Therapy Type
                     </label>
                     <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                       <option value="">Select therapy type</option>
@@ -507,7 +779,27 @@ const TherapySessions = () => {
                       ))}
                     </select>
                   </div>
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Time
+                    </label>
+                    <input
+                      type="time"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Duration (minutes)
@@ -523,37 +815,15 @@ const TherapySessions = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date
-                    </label>
-                    <input
-                      type="date"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Time
-                    </label>
-                    <input
-                      type="time"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Location
-                    </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                      <option value="video">Video Call</option>
-                      <option value="in-person">In-Person</option>
-                      <option value="phone">Phone Call</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location
+                  </label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <option value="Video Call">Video Call</option>
+                    <option value="In-Person">In-Person</option>
+                    <option value="Phone Call">Phone Call</option>
+                  </select>
                 </div>
 
                 <div>
