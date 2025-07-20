@@ -94,6 +94,7 @@ const doctorAssignmentRoutes = require('./routes/doctorAssignment');
 // Import doctor appointments routes
 const doctorAppointmentsRoutes = require('./routes/doctorAppointments');
 
+
 // Import and use routes with error checking
 try {
   routeConfigs.forEach(({ path, mount, name }) => {

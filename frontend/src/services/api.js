@@ -1,4 +1,4 @@
-// src/services/api.js
+// src/services/api.js (Updated)
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -8,6 +8,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // Add timeout
 });
 
 // Request interceptor
@@ -17,7 +18,11 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('API Request:', config.method?.toUpperCase(), config.url);
+    
+    // Only log in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('API Request:', config.method?.toUpperCase(), config.url);
+    }
     return config;
   },
   (error) => {
@@ -26,19 +31,29 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor
+// Response interceptor with better error handling
 api.interceptors.response.use(
   (response) => {
-    console.log('API Response:', response.status, response.config.url);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('API Response:', response.status, response.config.url);
+    }
     return response;
   },
   (error) => {
-    console.error('API Response Error:', error.response?.status, error.response?.data);
+    console.error('API Response Error:', {
+      status: error.response?.status,
+      message: error.response?.data?.message,
+      url: error.config?.url
+    });
     
     // Handle 401 errors (unauthorized)
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      // Don't redirect here, let components handle it
+      localStorage.removeItem('user');
+      // Redirect to login if not already there
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     
     return Promise.reject(error);
