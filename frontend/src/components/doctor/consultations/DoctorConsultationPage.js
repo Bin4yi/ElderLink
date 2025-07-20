@@ -440,19 +440,22 @@ const DoctorConsultationPage = () => {
             <h1 className="text-2xl font-bold text-gray-900">My Consultations</h1>
             <p className="text-gray-600">
               Manage your scheduled consultations and patient meetings
+            </p>
+            {/* Status indicator - always present to prevent layout shifts */}
+            <div className="min-h-[20px] flex items-center">
               {updateStatus === 'updating' && (
-                <span className="text-blue-600 ml-2">
-                  <span className="inline-block animate-spin w-3 h-3 border border-blue-600 border-t-transparent rounded-full mr-1"></span>
-                  <span className="opacity-100 transition-opacity duration-200">Checking for updates...</span>
+                <span className="text-blue-600 text-sm flex items-center">
+                  <span className="inline-block animate-spin w-3 h-3 border border-blue-600 border-t-transparent rounded-full mr-2"></span>
+                  Checking for updates...
                 </span>
               )}
               {updateStatus === 'updated' && (
-                <span className="text-green-600 ml-2 animate-fade-in">
-                  <CheckCircle className="inline-block w-3 h-3 mr-1" />
+                <span className="text-green-600 text-sm flex items-center">
+                  <CheckCircle className="w-3 h-3 mr-2" />
                   Updated
                 </span>
               )}
-            </p>
+            </div>
             <p className="text-xs text-gray-500">
               Last updated: {new Date(lastUpdated).toLocaleTimeString()}
             </p>
