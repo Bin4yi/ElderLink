@@ -87,22 +87,14 @@ const DoctorScheduleManager = () => {
       const isSelected = selectedDate === dateStr;
       const hasSlots = dateSlots[dateStr] && dateSlots[dateStr].some(s => s.isAvailable);
       const isToday = dateStr === todayStr;
-      const isPast = dateObj < new Date(todayStr + 'T00:00:00');
-
       calendarCells.push(
         <button
           key={dateStr}
-          disabled={isPast}
           className={`p-2 rounded w-10 h-10 text-center border transition
-            ${isPast
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : hasSlots
-              ? 'bg-green-500 text-white'
-              : 'bg-black text-white'}
-            ${isSelected ? 'ring-2 ring-blue-500' : ''}
+            ${isSelected ? 'bg-blue-500 text-white' : hasSlots ? 'bg-green-200' : 'bg-gray-100'}
             ${isToday ? 'border-2 border-red-500 font-bold' : ''}
             hover:bg-blue-100`}
-          onClick={() => !isPast && setSelectedDate(dateStr)}
+          onClick={() => setSelectedDate(dateStr)}
         >
           {day}
         </button>
