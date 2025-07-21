@@ -40,7 +40,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
         break;
 
       case "pharmacist":
-        redirectPath = "/pharmacy/dashboard";
+        redirectPath = "/pharmacist/dashboard";
 
         break;
       case "mental_health_consultant":

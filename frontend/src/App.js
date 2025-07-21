@@ -111,14 +111,14 @@ function App() {
                   <Route path="/family/elders" element={<FamilyElders />} />
                   
                   {/* Pharmacy routes */}
-                  <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
-                  <Route path="/pharmacy/medications" element={<MedicationManagement />} />
-                  <Route path="/pharmacy/delivery" element={<DeliverySchedule />} />
-                  <Route path="/pharmacy/prescriptions" element={<PrescriptionManagement />} />
-                  <Route path="/pharmacy/inventory" element={<InventoryManagement />} />
-                  <Route path="/pharmacy/inventory/add" element={<AddNewItem />} />
-                  <Route path="/pharmacy/profile" element={<PharmacyProfile />} />
-                  <Route path="/pharmacy/medicine/:id" element={<MedicineProfile />} />
+                  <Route path="/pharmacist/dashboard" element={<PharmacyDashboard />} />
+                  <Route path="/pharmacist/medications" element={<MedicationManagement />} />
+                  <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
+                  <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
+                  <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
+                  <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
+                  <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
+                  <Route path="/pharmacist/medicine/:id" element={<MedicineProfile />} />
                   
                   {/* Mental Health routes */}
                   <Route path="/mental-health/dashboard" element={<MentalHealthDashboard />} />
