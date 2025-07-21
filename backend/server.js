@@ -62,12 +62,30 @@ app.get('/api', (req, res) => {
 // Import routes with error handling
 const routeConfigs = [
   { path: './routes/auth', mount: '/api/auth', name: 'authRoutes' },
-  { path: './routes/elder', mount: '/api/elders', name: 'elderRoutes' },
+
+  { path: './routes/elder', mount: '/api/elder', name: 'elderRoutes' },
+  { path: './routes/healthMonitoring', mount: '/api/health-monitoring', name: 'healthMonitoringRoutes' },
+
   { path: './routes/subscription', mount: '/api/subscriptions', name: 'subscriptionRoutes' },
   { path: './routes/notification', mount: '/api/notifications', name: 'notificationRoutes' },
 ];
 
-// Load basic routes
+
+// Import health monitoring routes
+const healthMonitoringRoutes = require('./routes/healthMonitoring');
+// Import health reports routes
+const healthReportsRoutes = require('./routes/healthReports');
+
+// Import staff assignment routes
+const staffAssignmentRoutes = require('./routes/staffAssignment');
+
+// Import doctor assignment routes
+const doctorAssignmentRoutes = require('./routes/doctorAssignment');
+
+// Import elder routes
+const elderRoutes = require('./routes/elder');
+
+// Import and use routes with error checking
 try {
   routeConfigs.forEach(({ path, mount, name }) => {
     try {
@@ -84,34 +102,22 @@ try {
   console.log('⚠️  Some routes not found, continuing with available routes...');
 }
 
+
 // Load additional routes with fallbacks
-try {
-  const appointmentRoutes = require('./routes/appointments');
   app.use('/api/appointments', appointmentRoutes);
   console.log('✅ Appointment routes loaded');
-} catch (error) {
-  console.log('⚠️  Appointment routes not found, creating mock...');
-  // Mock appointment routes
-  app.get('/api/appointments/doctors', (req, res) => {
-    res.json({
-      success: true,
-      message: 'Available doctors retrieved successfully',
-      doctors: [
-        {
-          id: 1,
-          specialization: 'General Medicine',
-          experience: 10,
-          consultationFee: 100,
-          user: {
-            firstName: 'John',
-            lastName: 'Smith',
-            email: 'dr.smith@example.com'
-          }
-        }
-      ]
-    });
-  });
-}
+
+  // Use health monitoring routes
+  app.use('/api/health-monitoring', healthMonitoringRoutes);
+  // Use health reports routes
+  app.use('/api/health-reports', healthReportsRoutes);
+  // Use staff assignment routes
+  app.use('/api/staff-assignments', staffAssignmentRoutes);
+  // Use doctor assignment routes
+  app.use('/api/doctor-assignments', doctorAssignmentRoutes);
+  // Use elder routes
+  app.use('/api/elders', elderRoutes);
+
 
 try {
   const doctorAppointmentRoutes = require('./routes/doctorAppointments');

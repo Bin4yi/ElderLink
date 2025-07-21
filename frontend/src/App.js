@@ -34,7 +34,15 @@ import AppointmentList from './components/family/appointments/AppointmentList';
 import Doctors from './components/family/doctors/Doctors';
 import DoctorAssignment from './components/family/doctors/DoctorAssignment'; // NEW IMPORT
 import AppointmentBooking from './components/family/appointments/AppointmentBooking';
+
 import FamilyConsultationPage from './components/family/consultation/FamilyConsultationPage';
+
+import FamilySettings from './components/family/settings/FamilySettings';
+import FamilyProfile from './components/family/profile/FamilyProfile';
+import FamilyHealthReports from './components/family/reports/FamilyHealthReports';
+import FamilySubscriptions from './components/family/subscription/FamilySubscriptions';
+import FamilyElders from './components/family/elder/FamilyElders';
+
 
 // Pharmacy
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
@@ -67,6 +75,14 @@ import HealthReports from './components/staff/reports/HealthReports';
 
 // Elder
 import ElderDashboard from './components/Elder/dashboard/Elder';
+import ElderHealthReports from './components/Elder/dashboard/ElderHealthReports';
+import ElderAppointments from './components/Elder/dashboard/ElderAppointments';
+import ElderMedications from './components/Elder/dashboard/ElderMedications';
+import ElderMentalWellness from './components/Elder/dashboard/ElderMentalWellness';
+import ElderEmergency from './components/Elder/dashboard/ElderEmergency';
+import ElderProfile from './components/Elder/dashboard/ElderProfile';
+
+const theme = createTheme(); // Add this line
 
 const theme = createTheme();
 
@@ -104,7 +120,16 @@ function App() {
                   <Route path="/family/dashboard" element={<FamilyDashboard />} />
                   <Route path="/family/appointments" element={<AppointmentList />} />
                   <Route path="/family/doctors" element={<Doctors />} />
+
                   <Route path="/family/consultations" element={<FamilyConsultationPage />} />
+
+                  <Route path="/family/doctor-assignment" element={<DoctorAssignment />} /> {/* NEW ROUTE */}
+                  <Route path="/family/settings" element={<FamilySettings />} />
+                  <Route path="/family/profile" element={<FamilyProfile />} />
+                  <Route path="/family/health-reports" element={<FamilyHealthReports />} />
+                  <Route path="/family/subscriptions" element={<FamilySubscriptions />} />
+                  <Route path="/family/elders" element={<FamilyElders />} />
+
                   
                   {/* Pharmacy routes */}
                   <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
@@ -125,9 +150,7 @@ function App() {
                   <Route path="/mental-health/assessments" element={<MentalHealthAssessments />} />
                   <Route path="/mental-health/resources" element={<MentalHealthResources />} />
                   <Route path="/mental-health/therapy-sessions" element={<MentalHealthTherapySessions />} />
-                  <Route path="/family/doctors" element={<Doctors />} />
-              <Route path="/family/doctor-assignment" element={<DoctorAssignment />} /> {/* NEW ROUTE */}
-              
+                  
                   {/* Staff routes */}
                   <Route path="/staff/dashboard" element={<StaffDashboard />} />
                   <Route path="/staff/alerts" element={<AlertsManagement />} />
@@ -139,6 +162,12 @@ function App() {
                   
                   {/* Elder routes */}
                   <Route path="/elder/dashboard" element={<ElderDashboard />} />
+              <Route path="/elder/health-reports" element={<ElderHealthReports />} />
+              <Route path="/elder/appointments" element={<ElderAppointments />} />
+              <Route path="/elder/medications" element={<ElderMedications />} />
+              <Route path="/elder/mental-wellness" element={<ElderMentalWellness />} />
+              <Route path="/elder/emergency" element={<ElderEmergency />} />
+              <Route path="/elder/profile" element={<ElderProfile />} />
               <Route path="/appointment-booking" element={<AppointmentBooking />} />
                 </Routes>
                 

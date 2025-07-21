@@ -404,11 +404,29 @@ const deleteHealthRecord = async (req, res) => {
   }
 };
 
+const getLatestForElder = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const elder = await Elder.findOne({ where: { userId } });
+    if (!elder) {
+      return res.status(404).json({ success: false, message: 'Elder not found' });
+    }
+    const latestRecord = await HealthMonitoring.findOne({
+      where: { elderId: elder.id },
+      order: [['monitoringDate', 'DESC']]
+    });
+    res.json({ success: true, record: latestRecord });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to get latest health monitoring', error: error.message });
+  }
+};
+
 module.exports = {
   getAllHealthRecords,
   getTodayRecords,
   getElderHealthHistory,
   createHealthRecord,
   updateHealthRecord,
-  deleteHealthRecord
+  deleteHealthRecord,
+  getLatestForElder
 };

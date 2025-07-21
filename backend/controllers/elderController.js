@@ -229,18 +229,16 @@ const updateElder = async (req, res) => {
 
 const createElderLogin = async (req, res) => {
   try {
-    const { elderId } = req.params;
+    const { id } = req.params;
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ 
-        message: 'Username and password are required' 
-      });
+      return res.status(400).json({ message: 'Username and password are required' });
     }
 
-    // Verify elder belongs to the requesting user
+    // Find elder and check ownership
     const elder = await Elder.findOne({
-      where: { id: elderId },
+      where: { id },
       include: [{
         model: Subscription,
         as: 'subscription',
@@ -249,24 +247,40 @@ const createElderLogin = async (req, res) => {
     });
 
     if (!elder) {
-      return res.status(404).json({ message: 'Elder not found' });
+      return res.status(404).json({ message: 'Elder not found or you do not have permission' });
     }
 
-    // Use the elder auth service to create login
-    const result = await ElderAuthService.createElderLogin(elderId, username, password);
+    // Check if user already exists
+    const existingUser = await User.findOne({ where: { email: username } });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    // Create user
+    const user = await User.create({
+      firstName: elder.firstName,
+      lastName: elder.lastName,
+      email: username,
+      password,
+      phone: elder.phone,
+      role: 'elder',
+      isActive: true
+    });
+
+    // Link elder to user
+    await elder.update({
+      userId: user.id,
+      username,
+      hasLoginAccess: true
+    });
 
     res.json({
       message: 'Login credentials created successfully',
-      elder: result.elder,
+      elder,
       loginCreated: true
     });
   } catch (error) {
     console.error('Create elder login error:', error);
-    
-    if (error.message === 'Username already exists') {
-      return res.status(400).json({ message: error.message });
-    }
-    
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -305,47 +319,19 @@ const toggleElderAccess = async (req, res) => {
 
 const getElderProfile = async (req, res) => {
   try {
-    console.log('🔍 Getting elder profile for user:', req.user.id);
-    
-    // Find the elder record associated with this user
     const elder = await Elder.findOne({
       where: { userId: req.user.id },
       include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'isActive']
-        },
-        {
-          model: Subscription,
-          as: 'subscription',
-          attributes: ['id', 'plan', 'status', 'startDate', 'endDate']
-        }
+        { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'isActive'] },
+        { model: Subscription, as: 'subscription', attributes: ['id', 'plan', 'status', 'startDate', 'endDate'] }
       ]
     });
-
     if (!elder) {
-      console.log('❌ Elder profile not found for user:', req.user.id);
-      return res.status(404).json({
-        success: false,
-        message: 'Elder profile not found'
-      });
+      return res.status(404).json({ success: false, message: 'Elder profile not found' });
     }
-
-    console.log('✅ Found elder profile:', elder.id);
-
-    res.json({
-      success: true,
-      elder: elder,
-      message: 'Elder profile retrieved successfully'
-    });
+    res.json({ success: true, elder });
   } catch (error) {
-    console.error('❌ Get elder profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get elder profile',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to get elder profile', error: error.message });
   }
 };
 
@@ -673,6 +659,25 @@ const getAllEldersForStaff = async (req, res) => {
   return await getAssignedEldersForStaff(req, res);
 };
 
+const getProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const elder = await Elder.findOne({
+      where: { userId },
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email', 'phone'] },
+        { model: Subscription, as: 'subscription', attributes: ['id', 'plan', 'status', 'startDate', 'endDate'] }
+      ]
+    });
+    if (!elder) {
+      return res.status(404).json({ success: false, message: 'Profile not found' });
+    }
+    res.json({ success: true, elder });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Unable to load profile', error: error.message });
+  }
+};
+
 module.exports = {
   addElder,
   getElders,
@@ -684,5 +689,6 @@ module.exports = {
   addElderWithAuth,
   getAllEldersForStaff,
   getAssignedEldersForStaff,
-  getAllEldersForHealthMonitoring
+  getAllEldersForHealthMonitoring,
+  getProfile
 };
