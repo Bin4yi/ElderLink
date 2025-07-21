@@ -2,197 +2,157 @@
 import api from './api';
 
 class ConsultationService {
-  // Get doctor consultations (FIXED: Changed endpoint)
+  // ✅ FIXED: Get doctor consultations from appointments table
   async getDoctorConsultations(params = {}) {
     try {
-      const { page = 1, limit = 10 } = params;
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString()
+      console.log('🔄 Fetching doctor consultations with params:', params);
+      
+      const response = await api.get('/consultations/doctor/consultations', { 
+        params: {
+          status: params.status || 'all',
+          page: params.page || 1,
+          limit: params.limit || 50
+        }
       });
       
-      // ✅ FIXED: Changed from /consultation/doctor/consultations to /doctor/consultations
-      const response = await api.get(`/doctor/consultations?${queryParams}`);
+      console.log('✅ Doctor consultations response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching doctor consultations:', error);
-      throw this.handleError(error);
+      console.log('API Error:', error.response?.data);
+      console.error('❌ Error fetching doctor consultations:', error);
+      throw error;
     }
   }
 
-  // Get doctor appointments
-  async getDoctorAppointments(params = {}) {
+  // Get family consultations
+  async getFamilyConsultations(params = {}) {
     try {
-      const { status, date, page = 1, limit = 10 } = params;
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString()
-      });
-      
-      if (status) queryParams.append('status', status);
-      if (date) queryParams.append('date', date);
-      
-      // ✅ CORRECT: This endpoint matches the backend route
-      const response = await api.get(`/doctor/appointments?${queryParams}`);
+      const response = await api.get('/consultations/family/consultations', { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching doctor appointments:', error);
-      throw this.handleError(error);
+      console.error('Error fetching family consultations:', error);
+      throw error;
     }
   }
 
-  // Create consultation record
-  async createConsultation(consultationData) {
+  // Start consultation (for doctors)
+  async startConsultation(appointmentId) {
     try {
-      const response = await api.post('/doctor/consultations', consultationData);
+      const response = await api.post(`/consultations/${appointmentId}/start`);
       return response.data;
     } catch (error) {
-      throw this.handleError(error);
+      console.error('Error starting consultation:', error);
+      throw error;
     }
   }
 
-  // Update consultation
-  async updateConsultation(consultationId, consultationData) {
+  // Join consultation (for family members)
+  async joinConsultation(appointmentId) {
     try {
-      const response = await api.put(`/doctor/consultations/${consultationId}`, consultationData);
+      const response = await api.post(`/consultations/${appointmentId}/join`);
       return response.data;
     } catch (error) {
-      throw this.handleError(error);
+      console.error('Error joining consultation:', error);
+      throw error;
     }
   }
 
-  // Delete consultation
-  async deleteConsultation(consultationId) {
+  // Complete consultation
+  async completeConsultation(appointmentId, consultationData) {
     try {
-      const response = await api.delete(`/doctor/consultations/${consultationId}`);
+      const response = await api.post(`/consultations/${appointmentId}/complete`, consultationData);
       return response.data;
     } catch (error) {
-      throw this.handleError(error);
+      console.error('Error completing consultation:', error);
+      throw error;
     }
   }
 
-  // Get consultation by ID
-  async getConsultationById(consultationId) {
+  // Create prescription
+  async createPrescription(consultationId, prescriptionData) {
     try {
-      const response = await api.get(`/doctor/consultations/${consultationId}`);
+      const response = await api.post(`/consultations/${consultationId}/prescription`, prescriptionData);
       return response.data;
     } catch (error) {
-      throw this.handleError(error);
+      console.error('Error creating prescription:', error);
+      throw error;
     }
   }
 
-  // Review appointment (approve/reject)
-  async reviewAppointment(appointmentId, action, notes = '') {
+  // Get appointment details
+  async getAppointmentDetails(appointmentId) {
     try {
-      console.log('🔄 Reviewing appointment:', { appointmentId, action, notes });
-      
-      const response = await api.patch(`/doctor/appointments/${appointmentId}/review`, {
-        action,
-        doctorNotes: notes,
-        rejectionReason: action === 'reject' ? notes : undefined
-      });
-      
-      console.log('✅ Review response:', response.data);
+      const response = await api.get(`/consultations/appointments/${appointmentId}/details`);
       return response.data;
     } catch (error) {
-      console.error('❌ Error reviewing appointment:', error);
-      throw this.handleError(error);
+      console.error('Error getting appointment details:', error);
+      throw error;
     }
   }
 
-  // Complete appointment
-  async completeAppointment(appointmentId, data) {
+  // Get elder details for doctor
+  async getElderDetails(elderId) {
     try {
-      const response = await api.patch(`/doctor/appointments/${appointmentId}/complete`, data);
+      const response = await api.get(`/consultations/doctor/elders/${elderId}/details`);
       return response.data;
     } catch (error) {
-      console.error('Error completing appointment:', error);
-      throw this.handleError(error);
+      console.error('Error getting elder details:', error);
+      throw error;
     }
   }
 
-  // Get elder's medical summary
+  // Get elder medical summary (alternative method)
   async getElderMedicalSummary(elderId) {
     try {
       const response = await api.get(`/doctor/elders/${elderId}/medical-summary`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching elder medical summary:', error);
-      throw this.handleError(error);
+      console.error('Error getting elder medical summary:', error);
+      throw error;
     }
   }
 
-  // Create prescription
-  async createPrescription(appointmentId, prescriptionData) {
+  // Get consultation history for elder
+  async getConsultationHistory(elderId) {
     try {
-      const response = await api.post(`/doctor/appointments/${appointmentId}/prescriptions`, prescriptionData);
+      const response = await api.get(`/consultations/elder/${elderId}/history`);
       return response.data;
     } catch (error) {
-      console.error('Error creating prescription:', error);
-      throw this.handleError(error);
+      console.error('Error getting consultation history:', error);
+      throw error;
     }
   }
 
-  // Get dashboard stats
-  async getDashboardStats() {
+  // Update consultation status
+  async updateConsultationStatus(appointmentId, status) {
     try {
-      const response = await api.get('/doctor/dashboard/stats');
+      const response = await api.patch(`/consultations/${appointmentId}/status`, { status });
       return response.data;
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      throw this.handleError(error);
+      console.error('Error updating consultation status:', error);
+      throw error;
     }
   }
 
-  // Update schedule
-  async updateSchedule(schedules) {
-    try {
-      const response = await api.post('/doctor/schedule', { schedules });
-      return response.data;
-    } catch (error) {
-      console.error('Error updating schedule:', error);
-      throw this.handleError(error);
-    }
-  }
-
-  // Add schedule exception
-  async addScheduleException(exceptionData) {
-    try {
-      const response = await api.post('/doctor/schedule/exceptions', exceptionData);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding schedule exception:', error);
-      throw this.handleError(error);
-    }
-  }
-
-  // Reschedule appointment
-  async rescheduleAppointment(appointmentId, data) {
-    try {
-      const response = await api.patch(`/doctor/appointments/${appointmentId}/reschedule`, data);
-      return response.data;
-    } catch (error) {
-      console.error('Error rescheduling appointment:', error);
-      throw this.handleError(error);
-    }
-  }
-
-  // Error handler
+  // Handle API errors
   handleError(error) {
-    console.error('ConsultationService Error:', error);
-    
     if (error.response) {
       // Server responded with error status
-      const { status, data } = error.response;
-      throw new Error(data.message || `HTTP ${status} Error`);
+      const message = error.response.data?.message || 'An error occurred';
+      console.error('API Error:', message);
+      return new Error(message);
     } else if (error.request) {
       // Request was made but no response received
-      throw new Error('Network error - please check your connection');
+      console.error('Network Error:', error.request);
+      return new Error('Network error - please check your connection');
     } else {
       // Something else happened
-      throw new Error(error.message || 'An unexpected error occurred');
+      console.error('Error:', error.message);
+      return new Error(error.message);
     }
   }
 }
 
-export default new ConsultationService();
+// Export a singleton instance
+const consultationService = new ConsultationService();
+export default consultationService;
