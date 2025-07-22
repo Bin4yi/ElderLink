@@ -29,8 +29,18 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check endpoints
+// Health check endpoints
 app.get('/health', (req, res) => {
   res.status(200).json({ 
+    status: 'OK', 
+    message: 'ElderLink Backend is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
     status: 'OK', 
     message: 'ElderLink Backend is running',
     timestamp: new Date().toISOString()
@@ -44,6 +54,53 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Add this new endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'ElderLink API is running',
+    version: '1.0.0',
+    endpoints: [
+      '/api/health',
+      '/api/auth',
+      '/api/subscriptions',
+      '/api/elders',
+      '/api/notifications',
+      '/api/admin'
+    ]
+  });
+});
+
+// Route configurations
+const routeConfigs = [
+  { path: './routes/auth', mount: '/api/auth', name: 'authRoutes' },
+  { path: './routes/elder', mount: '/api/elder', name: 'elderRoutes' },
+  { path: './routes/healthMonitoring', mount: '/api/health-monitoring', name: 'healthMonitoringRoutes' },
+  { path: './routes/subscription', mount: '/api/subscriptions', name: 'subscriptionRoutes' },
+  { path: './routes/notification', mount: '/api/notifications', name: 'notificationRoutes' },
+  { path: './routes/adminUserRoutes', mount: '/api/admin', name: 'adminUserRoutes' },
+  { path: './routes/adminStatsRoutes', mount: '/api/admin', name: 'adminStatsRoutes' },
+  { path: './routes/staffAssignment', mount: '/api/staff-assignments', name: 'staffAssignmentRoutes' },
+  { path: './routes/doctorAssignment', mount: '/api/doctor-assignments', name: 'doctorAssignmentRoutes' }
+];
+
+// Import health monitoring routes
+const healthMonitoringRoutes = require('./routes/healthMonitoring');
+// Import health reports routes
+const healthReportsRoutes = require('./routes/healthReports');
+
+// Import staff assignment routes
+const staffAssignmentRoutes = require('./routes/staffAssignment');
+
+// Import doctor assignment routes
+const doctorAssignmentRoutes = require('./routes/doctorAssignment');
+
+// Import elder routes
+const elderRoutes = require('./routes/elder');
+
+// Import appointment routes
+const appointmentRoutes = require('./routes/appointments');
 
 // Add this new endpoint
 app.get('/api', (req, res) => {
@@ -112,6 +169,8 @@ try {
   const pharmacyDashboardRoutes = require('./routes/parmacyDashboard');
 
   // Verify additional routes are properly exported
+
+  // Verify additional routes are properly exported
   if (typeof inventoryRoutes !== 'function') {
     throw new Error('inventoryRoutes is not a valid router');
   }
@@ -121,7 +180,22 @@ try {
   if (typeof pharmacyDashboardRoutes !== 'function') {
     throw new Error('pharmacyDashboardRoutes is not a valid router');
   }
+  if (typeof simplePrescriptionRoutes !== 'function') {
+    throw new Error('simplePrescriptionRoutes is not a valid router');
+  }
+  if (typeof pharmacyDashboardRoutes !== 'function') {
+    throw new Error('pharmacyDashboardRoutes is not a valid router');
+  }
 
+  // Use health monitoring routes
+  app.use('/api/health-monitoring', healthMonitoringRoutes);
+  // Use health reports routes
+  app.use('/api/health-reports', healthReportsRoutes);
+  // Use staff assignment routes
+  app.use('/api/staff-assignments', staffAssignmentRoutes);
+  // Use doctor assignment routes
+  app.use('/api/doctor-assignments', doctorAssignmentRoutes);
+  // Use elder routes
   // Use health monitoring routes
   app.use('/api/health-monitoring', healthMonitoringRoutes);
   // Use health reports routes
@@ -202,6 +276,7 @@ app.use('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // Database connection and server start
 const startServer = async () => {

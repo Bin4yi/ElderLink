@@ -1,10 +1,13 @@
+
 // backend/models/index.js
 const sequelize = require('../config/database');
 
 // Import models
 const User = require('./User');
 const Elder = require('./Elder');
+const Elder = require('./Elder');
 const Subscription = require('./Subscription');
+const HealthMonitoring = require('./HealthMonitoring');
 const HealthMonitoring = require('./HealthMonitoring');
 const Notification = require('./Notification');
 const StaffAssignment = require('./StaffAssignment');

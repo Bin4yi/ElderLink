@@ -1,5 +1,6 @@
 // src/components/staff/dashboard/StaffDashboard.js
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import RoleLayout from '../../common/RoleLayout';
 import Loading from '../../common/Loading';
 import { 
@@ -27,6 +28,7 @@ const StaffDashboard = () => {
   // Removed todaySchedule state as schedule is now managed in CareManagement
   // Removed recentAlerts state
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadDashboardData();
@@ -142,7 +144,10 @@ const StaffDashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <button className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group">
+          <button 
+            onClick={() => navigate('/staff/care')}
+            className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group"
+          >
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center group-hover:bg-teal-200 transition-colors">
                 <Heart className="w-6 h-6 text-teal-500" />
@@ -152,7 +157,10 @@ const StaffDashboard = () => {
             <p className="text-gray-600">Manage daily care activities</p>
           </button>
 
-          <button className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group">
+          <button 
+            onClick={() => navigate('/staff/monitoring')}
+            className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group"
+          >
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                 <Monitor className="w-6 h-6 text-blue-500" />
@@ -162,7 +170,10 @@ const StaffDashboard = () => {
             <p className="text-gray-600">Check vital signs and health status</p>
           </button>
 
-          <button className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group">
+          <button 
+            onClick={() => navigate('/staff/alerts')}
+            className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group"
+          >
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
                 <AlertTriangle className="w-6 h-6 text-red-500" />
@@ -172,7 +183,10 @@ const StaffDashboard = () => {
             <p className="text-gray-600">Review and respond to alerts</p>
           </button>
 
-          <button className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group">
+          <button 
+            onClick={() => navigate('/staff/reports')}
+            className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group"
+          >
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
                 <Activity className="w-6 h-6 text-green-500" />
