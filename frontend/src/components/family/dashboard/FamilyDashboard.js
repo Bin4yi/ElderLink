@@ -439,7 +439,7 @@ const FamilyDashboard = () => {
                     </div>
                   )}
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Assign Staff</h3>
+                <h3 className="text-lg font-semibold mb-2">Assign Care Staff</h3>
                 <p className="text-gray-600">Assign dedicated staff members to your elders</p>
               </button>
 

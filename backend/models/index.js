@@ -1,3 +1,5 @@
+//index.js of models
+
 const sequelize = require('../config/database');
 
 // Import models
@@ -13,6 +15,12 @@ const Appointment = require('./Appointment');
 const ConsultationRecord = require('./ConsultationRecord'); // ✅ Add this
 const DoctorSchedule = require('./DoctorSchedule');
 
+// Import new inventory models
+const Inventory = require('./Inventory');
+const InventoryTransaction = require('./InventoryTransaction');
+const Prescription = require('./Prescription');
+const PrescriptionItem = require('./PrescriptionItem');
+
 
 // Clear any existing associations to prevent conflicts
 const clearAssociations = (model) => {
@@ -24,7 +32,8 @@ const clearAssociations = (model) => {
 };
 
 // Clear associations for all models
-[User, Elder, Subscription, HealthMonitoring, Notification, StaffAssignment, DoctorAssignment].forEach(clearAssociations);
+[User, Elder, Subscription, HealthMonitoring, Notification, StaffAssignment, DoctorAssignment, 
+ Inventory, InventoryTransaction, Prescription, PrescriptionItem].forEach(clearAssociations);
 
 // User associations
 User.hasMany(Elder, { foreignKey: 'userId', as: 'elders' });
@@ -148,6 +157,42 @@ Elder.hasMany(ConsultationRecord, {
   as: 'consultationRecords'
 });
 
+
+// === NEW INVENTORY ASSOCIATIONS ===
+
+// Inventory associations
+Inventory.belongsTo(User, { foreignKey: 'pharmacyId', as: 'pharmacy' });
+Inventory.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+Inventory.hasMany(InventoryTransaction, { foreignKey: 'inventoryId', as: 'transactions' });
+Inventory.hasMany(PrescriptionItem, { foreignKey: 'inventoryId', as: 'prescriptionItems' });
+
+// InventoryTransaction associations
+InventoryTransaction.belongsTo(Inventory, { foreignKey: 'inventoryId', as: 'inventory' });
+InventoryTransaction.belongsTo(User, { foreignKey: 'performedBy', as: 'performer' });
+
+// Prescription associations
+Prescription.belongsTo(User, { foreignKey: 'doctorId', as: 'doctor' });
+Prescription.belongsTo(Elder, { foreignKey: 'elderId', as: 'elder' });
+Prescription.belongsTo(User, { foreignKey: 'pharmacyId', as: 'pharmacy' });
+Prescription.belongsTo(User, { foreignKey: 'filledBy', as: 'pharmacist' });
+Prescription.hasMany(PrescriptionItem, { foreignKey: 'prescriptionId', as: 'items' });
+
+// PrescriptionItem associations
+PrescriptionItem.belongsTo(Prescription, { foreignKey: 'prescriptionId', as: 'prescription' });
+PrescriptionItem.belongsTo(Inventory, { foreignKey: 'inventoryId', as: 'inventory' });
+
+// Reverse associations for Users (Pharmacists)
+User.hasMany(Inventory, { foreignKey: 'pharmacyId', as: 'inventoryItems' });
+User.hasMany(Inventory, { foreignKey: 'createdBy', as: 'createdInventoryItems' });
+User.hasMany(InventoryTransaction, { foreignKey: 'performedBy', as: 'inventoryTransactions' });
+User.hasMany(Prescription, { foreignKey: 'doctorId', as: 'prescribedPrescriptions' });
+User.hasMany(Prescription, { foreignKey: 'pharmacyId', as: 'assignedPrescriptions' });
+User.hasMany(Prescription, { foreignKey: 'filledBy', as: 'filledPrescriptions' });
+
+// Elder prescriptions
+Elder.hasMany(Prescription, { foreignKey: 'elderId', as: 'prescriptions' });
+
+
 module.exports = {
   sequelize,
   User,
@@ -160,6 +205,10 @@ module.exports = {
   Appointment,
   ConsultationRecord,
   Doctor,
-  DoctorSchedule // ✅ Add this
+  DoctorSchedule, // ✅ Add this
+  Inventory,
+  InventoryTransaction,
+  Prescription,
+  PrescriptionItem
 };
 
