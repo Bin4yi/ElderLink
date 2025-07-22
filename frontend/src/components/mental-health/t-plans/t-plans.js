@@ -23,6 +23,24 @@ const TreatmentPlans = () => {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [showNewPlanModal, setShowNewPlanModal] = useState(false);
 
+  // Mock clients for dropdown
+  const mockClients = [
+    { id: "C001", name: "Margaret Johnson" },
+    { id: "C002", name: "Robert Chen" },
+    { id: "C003", name: "Dorothy Williams" },
+  ];
+
+  // State for new plan form
+  const [newPlan, setNewPlan] = useState({
+    clientId: "",
+    clientName: "",
+    state: "active",
+    priority: "medium",
+    goals: "",
+    interventions: "",
+    notes: "",
+  });
+
   // Mock data
   const mockTreatmentPlans = [
     {
@@ -230,6 +248,34 @@ const TreatmentPlans = () => {
       default:
         return "bg-gray-100 text-gray-800";
     }
+  };
+
+  // Handle form input changes
+  const handleNewPlanChange = (e) => {
+    const { name, value } = e.target;
+    setNewPlan((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === "clientId" && {
+        clientName: mockClients.find((c) => c.id === value)?.name || "",
+      }),
+    }));
+  };
+
+  // Handle new plan submit (demo only, just closes modal)
+  const handleCreatePlan = (e) => {
+    e.preventDefault();
+    // Add logic to save new plan if needed
+    setShowNewPlanModal(false);
+    setNewPlan({
+      clientId: "",
+      clientName: "",
+      state: "active",
+      priority: "medium",
+      goals: "",
+      interventions: "",
+      notes: "",
+    });
   };
 
   if (loading) {
@@ -577,13 +623,58 @@ const TreatmentPlans = () => {
                 </button>
               </div>
 
-              <form className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form className="space-y-6" onSubmit={handleCreatePlan}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Client Dropdown */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Client
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <select
+                      name="clientId"
+                      value={newPlan.clientId}
+                      onChange={handleNewPlanChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Select client</option>
+                      {mockClients.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* State Dropdown */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      State
+                    </label>
+                    <select
+                      name="state"
+                      value={newPlan.state}
+                      onChange={handleNewPlanChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="active">Active</option>
+                      <option value="completed">Completed</option>
+                      <option value="critical">Critical</option>
+                      <option value="on_hold">On Hold</option>
+                    </select>
+                  </div>
+                  {/* Priority Dropdown */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Priority
+                    </label>
+                    <select
+                      name="priority"
+                      value={newPlan.priority}
+                      onChange={handleNewPlanChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
                       <option value="high">High</option>
@@ -597,7 +688,10 @@ const TreatmentPlans = () => {
                     Treatment Goals
                   </label>
                   <textarea
+                    name="goals"
                     rows="4"
+                    value={newPlan.goals}
+                    onChange={handleNewPlanChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Enter treatment goals and objectives..."
                   ></textarea>
@@ -608,7 +702,10 @@ const TreatmentPlans = () => {
                     Interventions
                   </label>
                   <textarea
+                    name="interventions"
                     rows="4"
+                    value={newPlan.interventions}
+                    onChange={handleNewPlanChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="List planned interventions and treatments..."
                   ></textarea>
@@ -619,7 +716,10 @@ const TreatmentPlans = () => {
                     Notes
                   </label>
                   <textarea
+                    name="notes"
                     rows="3"
+                    value={newPlan.notes}
+                    onChange={handleNewPlanChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Additional notes and observations..."
                   ></textarea>
