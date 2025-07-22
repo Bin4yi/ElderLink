@@ -94,6 +94,8 @@ const elderRoutes = require('./routes/elder');
 // Import appointment routes
 const appointmentRoutes = require('./routes/appointments');
 
+// ✅ IMPORTANT: Import doctor appointments routes
+const doctorAppointmentsRoutes = require('./routes/doctorAppointments');
 // Import notification service
 // const notificationService = require('../services/notificationService');
 
@@ -123,6 +125,8 @@ try {
   app.use('/api/elders', elderRoutes);
   // Use appointment routes
   app.use('/api/appointments', appointmentRoutes);
+
+  app.use('/api/doctor', doctorAppointmentsRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);
