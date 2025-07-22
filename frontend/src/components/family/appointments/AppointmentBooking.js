@@ -5,8 +5,10 @@ import toast from 'react-hot-toast';
 import RoleLayout from '../../common/RoleLayout'; 
 import { appointmentService } from '../../../services/appointment'; // ✅ FIXED: Changed from '../../services/appointment'
 import { elderService } from '../../../services/elder'; // ✅ FIXED: Changed from '../../services/elder'
+import { useNavigate } from 'react-router-dom';
 
 const AppointmentBooking = ({ onBack, onSuccess }) => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [selectedElder, setSelectedElder] = useState(null);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -45,14 +47,18 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
       console.log('🔄 Loading doctors...');
       const response = await appointmentService.getAvailableDoctors();
       console.log('✅ Doctors API response:', response);
-      
-      if (response && response.doctors) {
-        setDoctors(response.doctors);
-        console.log(`✅ Set ${response.doctors.length} doctors`);
-      } else {
-        console.warn('⚠️ No doctors in response:', response);
-        setDoctors([]);
+
+      // Try both possible response shapes
+      let doctors = [];
+      if (response.doctors) {
+        doctors = response.doctors;
+      } else if (response.data && response.data.doctors) {
+        doctors = response.data.doctors;
+      } else if (response.data && Array.isArray(response.data)) {
+        doctors = response.data;
       }
+      setDoctors(doctors);
+      console.log(`✅ Set ${doctors.length} doctors`);
     } catch (error) {
       console.error('❌ Error loading doctors:', error);
       console.error('❌ Error details:', {
