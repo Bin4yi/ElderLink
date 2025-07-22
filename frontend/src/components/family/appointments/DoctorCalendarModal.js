@@ -1,4 +1,3 @@
-appointments/DoctorCalendarModal.js
 import React, { useState, useEffect } from 'react';
 import { appointmentService } from '../../../services/appointment';
 
