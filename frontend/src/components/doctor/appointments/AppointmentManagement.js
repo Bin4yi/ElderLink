@@ -18,7 +18,8 @@ import {
   MessageSquare,
   Edit,
   Ban,
-  Loader
+  Loader,
+  Filter
 } from 'lucide-react';
 
 const AppointmentManagement = () => {
@@ -48,21 +49,38 @@ const AppointmentManagement = () => {
         params.status = filter;
       }
 
+      console.log('📋 Calling doctorAppointmentService.getDoctorAppointments with params:', params);
+      
       const response = await doctorAppointmentService.getDoctorAppointments(params);
       
-      console.log('📋 Appointments response:', response);
+      console.log('📋 Appointments API response:', response);
 
-      if (response.success !== false) {
-        setAppointments(response.appointments || []);
-        console.log('✅ Loaded appointments:', response.appointments?.length || 0);
+      // Handle different response structures
+      if (response && response.success !== false) {
+        const appointmentsData = response.appointments || response.data || response || [];
+        setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
+        console.log('✅ Loaded appointments:', appointmentsData.length);
       } else {
-        console.error('API returned error:', response.message);
-        toast.error(response.message || 'Failed to load appointments');
+        console.error('❌ API returned error:', response?.message);
+        toast.error(response?.message || 'Failed to load appointments');
         setAppointments([]);
       }
     } catch (error) {
       console.error('❌ Error loading appointments:', error);
-      toast.error('Failed to load appointments');
+      
+      // Check if it's a network error
+      if (error.code === 'NETWORK_ERROR' || !error.response) {
+        toast.error('Network error. Please check your connection.');
+      } else if (error.response?.status === 404) {
+        toast.error('Appointments endpoint not found. Please check backend routes.');
+      } else if (error.response?.status === 401) {
+        toast.error('Unauthorized. Please login again.');
+      } else if (error.response?.status === 500) {
+        toast.error('Server error. Please try again later.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to load appointments');
+      }
+      
       setAppointments([]);
     } finally {
       setLoading(false);
@@ -82,12 +100,12 @@ const AppointmentManagement = () => {
         notes
       );
       
-      if (response.success !== false) {
+      if (response && response.success !== false) {
         toast.success(`Appointment ${action}d successfully`);
         loadAppointments(); // Reload to get updated data
         setSelectedAppointment(null);
       } else {
-        toast.error(response.message || `Failed to ${action} appointment`);
+        toast.error(response?.message || `Failed to ${action} appointment`);
       }
     } catch (error) {
       console.error(`❌ Error ${action}ing appointment:`, error);
@@ -113,14 +131,15 @@ const AppointmentManagement = () => {
         reason: rescheduleReason
       });
       
-      // Call reschedule API endpoint
       const response = await doctorAppointmentService.rescheduleAppointment(
         selectedAppointment.id,
-        rescheduleDateTime,
-        rescheduleReason
+        {
+          newDateTime: rescheduleDateTime,
+          reason: rescheduleReason
+        }
       );
       
-      if (response.success !== false) {
+      if (response && response.success !== false) {
         toast.success('Appointment rescheduled successfully');
         loadAppointments();
         setShowRescheduleModal(false);
@@ -128,7 +147,7 @@ const AppointmentManagement = () => {
         setRescheduleDateTime('');
         setRescheduleReason('');
       } else {
-        toast.error(response.message || 'Failed to reschedule appointment');
+        toast.error(response?.message || 'Failed to reschedule appointment');
       }
     } catch (error) {
       console.error('❌ Error rescheduling appointment:', error);
@@ -139,7 +158,14 @@ const AppointmentManagement = () => {
   };
 
   // Date helper functions
-  const getDateOnly = (dateStr) => new Date(dateStr).toISOString().split('T')[0];
+  const getDateOnly = (dateStr) => {
+    try {
+      return new Date(dateStr).toISOString().split('T')[0];
+    } catch {
+      return '';
+    }
+  };
+  
   const isToday = (dateStr) => getDateOnly(dateStr) === today;
   const isFuture = (dateStr) => getDateOnly(dateStr) > today;
   const isPast = (dateStr) => getDateOnly(dateStr) < today;
@@ -159,19 +185,23 @@ const AppointmentManagement = () => {
 
   // Format date and time
   const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    return {
-      date: date.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      }),
-      time: date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      })
-    };
+    try {
+      const date = new Date(dateString);
+      return {
+        date: date.toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        time: date.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })
+      };
+    } catch {
+      return { date: 'Invalid Date', time: 'Invalid Time' };
+    }
   };
 
   // Get status badge styling
@@ -216,7 +246,7 @@ const AppointmentManagement = () => {
               )}
               <div>
                 <h3 className="font-semibold text-lg text-gray-900">
-                  {elder.firstName} {elder.lastName}
+                  {elder.firstName || 'Unknown'} {elder.lastName || 'Patient'}
                 </h3>
                 <p className="text-sm text-gray-500">
                   {elder.gender && `${elder.gender.charAt(0).toUpperCase()}${elder.gender.slice(1)}`}
@@ -238,7 +268,7 @@ const AppointmentManagement = () => {
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <AlertCircle className="w-4 h-4" />
-                  <span className="text-sm capitalize">{appointment.type}</span>
+                  <span className="text-sm capitalize">{appointment.type || 'consultation'}</span>
                 </div>
               </div>
               
@@ -266,9 +296,11 @@ const AppointmentManagement = () => {
 
             {/* Reason and Symptoms */}
             <div className="space-y-2">
-              <p className="text-gray-700">
-                <span className="font-medium">Reason:</span> {appointment.reason}
-              </p>
+              {appointment.reason && (
+                <p className="text-gray-700">
+                  <span className="font-medium">Reason:</span> {appointment.reason}
+                </p>
+              )}
               {appointment.symptoms && (
                 <p className="text-gray-700">
                   <span className="font-medium">Symptoms:</span> {appointment.symptoms}
@@ -311,7 +343,7 @@ const AppointmentManagement = () => {
           {/* Status and Actions */}
           <div className="flex flex-col items-end gap-3 ml-4">
             <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(appointment.status)}`}>
-              {appointment.status.replace('-', ' ').toUpperCase()}
+              {(appointment.status || 'pending').replace('-', ' ').toUpperCase()}
             </span>
 
             {/* Action Buttons */}
@@ -408,7 +440,8 @@ const AppointmentManagement = () => {
         </div>
 
         {/* Filter Buttons */}
-        <div className="mb-6 flex gap-2 flex-wrap">
+        <div className="mb-6 flex gap-2 flex-wrap items-center">
+          <Filter className="w-5 h-5 text-gray-500" />
           {[
             { value: 'all', label: 'All', icon: null },
             { value: 'pending', label: 'Pending', icon: <Clock className="w-4 h-4" /> },
@@ -487,11 +520,14 @@ const AppointmentManagement = () => {
               <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No appointments found</h3>
-                <p className="text-gray-500">
+                <p className="text-gray-500 mb-4">
                   {filter === 'all' 
                     ? "You don't have any appointments yet." 
                     : `No ${filter} appointments found.`
                   }
+                </p>
+                <p className="text-sm text-gray-400">
+                  Appointments will appear here when patients book with you.
                 </p>
               </div>
             )}
