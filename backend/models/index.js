@@ -1,44 +1,11 @@
+const sequelize = require('../config/database');
 
-// backend/models/index.js
-
-require('dotenv').config();
-const { Sequelize, DataTypes } = require('sequelize');
-
-// ✅ Set up Sequelize instance with Neon PostgreSQL
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT || 5432,
-    dialect: 'postgres',
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false // Required for Neon
-      }
-    },
-    logging: false
-  }
-);
-
-// ✅ Import model factory functions
-
+// Import models
 const User = require('./User');
 const Elder = require('./Elder');
 const Subscription = require('./Subscription');
 const HealthMonitoring = require('./HealthMonitoring');
 const Notification = require('./Notification');
-
-const Inventory = require('./Inventory');
-const SimplePrescription = require('./SimplePrescription');
-
-
-// ✅ Export all models and sequelize
-module.exports = {
-  sequelize,
-  Sequelize,
 const StaffAssignment = require('./StaffAssignment'); // ✅ Changed from StaffAssignmentModel
 const DoctorAssignment = require('./DoctorAssignment'); // ✅ Add this
 
@@ -96,18 +63,11 @@ DoctorAssignment.belongsTo(User, { foreignKey: 'familyMemberId', as: 'familyMemb
 
 module.exports = {
   sequelize,
-
   User,
   Elder,
-
-  Notification,
-  Inventory,
-  SimplePrescription
-
   Subscription,
   HealthMonitoring,
   Notification,
   StaffAssignment,
   DoctorAssignment // ✅ Add this
-
 };

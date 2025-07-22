@@ -4,37 +4,19 @@ import RoleLayout from '../../common/RoleLayout';
 import { InventoryContext } from '../../../context/InventoryContext';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { toast } from 'react-hot-toast';
-
 
 const reorderThreshold = 10;
 
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}/${month}/${day}`;
-};
-
-
 const InventoryManagement = () => {
   const navigate = useNavigate();
-  const { items, setItems, fetchItems } = useContext(InventoryContext);
+  const { items, setItems } = useContext(InventoryContext);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
-  
+  // Alert for low stock
   useEffect(() => {
     const updatedItems = items.map(item => {
       if (item.quantity < reorderThreshold && !item.reorderTriggered) {
-        // Instead of: alert(`⚠️ Reorder needed for ${item.name}`);
-        toast(`⚠️ Reorder needed for ${item.name}`, {
-          icon: '⚠️',
-        });
-
+        alert(`⚠️ Reorder needed for ${item.name}`);
         return { ...item, reorderTriggered: true };
       }
       return item;
@@ -42,10 +24,17 @@ const InventoryManagement = () => {
     setItems(updatedItems);
   }, [items, setItems]);
 
+  // Analytics Calculations
+
+  // 1. Weekly trends: sum usageCount of items used in last 7 days
+  // assuming each item has a usageLog = [{ date: '2025-07-01', count: 3 }, ...]
+  // For demonstration, we’ll simulate usageLog if it doesn’t exist
+
   const today = new Date();
   const sevenDaysAgo = new Date(today);
   sevenDaysAgo.setDate(today.getDate() - 7);
 
+  // Flatten usage counts in last 7 days
   const weeklyUsageCount = items.reduce((total, item) => {
     if (!item.usageLog) return total;
     const countInWeek = item.usageLog.reduce((sum, usage) => {
@@ -58,6 +47,8 @@ const InventoryManagement = () => {
     return total + countInWeek;
   }, 0);
 
+  // 2. Top used meds: top 5 by total usage count
+  // total usage count = sum of usageLog counts or fallback to item.usageCount
   const medsWithUsage = items.map(item => {
     let totalUsage = 0;
     if (item.usageLog) {
@@ -72,6 +63,7 @@ const InventoryManagement = () => {
     .sort((a, b) => b.usage - a.usage)
     .slice(0, 5);
 
+  // 3. Monthly stats: total quantity used in current month
   const currentMonth = today.getMonth();
   const currentYear = today.getFullYear();
 
@@ -90,17 +82,20 @@ const InventoryManagement = () => {
     return total + countInMonth;
   }, 0);
 
+  // Render Analytics Section
   const renderAnalytics = () => (
     <div className="mt-12 bg-gray-50 p-6 rounded shadow">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Analytics Dashboard</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Weekly Trends */}
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-semibold text-lg mb-2">Weekly Usage Trends</h3>
           <p className="text-3xl font-bold text-blue-600">{weeklyUsageCount}</p>
           <p className="text-gray-600 text-sm">Total items used in last 7 days</p>
         </div>
 
+        {/* Top Used Medicines */}
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-semibold text-lg mb-2">Top Used Medicines</h3>
           <ol className="list-decimal list-inside text-gray-700">
@@ -116,6 +111,7 @@ const InventoryManagement = () => {
           </ol>
         </div>
 
+        {/* Monthly Stats */}
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-semibold text-lg mb-2">Monthly Usage Stats</h3>
           <p className="text-3xl font-bold text-green-600">{monthlyUsageCount}</p>
@@ -148,8 +144,7 @@ const InventoryManagement = () => {
       'Usage',
       'Prescribed',
       'Reorder Status',
-      'Location',
-      'price'
+      'Location'
     ];
 
     const tableRows = items.map(item => [
@@ -159,8 +154,7 @@ const InventoryManagement = () => {
       item.usage || '-',
       item.prescriptionRequired ? 'Yes' : 'No',
       item.quantity < reorderThreshold ? 'Reorder Needed' : 'OK',
-      item.location,
-      item.price || '—'
+      item.location
     ]);
 
     doc.autoTable({
@@ -189,7 +183,6 @@ const InventoryManagement = () => {
               <th className="border px-4 py-2">Reorder Status</th>
               <th className="border px-4 py-2">Location</th>
               <th className="border px-4 py-2">Last Updated</th>
-              <th className="border px-4 py-2">Price</th>
             </tr>
           </thead>
           <tbody>
@@ -198,22 +191,15 @@ const InventoryManagement = () => {
               .map((item) => {
                 const isExpiringSoon =
                   (new Date(item.expirationDate) - new Date()) / (1000 * 60 * 60 * 24) <= 30;
-
-                // ✅ Debug log for checking IDs
-                console.log('🧪 Inventory item:', item);
-
                 return (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-gray-100 cursor-pointer"
-                    onClick={() => item.id && navigate(`/pharmacist/inventory/${item.id}`)} // ✅ Check for valid ID
-                  >
+                  <tr key={item.id}
+                      className="hover:bg-gray-100 cursor-pointer"
+                      onClick={() => navigate(`/pharmacist/inventory/${item.id}`)}>
                     <td className="border px-4 py-2">{item.name}</td>
                     <td className="border px-4 py-2 text-center">{item.quantity}</td>
                     <td className={`border px-4 py-2 ${isExpiringSoon ? 'text-red-600 font-semibold' : ''}`}>
-                      {formatDate(item.expirationDate)}
+                      {item.expirationDate}
                     </td>
-
                     <td className="border px-4 py-2">{item.usage}</td>
                     <td className="border px-4 py-2 text-center">
                       {item.prescriptionRequired ? 'Yes' : 'No'}
@@ -226,10 +212,7 @@ const InventoryManagement = () => {
                       )}
                     </td>
                     <td className="border px-4 py-2">{item.location}</td>
-                    <td className="border px-4 py-2">
-                      {item.lastUpdated ? formatDate(item.lastUpdated) : '—'}
-                    </td>
-                    <td className="border px-4 py-2">{item.price || '—'}</td>
+                    <td className="border px-4 py-2">{item.lastUpdated || '—'}</td>
                   </tr>
                 );
               })}
