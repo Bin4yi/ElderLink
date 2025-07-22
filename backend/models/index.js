@@ -1,5 +1,3 @@
-// index js 
-
 const sequelize = require('../config/database');
 
 // Import models
@@ -73,5 +71,4 @@ module.exports = {
   StaffAssignment,
   DoctorAssignment // ✅ Add this
 };
-
 

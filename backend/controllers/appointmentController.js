@@ -11,7 +11,7 @@ const {
 const { Op } = require('sequelize');
 const { sequelize } = require('../models');
 // const ZoomService = require('../services/zoomService');
-const NotificationService = require('../services/notificationService');
+// const notificationService = require('../services/notificationService');
 
 class AppointmentController {
   

@@ -94,6 +94,9 @@ const elderRoutes = require('./routes/elder');
 // Import appointment routes
 const appointmentRoutes = require('./routes/appointments');
 
+// Import notification service
+// const notificationService = require('../services/notificationService');
+
 // Import and use routes with error checking
 try {
   routeConfigs.forEach(({ path, mount, name }) => {
