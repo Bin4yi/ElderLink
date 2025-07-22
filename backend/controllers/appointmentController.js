@@ -27,11 +27,11 @@ class AppointmentController {
           'id', 
           'specialization', 
           'experience', 
-          'qualifications', 
+          // 'qualifications', 
           'consultationFee',
-          'rating',
-          'about',
-          'languages'
+          // 'rating', // <-- REMOVE or comment out this line
+          // 'about',
+          // 'languages'
         ]
 
       });
