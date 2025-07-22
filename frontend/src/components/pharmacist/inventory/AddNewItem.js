@@ -1,136 +1,181 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import RoleLayout from '../../common/RoleLayout';
 import { InventoryContext } from '../../../context/InventoryContext';
+import toast from 'react-hot-toast';
 
 const AddNewItem = () => {
-  const { items, setItems } = useContext(InventoryContext);
   const navigate = useNavigate();
+  const { fetchItems } = useContext(InventoryContext);
 
-  const [formData, setFormData] = useState({
+  const [form, setForm] = useState({
     name: '',
     quantity: '',
-    location: '',
     expirationDate: '',
     usage: '',
     prescriptionRequired: false,
+    location: '',
     notes: '',
-    lastUpdated: new Date().toISOString().split('T')[0],
+    price: ''
   });
 
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [lowStockWarning, setLowStockWarning] = useState('');
-
-  useEffect(() => {
-    if (formData.quantity && parseInt(formData.quantity) < 10) {
-      setLowStockWarning('⚠️ Low stock will trigger auto-reorder!');
-    } else {
-      setLowStockWarning('');
-    }
-  }, [formData.quantity]);
+  const [daysLeft, setDaysLeft] = useState(null);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.name || !formData.quantity || !formData.expirationDate) {
-      alert('Please fill in all required fields.');
-      return;
+    if (name === 'expirationDate') {
+      const today = new Date();
+      const expiry = new Date(value);
+      const diffTime = expiry - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      setDaysLeft(diffDays);
     }
 
-    const newItem = {
-      ...formData,
-      id: items.length + 1,
-      quantity: parseInt(formData.quantity),
-      reorderTriggered: parseInt(formData.quantity) < 10,
-    };
-
-    setItems([...items, newItem]);
-    setShowSuccess(true);
-
-    setTimeout(() => {
-      setShowSuccess(false);
-      navigate('/pharmacist/inventory');
-    }, 2000);
+    setForm({
+      ...form,
+      [name]: type === 'checkbox' ? checked : value
+    });
   };
 
-  const daysUntilExpiration = () => {
-    if (!formData.expirationDate) return null;
-    const today = new Date();
-    const expiry = new Date(formData.expirationDate);
-    const diffTime = expiry - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? `${diffDays} day(s) left` : '⚠️ Already expired!';
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Convert numeric fields correctly
+    const newItem = {
+      ...form,
+      price: parseFloat(form.price),
+      quantity: parseInt(form.quantity),
+      lastUpdated: new Date().toISOString().split('T')[0],
+    };
+
+    try {
+      const res = await fetch('http://localhost:5000/api/inventory', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newItem)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to add item');
+      }
+
+      const data = await res.json();
+      console.log('✅ Item added:', data);
+
+      await fetchItems();
+
+      toast.success('✅ Medicine added successfully!');
+      navigate('/pharmacist/inventory');
+    } catch (error) {
+      console.error('❌ Error adding item:', error);
+      toast.error('Error adding item: ' + error.message);
+    }
   };
 
   return (
-    <RoleLayout title="Add New Inventory Item">
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-6 max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-800">Add New Medication</h2>
+    <form onSubmit={handleSubmit} className="max-w-xl mx-auto bg-white shadow-md rounded-lg p-6 space-y-6">
+      <h2 className="text-2xl font-semibold text-blue-700 text-center">➕ Add New Medicine</h2>
 
-        {showSuccess && (
-          <p className="text-green-600 text-sm font-medium bg-green-100 p-2 rounded">
-            ✅ Item successfully added!
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Medicine Name</label>
+        <input
+          name="name"
+          value={form.name}
+          onChange={handleChange}
+          placeholder="e.g., Paracetamol"
+          required
+          className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Quantity</label>
+        <input
+          name="quantity"
+          type="number"
+          value={form.quantity}
+          onChange={handleChange}
+          placeholder="e.g., 100"
+          required
+          className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Expiration Date</label>
+        <input
+          name="expirationDate"
+          type="date"
+          value={form.expirationDate}
+          onChange={handleChange}
+          required
+          className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+        {form.expirationDate && (
+          <p className={`text-sm mt-1 ${daysLeft <= 0 ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+            {daysLeft <= 0
+              ? '⚠️ Expired or expiring today!'
+              : `📅 ${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining until expiration.`}
           </p>
         )}
+      </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold mb-1">Name <span className="text-red-500">*</span></label>
-            <input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-          </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Usage Instructions</label>
+        <input
+          name="usage"
+          value={form.usage}
+          onChange={handleChange}
+          placeholder="e.g., 1 tablet every 6 hours"
+          className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
 
-          <div>
-            <label className="block text-sm font-semibold mb-1">Quantity <span className="text-red-500">*</span></label>
-            <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} min="0" required className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-            {lowStockWarning && <p className="text-yellow-600 text-xs mt-1">{lowStockWarning}</p>}
-          </div>
+      <div className="flex items-center space-x-3">
+        <input
+          type="checkbox"
+          name="prescriptionRequired"
+          checked={form.prescriptionRequired}
+          onChange={handleChange}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+        <label className="text-sm text-gray-700">Prescription Required?</label>
+      </div>
 
-          <div>
-            <label className="block text-sm font-semibold mb-1">Location</label>
-            <input type="text" name="location" value={formData.location} onChange={handleChange} className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-          </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Location in Store</label>
+        <input
+          name="location"
+          value={form.location}
+          onChange={handleChange}
+          placeholder="e.g., Shelf A2"
+          className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
 
-          <div>
-            <label className="block text-sm font-semibold mb-1">Expiration Date <span className="text-red-500">*</span></label>
-            <input type="date" name="expirationDate" value={formData.expirationDate} onChange={handleChange} required className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-            {formData.expirationDate && (
-              <p className="text-sm text-gray-500 mt-1 italic">{daysUntilExpiration()}</p>
-            )}
-          </div>
+      <div>
+        <label className="block text-sm font-semibold mb-1">Price per Unit (Rs)</label>
+        <input
+          type="number"
+          name="price"
+          step="0.01"
+          value={form.price}
+          onChange={handleChange}
+          required
+          className="w-full border px-3 py-2 rounded shadow-sm focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
 
-          <div>
-            <label className="block text-sm font-semibold mb-1">Usage</label>
-            <input type="text" name="usage" value={formData.usage} onChange={handleChange} className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-          </div>
-
-          <div className="flex items-center mt-6 space-x-2">
-            <input type="checkbox" name="prescriptionRequired" checked={formData.prescriptionRequired} onChange={handleChange} />
-            <label className="text-sm font-semibold">Prescription Required</label>
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-semibold mb-1">Additional Notes</label>
-            <textarea name="notes" value={formData.notes} onChange={handleChange} rows={3} className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Any special handling, storage instructions, or batch notes..."></textarea>
-          </div>
-        </div>
-
-        <div className="flex justify-between mt-6">
-          <button type="button" onClick={() => navigate('/pharmacist/inventory')} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium">
-            Cancel
-          </button>
-          <button type="submit" className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold">
-            Add Item
-          </button>
-        </div>
-      </form>
-    </RoleLayout>
+      <button
+        type="submit"
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition duration-150"
+      >
+        ➕ Add Medicine
+      </button>
+    </form>
   );
 };
 

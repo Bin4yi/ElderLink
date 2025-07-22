@@ -27,7 +27,7 @@ import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
 import AppointmentList from './components/family/appointments/AppointmentList';
 import Doctors from './components/family/doctors/Doctors';
-import DoctorAssignment from './components/family/doctors/DoctorAssignment'; // NEW IMPORT
+import DoctorAssignment from './components/family/doctors/DoctorAssignment';
 import AppointmentBooking from './components/family/appointments/AppointmentBooking';
 import FamilySettings from './components/family/settings/FamilySettings';
 import FamilyProfile from './components/family/profile/FamilyProfile';
@@ -44,6 +44,7 @@ import InventoryManagement from './components/pharmacist/inventory/InventoryMana
 import AddNewItem from './components/pharmacist/inventory/AddNewItem';
 import PharmacyProfile from './components/pharmacist/profile/Pharmacyprofile';
 import MedicineProfile from './components/pharmacist/inventory/MedicineProfile';
+import EditItems from './components/pharmacist/inventory/Edititems';
 
 // Mental Health Consultant Components
 import MentalHealthDashboard from './components/mental-health/dashboard/MentalHealthDashboard';
@@ -73,7 +74,7 @@ import ElderMentalWellness from './components/Elder/dashboard/ElderMentalWellnes
 import ElderEmergency from './components/Elder/dashboard/ElderEmergency';
 import ElderProfile from './components/Elder/dashboard/ElderProfile';
 
-const theme = createTheme(); // Add this line
+const theme = createTheme();
 
 function App() {
   return (
@@ -103,7 +104,7 @@ function App() {
                   <Route path="/family/dashboard" element={<FamilyDashboard />} />
                   <Route path="/family/appointments" element={<AppointmentList />} />
                   <Route path="/family/doctors" element={<Doctors />} />
-                  <Route path="/family/doctor-assignment" element={<DoctorAssignment />} /> {/* NEW ROUTE */}
+                  <Route path="/family/doctor-assignment" element={<DoctorAssignment />} />
                   <Route path="/family/settings" element={<FamilySettings />} />
                   <Route path="/family/profile" element={<FamilyProfile />} />
                   <Route path="/family/health-reports" element={<FamilyHealthReports />} />
@@ -118,7 +119,8 @@ function App() {
                   <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
                   <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
                   <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
-                  <Route path="/pharmacist/medicine/:id" element={<MedicineProfile />} />
+                  <Route path="/pharmacist/inventory/:id" element={<MedicineProfile />} />
+                  <Route path="/pharmacist/inventory/edit/:id" element={<EditItems />} />
                   
                   {/* Mental Health routes */}
                   <Route path="/mental-health/dashboard" element={<MentalHealthDashboard />} />
@@ -141,13 +143,13 @@ function App() {
                   
                   {/* Elder routes */}
                   <Route path="/elder/dashboard" element={<ElderDashboard />} />
-              <Route path="/elder/health-reports" element={<ElderHealthReports />} />
-              <Route path="/elder/appointments" element={<ElderAppointments />} />
-              <Route path="/elder/medications" element={<ElderMedications />} />
-              <Route path="/elder/mental-wellness" element={<ElderMentalWellness />} />
-              <Route path="/elder/emergency" element={<ElderEmergency />} />
-              <Route path="/elder/profile" element={<ElderProfile />} />
-              <Route path="/appointment-booking" element={<AppointmentBooking />} />
+                  <Route path="/elder/health-reports" element={<ElderHealthReports />} />
+                  <Route path="/elder/appointments" element={<ElderAppointments />} />
+                  <Route path="/elder/medications" element={<ElderMedications />} />
+                  <Route path="/elder/mental-wellness" element={<ElderMentalWellness />} />
+                  <Route path="/elder/emergency" element={<ElderEmergency />} />
+                  <Route path="/elder/profile" element={<ElderProfile />} />
+                  <Route path="/appointment-booking" element={<AppointmentBooking />} />
                 </Routes>
                 
                 {/* Toast notifications */}
