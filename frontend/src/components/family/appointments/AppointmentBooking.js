@@ -10,11 +10,10 @@ import DoctorCalendarModal from './DoctorCalendarModal';
 import AppointmentPaymentForm from './AppointmentPaymentForm';
 import { appointmentService } from '../../../services/appointment';
 import { elderService } from '../../../services/elder';
+import { useNavigate } from 'react-router-dom'; // <-- Move this import up here
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here');
-
-import { useNavigate } from 'react-router-dom';
 
 
 const AppointmentBooking = ({ onBack, onSuccess }) => {
