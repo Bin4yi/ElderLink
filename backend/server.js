@@ -59,7 +59,9 @@ app.get('/api', (req, res) => {
       '/api/subscriptions',
       '/api/elders',
       '/api/notifications',
-      '/api/admin'
+      '/api/admin',
+      '/api/inventory',
+      '/api/prescriptions'
     ]
   });
 });
@@ -99,6 +101,11 @@ const doctorAppointmentsRoutes = require('./routes/doctorAppointments');
 // Import notification service
 // const notificationService = require('../services/notificationService');
 
+
+// Import new inventory routes
+const inventoryRoutes = require('./routes/inventory');
+const prescriptionRoutes = require('./routes/prescriptions');
+
 // Import and use routes with error checking
 try {
   routeConfigs.forEach(({ path, mount, name }) => {
@@ -127,6 +134,11 @@ try {
   app.use('/api/appointments', appointmentRoutes);
 
   app.use('/api/doctor', doctorAppointmentsRoutes);
+
+    // Use new inventory routes
+    
+  app.use('/api/inventory', inventoryRoutes);
+  app.use('/api/prescriptions', prescriptionRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);
