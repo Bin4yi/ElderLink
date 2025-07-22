@@ -315,7 +315,14 @@ router.put('/:id', authenticate, authorize('family_member'), upload.single('phot
 });
 
 // Create elder with authentication
-router.post('/with-auth', authenticate, authorize('family_member'), validateElderWithAuth, upload.single('photo'), addElderWithAuth);
+router.post(
+  '/with-auth',
+  authenticate,
+  authorize('family_member'),
+  upload.single('photo'),        // <-- MUST come BEFORE validateElderWithAuth
+  validateElderWithAuth,
+  addElderWithAuth
+);
 
 // Create elder login
 router.post('/:id/create-login', authenticate, authorize('family_member'), createElderLogin);

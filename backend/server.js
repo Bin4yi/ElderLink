@@ -91,6 +91,9 @@ const doctorAssignmentRoutes = require('./routes/doctorAssignment');
 // Import elder routes
 const elderRoutes = require('./routes/elder');
 
+// Import appointment routes
+const appointmentRoutes = require('./routes/appointments');
+
 // Import and use routes with error checking
 try {
   routeConfigs.forEach(({ path, mount, name }) => {
@@ -115,6 +118,8 @@ try {
   app.use('/api/doctor-assignments', doctorAssignmentRoutes);
   // Use elder routes
   app.use('/api/elders', elderRoutes);
+  // Use appointment routes
+  app.use('/api/appointments', appointmentRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);
