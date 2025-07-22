@@ -119,18 +119,6 @@ app.get('/api', (req, res) => {
   });
 });
 
-// Route configurations
-const routeConfigs = [
-  { path: './routes/auth', mount: '/api/auth', name: 'authRoutes' },
-  { path: './routes/elder', mount: '/api/elder', name: 'elderRoutes' },
-  { path: './routes/healthMonitoring', mount: '/api/health-monitoring', name: 'healthMonitoringRoutes' },
-  { path: './routes/subscription', mount: '/api/subscriptions', name: 'subscriptionRoutes' },
-  { path: './routes/notification', mount: '/api/notifications', name: 'notificationRoutes' },
-  { path: './routes/adminUserRoutes', mount: '/api/admin', name: 'adminUserRoutes' },
-  { path: './routes/adminStatsRoutes', mount: '/api/admin', name: 'adminStatsRoutes' },
-  { path: './routes/staffAssignment', mount: '/api/staff-assignments', name: 'staffAssignmentRoutes' },
-  { path: './routes/doctorAssignment', mount: '/api/doctor-assignments', name: 'doctorAssignmentRoutes' }
-];
 
 // Import health monitoring routes
 const healthMonitoringRoutes = require('./routes/healthMonitoring');
