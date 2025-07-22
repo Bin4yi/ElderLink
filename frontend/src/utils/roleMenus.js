@@ -13,6 +13,8 @@ export const getRoleMenuItems = (role) => {
         { path: '/family/dashboard', icon: Home, label: 'Dashboard' },
         { path: '/family/elders', icon: Heart, label: 'My Elders' },
         { path: '/family/subscriptions', icon: Package, label: 'Subscriptions' },
+        { path: '/family/appointments', icon: Calendar, label: 'Appointments' },
+        { path: '/family/doctors', icon: Stethoscope, label: 'Doctors' },
         { path: '/family/health-reports', icon: Activity, label: 'Health Reports' },
         { path: '/family/profile', icon: User, label: 'Profile' },
         { path: '/family/settings', icon: Settings, label: 'Settings' }
@@ -40,8 +42,9 @@ export const getRoleMenuItems = (role) => {
   case 'staff':
       return [
         { path: '/staff/dashboard', icon: Home, label: 'Dashboard' },
-{ path: '/staff/care', icon: Heart, label: 'Care Management' },
-{ path: '/staff/monitoring', icon: Monitor, label: 'Health Monitoring' },
+        { path: '/staff/care', icon: Heart, label: 'Care Management' },
+         { path: '/staff/mental', icon: Heart, label: 'Mental Specialist Plans' },
+        { path: '/staff/monitoring', icon: Monitor, label: 'Health Monitoring' },
         { path: '/staff/alerts', icon: AlertTriangle, label: 'Alerts' },
         { path: '/staff/reports', icon: FileText, label: 'Reports' },
         { path: '/staff/profile', icon: User, label: 'Profile' }
@@ -73,7 +76,7 @@ export const getRoleMenuItems = (role) => {
     case 'elder':
       return [
         { path: '/elder/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/elder/health', icon: Heart, label: 'My Health' },
+        { path: '/elder/health-reports', icon: Heart, label: 'My Health' },
         { path: '/elder/appointments', icon: Calendar, label: 'Appointments' },
         { path: '/elder/medications', icon: Pill, label: 'Medications' },
         { path: '/elder/mental-wellness', icon: Brain, label: 'Mental Wellness' }, // NEW!
