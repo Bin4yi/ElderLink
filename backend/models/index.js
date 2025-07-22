@@ -1,13 +1,20 @@
+
+// backend/models/index.js
 const sequelize = require('../config/database');
 
 // Import models
 const User = require('./User');
 const Elder = require('./Elder');
+const Elder = require('./Elder');
 const Subscription = require('./Subscription');
 const HealthMonitoring = require('./HealthMonitoring');
+const HealthMonitoring = require('./HealthMonitoring');
 const Notification = require('./Notification');
-const StaffAssignment = require('./StaffAssignment'); // ✅ Changed from StaffAssignmentModel
-const DoctorAssignment = require('./DoctorAssignment'); // ✅ Add this
+const StaffAssignment = require('./StaffAssignment');
+const DoctorAssignment = require('./DoctorAssignment');
+// Additional models from other file
+const Inventory = require('./Inventory');
+const SimplePrescription = require('./SimplePrescription');
 
 // Clear any existing associations to prevent conflicts
 const clearAssociations = (model) => {
@@ -19,7 +26,7 @@ const clearAssociations = (model) => {
 };
 
 // Clear associations for all models
-[User, Elder, Subscription, HealthMonitoring, Notification, StaffAssignment, DoctorAssignment].forEach(clearAssociations);
+[User, Elder, Subscription, HealthMonitoring, Notification, StaffAssignment, DoctorAssignment, Inventory, SimplePrescription].forEach(clearAssociations);
 
 // User associations
 User.hasMany(Elder, { foreignKey: 'userId', as: 'elders' });
@@ -27,8 +34,8 @@ User.hasMany(Subscription, { foreignKey: 'userId', as: 'subscriptions' });
 User.hasMany(HealthMonitoring, { foreignKey: 'staffId', as: 'healthMonitorings' });
 User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
 User.hasMany(StaffAssignment, { foreignKey: 'staffId', as: 'staffAssignments' });
-User.hasMany(DoctorAssignment, { foreignKey: 'doctorId', as: 'doctorAssignments' }); // ✅ Add this
-User.hasMany(DoctorAssignment, { foreignKey: 'familyMemberId', as: 'familyDoctorAssignments' }); // ✅ Add this
+User.hasMany(DoctorAssignment, { foreignKey: 'doctorId', as: 'doctorAssignments' });
+User.hasMany(DoctorAssignment, { foreignKey: 'familyMemberId', as: 'familyDoctorAssignments' });
 
 // Elder associations
 Elder.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -36,7 +43,7 @@ Elder.belongsTo(Subscription, { foreignKey: 'subscriptionId', as: 'subscription'
 Elder.hasMany(HealthMonitoring, { foreignKey: 'elderId', as: 'healthRecords' });
 Elder.hasMany(Notification, { foreignKey: 'elderId', as: 'elderNotifications' });
 Elder.hasMany(StaffAssignment, { foreignKey: 'elderId', as: 'staffAssignments' });
-Elder.hasMany(DoctorAssignment, { foreignKey: 'elderId', as: 'doctorAssignmentRecords' }); // ✅ Changed from 'doctorAssignments' to 'doctorAssignmentRecords'
+Elder.hasMany(DoctorAssignment, { foreignKey: 'elderId', as: 'doctorAssignmentRecords' });
 
 // Subscription associations
 Subscription.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -69,5 +76,7 @@ module.exports = {
   HealthMonitoring,
   Notification,
   StaffAssignment,
-  DoctorAssignment // ✅ Add this
+  DoctorAssignment,
+  Inventory,
+  SimplePrescription
 };

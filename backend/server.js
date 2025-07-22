@@ -1,5 +1,3 @@
-// backend/server.js - Updated with familyDoctors route
-
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -31,8 +29,18 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check endpoints
+// Health check endpoints
 app.get('/health', (req, res) => {
   res.status(200).json({ 
+    status: 'OK', 
+    message: 'ElderLink Backend is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
     status: 'OK', 
     message: 'ElderLink Backend is running',
     timestamp: new Date().toISOString()
@@ -94,6 +102,41 @@ const elderRoutes = require('./routes/elder');
 // Import appointment routes
 const appointmentRoutes = require('./routes/appointments');
 
+// Add this new endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'ElderLink API is running',
+    version: '1.0.0',
+    endpoints: [
+      '/api/health',
+      '/api/auth',
+      '/api/subscriptions',
+      '/api/elders',
+      '/api/notifications',
+      '/api/admin'
+    ]
+  });
+});
+
+
+// Import health monitoring routes
+const healthMonitoringRoutes = require('./routes/healthMonitoring');
+// Import health reports routes
+const healthReportsRoutes = require('./routes/healthReports');
+
+// Import staff assignment routes
+const staffAssignmentRoutes = require('./routes/staffAssignment');
+
+// Import doctor assignment routes
+const doctorAssignmentRoutes = require('./routes/doctorAssignment');
+
+// Import elder routes
+const elderRoutes = require('./routes/elder');
+
+// Import appointment routes
+const appointmentRoutes = require('./routes/appointments');
+
 // Import and use routes with error checking
 try {
   routeConfigs.forEach(({ path, mount, name }) => {
@@ -108,6 +151,39 @@ try {
     app.use(mount, route);
   });
 
+  // Additional routes not in main
+  const inventoryRoutes = require('./routes/inventoryRoutes');
+  const simplePrescriptionRoutes = require('./routes/simplePrescriptions');
+  const pharmacyDashboardRoutes = require('./routes/parmacyDashboard');
+
+  // Verify additional routes are properly exported
+
+  // Verify additional routes are properly exported
+  if (typeof inventoryRoutes !== 'function') {
+    throw new Error('inventoryRoutes is not a valid router');
+  }
+  if (typeof simplePrescriptionRoutes !== 'function') {
+    throw new Error('simplePrescriptionRoutes is not a valid router');
+  }
+  if (typeof pharmacyDashboardRoutes !== 'function') {
+    throw new Error('pharmacyDashboardRoutes is not a valid router');
+  }
+  if (typeof simplePrescriptionRoutes !== 'function') {
+    throw new Error('simplePrescriptionRoutes is not a valid router');
+  }
+  if (typeof pharmacyDashboardRoutes !== 'function') {
+    throw new Error('pharmacyDashboardRoutes is not a valid router');
+  }
+
+  // Use health monitoring routes
+  app.use('/api/health-monitoring', healthMonitoringRoutes);
+  // Use health reports routes
+  app.use('/api/health-reports', healthReportsRoutes);
+  // Use staff assignment routes
+  app.use('/api/staff-assignments', staffAssignmentRoutes);
+  // Use doctor assignment routes
+  app.use('/api/doctor-assignments', doctorAssignmentRoutes);
+  // Use elder routes
   // Use health monitoring routes
   app.use('/api/health-monitoring', healthMonitoringRoutes);
   // Use health reports routes
@@ -120,6 +196,11 @@ try {
   app.use('/api/elders', elderRoutes);
   // Use appointment routes
   app.use('/api/appointments', appointmentRoutes);
+
+  // Use additional routes
+  app.use('/api/inventory', inventoryRoutes);
+  app.use('/api/simple-prescriptions', simplePrescriptionRoutes);
+  app.use('/api/pharmacy-dashboard', pharmacyDashboardRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);
