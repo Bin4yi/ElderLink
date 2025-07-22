@@ -213,3 +213,7 @@ const startServer = async () => {
 };
 
 startServer();
+
+// Doctor routes
+const doctorAppointmentsRoutes = require('./routes/doctorAppointments');
+app.use('/api/doctor', doctorAppointmentsRoutes);

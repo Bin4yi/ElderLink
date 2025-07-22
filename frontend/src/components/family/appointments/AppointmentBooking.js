@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import RoleLayout from '../../common/RoleLayout'; 
+
 import DoctorCalendarModal from './DoctorCalendarModal';
 import AppointmentPaymentForm from './AppointmentPaymentForm';
 import { appointmentService } from '../../../services/appointment';
@@ -13,7 +14,11 @@ import { elderService } from '../../../services/elder';
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here');
 
+import { useNavigate } from 'react-router-dom';
+
+
 const AppointmentBooking = ({ onBack, onSuccess }) => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [selectedElder, setSelectedElder] = useState(null);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -53,14 +58,18 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
       console.log('🔄 Loading doctors...');
       const response = await appointmentService.getAvailableDoctors();
       console.log('✅ Doctors API response:', response);
-      
-      if (response && response.doctors) {
-        setDoctors(response.doctors);
-        console.log(`✅ Set ${response.doctors.length} doctors`);
-      } else {
-        console.warn('⚠️ No doctors in response:', response);
-        setDoctors([]);
+
+      // Try both possible response shapes
+      let doctors = [];
+      if (response.doctors) {
+        doctors = response.doctors;
+      } else if (response.data && response.data.doctors) {
+        doctors = response.data.doctors;
+      } else if (response.data && Array.isArray(response.data)) {
+        doctors = response.data;
       }
+      setDoctors(doctors);
+      console.log(`✅ Set ${doctors.length} doctors`);
     } catch (error) {
       console.error('❌ Error loading doctors:', error);
       toast.error(`Failed to load doctors: ${error.message}`);

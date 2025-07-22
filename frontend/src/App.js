@@ -39,6 +39,8 @@ import FamilyProfile from './components/family/profile/FamilyProfile';
 import FamilyHealthReports from './components/family/reports/FamilyHealthReports';
 import FamilySubscriptions from './components/family/subscription/FamilySubscriptions';
 import FamilyElders from './components/family/elder/FamilyElders';
+import AppointmentPaymentForm from './components/family/appointments/AppointmentPaymentForm';
+import DoctorCalendarModal from './components/family/appointments/DoctorCalendarModal';
 
 // Pharmacy
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
@@ -107,8 +109,6 @@ function App() {
                   <Route path="/doctor/appointments" element={<AppointmentManagement />} />
                   <Route path="/doctor/consultations" element={<ConsultationHistory />} />
                   <Route path="/doctor/records" element={<MedicalRecords />} />
-                  <Route path="/appointment-booking" element={<AppointmentBooking />} />
-                  
                   
                   {/* Family routes */}
                   <Route path="/family/dashboard" element={<FamilyDashboard />} />
@@ -158,7 +158,13 @@ function App() {
               <Route path="/elder/mental-wellness" element={<ElderMentalWellness />} />
               <Route path="/elder/emergency" element={<ElderEmergency />} />
               <Route path="/elder/profile" element={<ElderProfile />} />
+              
+              {/* Booking and Payment routes */}
               <Route path="/appointment-booking" element={<AppointmentBooking />} />
+              <Route path="/appointment-payment" element={<AppointmentPaymentForm />} />
+              
+              {/* Doctor Calendar Modal - Uncomment if needed as a route */}
+              {/* <Route path="/doctor-calendar" element={<DoctorCalendarModal />} /> */}
                 </Routes>
                 
                 {/* Toast notifications */}

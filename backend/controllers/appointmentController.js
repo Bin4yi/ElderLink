@@ -14,6 +14,7 @@ class AppointmentController {
         : {};
 
       const doctors = await Doctor.findAll({
+
         where: whereClause,
         include: [
           {
@@ -32,6 +33,7 @@ class AppointmentController {
           'about',
           'languages'
         ]
+
       });
 
       console.log('✅ Found doctors:', doctors.length);
