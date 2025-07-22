@@ -11,35 +11,14 @@ export const doctorAppointmentService = {
         limit: limit.toString()
       });
       
-      if (status && status !== 'all') {
-        queryParams.append('status', status);
-      }
-      if (date) {
-        queryParams.append('date', date);
-      }
-      
-      console.log('🔄 Fetching doctor appointments with params:', { status, date, page, limit });
+      if (status) queryParams.append('status', status);
+      if (date) queryParams.append('date', date);
       
       const response = await api.get(`/doctor/appointments?${queryParams}`);
-      
-      console.log('✅ Doctor appointments response:', response.data);
-      
-      // Ensure we return the expected structure
-      return {
-        success: response.data.success !== false,
-        appointments: response.data.appointments || [],
-        pagination: response.data.pagination || {}
-      };
+      return response.data;
     } catch (error) {
-      console.error('❌ Error fetching doctor appointments:', error);
-      
-      // Return a structured error response
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to fetch appointments',
-        appointments: [],
-        pagination: {}
-      };
+      console.error('Error fetching doctor appointments:', error);
+      throw error;
     }
   },
 
@@ -50,8 +29,8 @@ export const doctorAppointmentService = {
       
       const response = await api.patch(`/doctor/appointments/${appointmentId}/review`, {
         action,
-        doctorNotes: notes,
-        rejectionReason: action === 'reject' ? (notes || 'Rejected by doctor') : undefined
+        doctorNotes: notes, // ✅ CHANGED: from notes to doctorNotes
+        rejectionReason: action === 'reject' ? notes : undefined
       });
       
       console.log('✅ Review response:', response.data);
@@ -62,20 +41,12 @@ export const doctorAppointmentService = {
     }
   },
 
-  // Reschedule appointment
-  async rescheduleAppointment(appointmentId, newDateTime, reason = '') {
+  async rescheduleAppointment(appointmentId, data) {
     try {
-      console.log('🔄 Rescheduling appointment:', { appointmentId, newDateTime, reason });
-      
-      const response = await api.patch(`/doctor/appointments/${appointmentId}/reschedule`, {
-        newDateTime,
-        reason
-      });
-      
-      console.log('✅ Reschedule response:', response.data);
+      const response = await api.patch(`/doctor/appointments/${appointmentId}/reschedule`, data);
       return response.data;
     } catch (error) {
-      console.error('❌ Error rescheduling appointment:', error);
+      console.error('Error rescheduling appointment:', error);
       throw error;
     }
   },
@@ -83,29 +54,21 @@ export const doctorAppointmentService = {
   // Get elder's medical summary
   async getElderMedicalSummary(elderId) {
     try {
-      console.log('🔄 Fetching elder medical summary:', { elderId });
-      
       const response = await api.get(`/doctor/elders/${elderId}/medical-summary`);
-      
-      console.log('✅ Elder medical summary response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Error fetching elder medical summary:', error);
+      console.error('Error fetching elder medical summary:', error);
       throw error;
     }
   },
 
   // Complete appointment
-  async completeAppointment(appointmentId, consultationData) {
+  async completeAppointment(appointmentId, data) {
     try {
-      console.log('🔄 Completing appointment:', { appointmentId, consultationData });
-      
-      const response = await api.patch(`/doctor/appointments/${appointmentId}/complete`, consultationData);
-      
-      console.log('✅ Complete appointment response:', response.data);
+      const response = await api.patch(`/doctor/appointments/${appointmentId}/complete`, data);
       return response.data;
     } catch (error) {
-      console.error('❌ Error completing appointment:', error);
+      console.error('Error completing appointment:', error);
       throw error;
     }
   },
@@ -113,14 +76,10 @@ export const doctorAppointmentService = {
   // Create prescription
   async createPrescription(appointmentId, prescriptionData) {
     try {
-      console.log('🔄 Creating prescription:', { appointmentId, prescriptionData });
-      
       const response = await api.post(`/doctor/appointments/${appointmentId}/prescriptions`, prescriptionData);
-      
-      console.log('✅ Create prescription response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Error creating prescription:', error);
+      console.error('Error creating prescription:', error);
       throw error;
     }
   },
@@ -128,24 +87,16 @@ export const doctorAppointmentService = {
   // Get consultation records
   async getConsultationRecords(params = {}) {
     try {
-      const { page = 1, limit = 10, elderId } = params;
+      const { page = 1, limit = 10 } = params;
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString()
       });
       
-      if (elderId) {
-        queryParams.append('elderId', elderId);
-      }
-      
-      console.log('🔄 Fetching consultation records:', params);
-      
       const response = await api.get(`/doctor/consultations?${queryParams}`);
-      
-      console.log('✅ Consultation records response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Error fetching consultation records:', error);
+      console.error('Error fetching consultation records:', error);
       throw error;
     }
   },
@@ -153,29 +104,40 @@ export const doctorAppointmentService = {
   // Get dashboard stats
   async getDashboardStats() {
     try {
-      console.log('🔄 Fetching dashboard stats');
-      
       const response = await api.get('/doctor/dashboard/stats');
-      
-      console.log('✅ Dashboard stats response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Error fetching dashboard stats:', error);
+      console.error('Error fetching dashboard stats:', error);
       throw error;
     }
   },
 
-  // Update schedule
+  // ✅ FIXED: Update schedule - now using the correct endpoint
   async updateSchedule(schedules) {
     try {
-      console.log('🔄 Updating schedule:', { schedules });
+      console.log('🔄 Updating schedule:', schedules);
       
+      // Use the correct endpoint that matches the backend route
+      // The backend route is POST /schedule in doctorAppointments.js
+      // which gets mounted as /api/doctor/schedule in server.js
       const response = await api.post('/doctor/schedule', { schedules });
       
-      console.log('✅ Update schedule response:', response.data);
+      console.log('✅ Schedule updated successfully:', response.data);
       return response.data;
     } catch (error) {
       console.error('❌ Error updating schedule:', error);
+      
+      // Enhanced error logging for debugging
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+        console.error('Response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+      } else {
+        console.error('Error setting up request:', error.message);
+      }
+      
       throw error;
     }
   },
@@ -183,16 +145,41 @@ export const doctorAppointmentService = {
   // Add schedule exception
   async addScheduleException(exceptionData) {
     try {
-      console.log('🔄 Adding schedule exception:', exceptionData);
-      
       const response = await api.post('/doctor/schedule/exceptions', exceptionData);
-      
-      console.log('✅ Add schedule exception response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Error adding schedule exception:', error);
+      console.error('Error adding schedule exception:', error);
+      throw error;
+    }
+  },
+
+  // ✅ NEW: Get doctor's current schedule
+  async getDoctorSchedule(params = {}) {
+    try {
+      const { startDate, endDate } = params;
+      const queryParams = new URLSearchParams();
+      
+      if (startDate) queryParams.append('startDate', startDate);
+      if (endDate) queryParams.append('endDate', endDate);
+      
+      const response = await api.get(`/doctor/schedule?${queryParams}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching doctor schedule:', error);
+      throw error;
+    }
+  },
+
+  // ✅ NEW: Delete specific schedule slots
+  async deleteScheduleSlots(scheduleIds) {
+    try {
+      const response = await api.delete('/doctor/schedule', {
+        data: { scheduleIds }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting schedule slots:', error);
       throw error;
     }
   }
 };
-

@@ -56,6 +56,9 @@ const DoctorScheduleManager = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
+      console.log('🔄 Saving schedule...', dateSlots);
+      
+      // Prepare schedules data in the correct format
       const schedules = Object.entries(dateSlots).flatMap(([date, slots]) =>
         slots.filter(s => s.isAvailable).map(s => ({
           date,
@@ -64,10 +67,33 @@ const DoctorScheduleManager = () => {
           isAvailable: true
         }))
       );
-      await doctorAppointmentService.updateSchedule(schedules);
-      toast.success('Availability updated!');
-    } catch (e) {
-      toast.error('Failed to update schedule');
+      
+      console.log('📅 Formatted schedules:', schedules);
+      
+      if (schedules.length === 0) {
+        toast.error('Please select at least one time slot');
+        return;
+      }
+      
+      // Call the updated schedule service
+      const response = await doctorAppointmentService.updateSchedule(schedules);
+      
+      console.log('✅ Schedule updated successfully:', response);
+      toast.success('Availability updated successfully!');
+      
+    } catch (error) {
+      console.error('❌ Failed to update schedule:', error);
+      
+      // More detailed error handling
+      if (error.response?.status === 404) {
+        toast.error('Schedule endpoint not found. Please check your API configuration.');
+      } else if (error.response?.status === 401) {
+        toast.error('You are not authorized. Please log in again.');
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to update schedule. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -76,10 +102,12 @@ const DoctorScheduleManager = () => {
   // Render a standard calendar for the current month
   const renderCalendar = () => {
     const calendarCells = [];
+    
     // Fill empty cells before the first day
     for (let i = 0; i < firstDayOfWeek; i++) {
       calendarCells.push(<div key={`empty-${i}`} className="p-2" />);
     }
+    
     // Fill days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const dateObj = new Date(year, month, day);
@@ -87,25 +115,37 @@ const DoctorScheduleManager = () => {
       const isSelected = selectedDate === dateStr;
       const hasSlots = dateSlots[dateStr] && dateSlots[dateStr].some(s => s.isAvailable);
       const isToday = dateStr === todayStr;
+      const isPastDate = dateObj < todayObj && dateStr !== todayStr;
+      
       calendarCells.push(
         <button
           key={dateStr}
           className={`p-2 rounded w-10 h-10 text-center border transition
-            ${isSelected ? 'bg-blue-500 text-white' : hasSlots ? 'bg-green-200' : 'bg-gray-100'}
-            ${isToday ? 'border-2 border-red-500 font-bold' : ''}
-            hover:bg-blue-100`}
-          onClick={() => setSelectedDate(dateStr)}
+            ${isPastDate 
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+              : isSelected 
+                ? 'bg-blue-500 text-white' 
+                : hasSlots 
+                  ? 'bg-green-200 hover:bg-green-300' 
+                  : 'bg-gray-100 hover:bg-blue-100'
+            }
+            ${isToday ? 'border-2 border-red-500 font-bold' : 'border-gray-300'}
+          `}
+          onClick={() => !isPastDate && setSelectedDate(dateStr)}
+          disabled={isPastDate}
+          title={isPastDate ? 'Cannot schedule for past dates' : `Select ${dateStr}`}
         >
           {day}
         </button>
       );
     }
+    
     // Render grid
     return (
       <div>
         <div className="grid grid-cols-7 mb-2">
           {weekdays.map(w => (
-            <div key={w} className="text-center font-semibold text-gray-600">{w}</div>
+            <div key={w} className="text-center font-semibold text-gray-600 p-2">{w}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-1">
@@ -115,33 +155,92 @@ const DoctorScheduleManager = () => {
     );
   };
 
+  // Check if selected date is in the past
+  const isSelectedDatePast = () => {
+    const selected = new Date(selectedDate + 'T00:00:00');
+    const today = new Date(todayStr + 'T00:00:00');
+    return selected < today;
+  };
+
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">
         Configure Your Availability for {todayObj.toLocaleString('default', { month: 'long', year: 'numeric' })}
       </h2>
-      {renderCalendar()}
+      
+      <div className="mb-6">
+        {renderCalendar()}
+      </div>
+      
+      <div className="flex gap-4 text-sm mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-green-200 border rounded"></div>
+          <span>Has available slots</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-blue-500 border rounded"></div>
+          <span>Selected date</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-red-500 rounded"></div>
+          <span>Today</span>
+        </div>
+      </div>
+      
       {selectedDate && (
-        <div className="mt-4">
-          <h3 className="font-semibold mb-2">Select Available Slots for {selectedDate}</h3>
-          <div className="flex gap-2 flex-wrap">
-            {(dateSlots[selectedDate] || timeSlots.map(ts => ({ ...ts, isAvailable: false }))).map((slot, idx) => (
+        <div className="bg-gray-50 p-6 rounded-lg">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            Select Available Slots for {selectedDate}
+            {isSelectedDatePast() && (
+              <span className="text-red-500 text-sm ml-2">(Past date - cannot schedule)</span>
+            )}
+          </h3>
+          
+          {isSelectedDatePast() ? (
+            <div className="text-gray-500 text-center py-8">
+              Cannot schedule appointments for past dates. Please select a future date.
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+                {(dateSlots[selectedDate] || timeSlots.map(ts => ({ ...ts, isAvailable: false }))).map((slot, idx) => (
+                  <button
+                    key={slot.startTime}
+                    className={`px-4 py-3 rounded-lg border-2 transition-all duration-200 font-medium
+                      ${slot.isAvailable 
+                        ? 'bg-green-500 text-white border-green-500 hover:bg-green-600' 
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:text-blue-600'
+                      }`}
+                    onClick={() => handleSlotToggle(selectedDate, idx)}
+                  >
+                    {slot.startTime} - {slot.endTime}
+                  </button>
+                ))}
+              </div>
+              
               <button
-                key={slot.startTime}
-                className={`px-4 py-2 rounded border ${slot.isAvailable ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
-                onClick={() => handleSlotToggle(selectedDate, idx)}
+                className={`w-full md:w-auto px-8 py-3 rounded-lg font-semibold transition-all duration-200
+                  ${loading 
+                    ? 'bg-gray-400 cursor-not-allowed text-white' 
+                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
+                  }`}
+                onClick={handleSave}
+                disabled={loading}
               >
-                {slot.startTime}-{slot.endTime}
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                    </svg>
+                    Saving...
+                  </span>
+                ) : (
+                  'Save Availability'
+                )}
               </button>
-            ))}
-          </div>
-          <button
-            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded"
-            onClick={handleSave}
-            disabled={loading}
-          >
-            {loading ? 'Saving...' : 'Save Availability'}
-          </button>
+            </>
+          )}
         </div>
       )}
     </div>
