@@ -53,6 +53,10 @@ const MentalHealthClients = () => {
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
 
+  // Add state for scheduling first session modal
+  const [showFirstSessionModal, setShowFirstSessionModal] = useState(false);
+  const [firstSessionClient, setFirstSessionClient] = useState(null);
+
   // Enhanced mock data with different client states
   const mockClients = [
     {
@@ -271,18 +275,28 @@ const MentalHealthClients = () => {
   };
 
   const handleScheduleFirstSession = (client) => {
+    setFirstSessionClient(client);
+    setShowFirstSessionModal(true);
+  };
+
+  // Handle submit for first session details
+  const handleFirstSessionSubmit = (sessionData) => {
     setClients(
       clients.map((c) =>
-        c.id === client.id
+        c.id === firstSessionClient.id
           ? {
               ...c,
               status: "pending_assessment",
-              firstSessionDate: "2025-01-20",
-              nextAppointment: "2025-01-20",
+              firstSessionDate: sessionData.firstSessionDate,
+              nextAppointment: sessionData.firstSessionDate,
+              therapyType: sessionData.therapyType,
+              notes: sessionData.notes,
             }
           : c
       )
     );
+    setShowFirstSessionModal(false);
+    setFirstSessionClient(null);
   };
 
   const handleCompleteAssessment = (client) => {
@@ -436,6 +450,88 @@ const MentalHealthClients = () => {
             </button>
             <button
               onClick={() => setShowAssessmentModal(false)}
+              className="flex-1 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // First Session Modal Component
+  const FirstSessionModal = () => {
+    const [formData, setFormData] = useState({
+      firstSessionDate: "",
+      therapyType: "Individual Therapy",
+      notes: "",
+    });
+
+    if (!showFirstSessionModal || !firstSessionClient) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <h3 className="text-lg font-semibold mb-4">
+            Schedule First Session - {firstSessionClient.name}
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                First Session Date
+              </label>
+              <input
+                type="date"
+                className="w-full border rounded-lg px-3 py-2"
+                value={formData.firstSessionDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, firstSessionDate: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Therapy Type
+              </label>
+              <select
+                className="w-full border rounded-lg px-3 py-2"
+                value={formData.therapyType}
+                onChange={(e) =>
+                  setFormData({ ...formData, therapyType: e.target.value })
+                }
+              >
+                <option value="Individual Therapy">Individual Therapy</option>
+                <option value="Group Therapy">Group Therapy</option>
+                <option value="Cognitive Behavioral Therapy">
+                  Cognitive Behavioral Therapy
+                </option>
+                <option value="Family Therapy">Family Therapy</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Notes</label>
+              <textarea
+                className="w-full border rounded-lg px-3 py-2"
+                rows="3"
+                value={formData.notes}
+                onChange={(e) =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
+                placeholder="Session notes or special instructions..."
+              />
+            </div>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={() => handleFirstSessionSubmit(formData)}
+              className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              disabled={!formData.firstSessionDate}
+            >
+              Save Session
+            </button>
+            <button
+              onClick={() => setShowFirstSessionModal(false)}
               className="flex-1 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50"
             >
               Cancel
@@ -789,6 +885,7 @@ const MentalHealthClients = () => {
         </div>
 
         <AssessmentModal />
+        <FirstSessionModal />
       </div>
     </RoleLayout>
   );
