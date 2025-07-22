@@ -1,8 +1,8 @@
 // backend/routes/doctorAppointments.js
 const express = require('express');
 const router = express.Router();
-const DoctorAppointmentController = require('../controllers/doctorAppointmentController');
 const { authenticate, authorize } = require('../middleware/auth');
+const DoctorAppointmentController = require('../controllers/doctorAppointmentController');
 
 // Test route
 router.get('/test', (req, res) => {
@@ -13,109 +13,183 @@ router.get('/test', (req, res) => {
   });
 });
 
-// Get doctor's appointments
+// Get doctor's appointments - USE CONTROLLER
 router.get('/appointments', authenticate, authorize('doctor'), DoctorAppointmentController.getDoctorAppointments);
 
-// Review appointment (approve/reject)
+// Review appointment (approve/reject) - USE CONTROLLER
 router.patch('/appointments/:id/review', authenticate, authorize('doctor'), DoctorAppointmentController.reviewAppointment);
 
-// Reschedule appointment
-router.patch('/appointments/:appointmentId/reschedule', authenticate, authorize('doctor'), DoctorAppointmentController.rescheduleAppointment);
+// Reschedule appointment - USE CONTROLLER
+router.patch('/appointments/:id/reschedule', authenticate, authorize('doctor'), DoctorAppointmentController.rescheduleAppointment);
 
-// Get elder's medical summary
+// Complete appointment - USE CONTROLLER
+router.patch('/appointments/:id/complete', authenticate, authorize('doctor'), DoctorAppointmentController.completeAppointment);
+
+// Get elder's medical summary - USE CONTROLLER
 router.get('/elders/:elderId/medical-summary', authenticate, authorize('doctor'), DoctorAppointmentController.getElderMedicalSummary);
 
-// Get dashboard stats
-router.get('/dashboard/stats', authenticate, authorize('doctor'), DoctorAppointmentController.getDoctorDashboardStats);
+// Get dashboard stats - USE CONTROLLER
+router.get('/dashboard/stats', authenticate, authorize('doctor'), DoctorAppointmentController.getDashboardStats);
 
-// Get doctor consultations (if you have this method)
-router.get('/consultations', authenticate, authorize('doctor'), async (req, res) => {
+// Create prescription
+router.post('/appointments/:appointmentId/prescriptions', authenticate, authorize('doctor'), async (req, res) => {
   try {
-    const { page = 1, limit = 10, elderId } = req.query;
-    
-    // Mock consultation data for now - you can implement this later
-    const mockConsultations = [];
+    const { appointmentId } = req.params;
+    const { medicationName, dosage, frequency, duration, instructions } = req.body;
 
-    res.json({
-      success: true,
-      message: 'Doctor consultations retrieved successfully',
-      consultations: mockConsultations,
-      pagination: {
-        total: 0,
-        page: parseInt(page),
-        pages: 0
-      }
+    // Validate required fields
+    if (!medicationName || !dosage || !frequency) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: medicationName, dosage, frequency'
+      });
+    }
+
+    // Get doctor profile
+    const { Doctor } = require('../models');
+    const doctor = await Doctor.findOne({
+      where: { userId: req.user.id }
     });
-  } catch (error) {
-    console.error('❌ Get doctor consultations error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Internal server error'
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor profile not found'
+      });
+    }
+
+    // Create prescription in database
+    const { Prescription } = require('../models');
+    const newPrescription = await Prescription.create({
+      appointmentId: parseInt(appointmentId),
+      doctorId: doctor.id,
+      medicationName,
+      dosage,
+      frequency,
+      duration,
+      instructions,
+      prescribedDate: new Date(),
+      status: 'active'
     });
-  }
-});
 
-// Complete appointment (if you have this method)
-router.patch('/appointments/:id/complete', authenticate, authorize('doctor'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const consultationData = req.body;
-
-    // TODO: Implement appointment completion logic
-    console.log('🔄 Completing appointment:', { id, consultationData });
-
-    res.json({
-      success: true,
-      message: 'Appointment completed successfully'
-    });
-  } catch (error) {
-    console.error('❌ Complete appointment error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-});
-
-// Create prescription (if you have this method)
-router.post('/appointments/:id/prescriptions', authenticate, authorize('doctor'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const prescriptionData = req.body;
-
-    // TODO: Implement prescription creation logic
-    console.log('💊 Creating prescription:', { appointmentId: id, prescriptionData });
+    console.log('💊 New prescription created:', newPrescription.toJSON());
 
     res.status(201).json({
       success: true,
-      message: 'Prescription created successfully'
+      message: 'Prescription created successfully',
+      prescription: newPrescription
     });
   } catch (error) {
-    console.error('❌ Create prescription error:', error);
-    res.status(500).json({ 
+    console.error('❌ Error creating prescription:', error);
+    res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Failed to create prescription',
+      error: error.message
     });
   }
 });
 
-// Update schedule (if you have this method)
-router.post('/schedule', authenticate, authorize('doctor'), async (req, res) => {
+// Get consultation records
+router.get('/consultations', authenticate, authorize('doctor'), async (req, res) => {
   try {
-    const { schedules } = req.body;
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
 
-    // TODO: Implement schedule update logic
-    console.log('📅 Updating doctor schedule:', { schedules });
+    // Get doctor profile
+    const { Doctor, ConsultationRecord, Elder, Appointment } = require('../models');
+    const doctor = await Doctor.findOne({
+      where: { userId: req.user.id }
+    });
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor profile not found'
+      });
+    }
+
+    const consultations = await ConsultationRecord.findAndCountAll({
+      where: { doctorId: doctor.id },
+      include: [
+        {
+          model: Elder,
+          as: 'elder',
+          attributes: ['id', 'firstName', 'lastName', 'dateOfBirth']
+        },
+        {
+          model: Appointment,
+          as: 'appointment',
+          attributes: ['id', 'appointmentDate', 'reason']
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: parseInt(limit),
+      offset: offset
+    });
 
     res.json({
       success: true,
-      message: 'Schedule updated successfully'
+      message: 'Consultation records retrieved successfully',
+      consultations: consultations.rows,
+      pagination: {
+        total: consultations.count,
+        page: parseInt(page),
+        pages: Math.ceil(consultations.count / limit)
+      }
     });
   } catch (error) {
-    console.error('❌ Update schedule error:', error);
-    res.status(500).json({ 
+    console.error('❌ Error fetching consultation records:', error);
+    res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Failed to fetch consultation records',
+      error: error.message
+    });
+  }
+});
+
+// Update schedule - USE CONTROLLER
+router.post('/schedule', authenticate, authorize('doctor'), DoctorAppointmentController.updateSchedule);
+
+// Add schedule exception
+router.post('/schedule/exceptions', authenticate, authorize('doctor'), async (req, res) => {
+  try {
+    const { date, startTime, endTime, reason } = req.body;
+
+    // Get doctor profile
+    const { Doctor, ScheduleException } = require('../models');
+    const doctor = await Doctor.findOne({
+      where: { userId: req.user.id }
+    });
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor profile not found'
+      });
+    }
+
+    const exception = await ScheduleException.create({
+      doctorId: doctor.id,
+      date: new Date(date),
+      startTime,
+      endTime,
+      reason,
+      isActive: true
+    });
+
+    console.log('📅 Schedule exception created:', exception.toJSON());
+
+    res.status(201).json({
+      success: true,
+      message: 'Schedule exception added successfully',
+      exception
+    });
+  } catch (error) {
+    console.error('❌ Error adding schedule exception:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add schedule exception',
+      error: error.message
     });
   }
 });
