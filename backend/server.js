@@ -120,22 +120,7 @@ app.get('/api', (req, res) => {
 });
 
 
-// Import health monitoring routes
-const healthMonitoringRoutes = require('./routes/healthMonitoring');
-// Import health reports routes
-const healthReportsRoutes = require('./routes/healthReports');
 
-// Import staff assignment routes
-const staffAssignmentRoutes = require('./routes/staffAssignment');
-
-// Import doctor assignment routes
-const doctorAssignmentRoutes = require('./routes/doctorAssignment');
-
-// Import elder routes
-const elderRoutes = require('./routes/elder');
-
-// Import appointment routes
-const appointmentRoutes = require('./routes/appointments');
 
 // Import and use routes with error checking
 try {
