@@ -503,6 +503,18 @@ const MentalHealthAssessments = () => {
                   </div>
                 </div>
 
+                {/* Score/Results Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Score/Results
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Enter score or results (e.g., PHQ-9: 8/27)"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Notes
