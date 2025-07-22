@@ -96,7 +96,6 @@ const appointmentRoutes = require('./routes/appointments');
 
 // Import and use routes with error checking
 try {
-  // Prioritizing main branch approach - using routeConfigs
   routeConfigs.forEach(({ path, mount, name }) => {
     const route = require(path);
     
@@ -109,22 +108,6 @@ try {
     app.use(mount, route);
   });
 
-  // Additional routes from dewmini branch - integrating the extra routes
-  const inventoryRoutes = require('./routes/inventoryRoutes');
-  const simplePrescriptionRoutes = require('./routes/simplePrescriptions');
-  const pharmacyDashboardRoutes = require('./routes/parmacyDashboard');
-
-  // Verify additional routes are properly exported
-  if (typeof inventoryRoutes !== 'function') {
-    throw new Error('inventoryRoutes is not a valid router');
-  }
-  if (typeof simplePrescriptionRoutes !== 'function') {
-    throw new Error('simplePrescriptionRoutes is not a valid router');
-  }
-  if (typeof pharmacyDashboardRoutes !== 'function') {
-    throw new Error('pharmacyDashboardRoutes is not a valid router');
-  }
-
   // Use health monitoring routes
   app.use('/api/health-monitoring', healthMonitoringRoutes);
   // Use health reports routes
@@ -135,14 +118,8 @@ try {
   app.use('/api/doctor-assignments', doctorAssignmentRoutes);
   // Use elder routes
   app.use('/api/elders', elderRoutes);
-
   // Use appointment routes
   app.use('/api/appointments', appointmentRoutes);
-
-  // Use additional routes from dewmini branch
-  app.use('/api/inventory', inventoryRoutes);
-  app.use('/api/simple-prescriptions', simplePrescriptionRoutes);
-  app.use('/api/pharmacy-dashboard', pharmacyDashboardRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);
