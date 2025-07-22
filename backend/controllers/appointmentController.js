@@ -27,24 +27,10 @@ class AppointmentController {
         where.specialization = specialization;
       }
       const doctors = await Doctor.findAll({
-        where,
-        include: [
-          {
-            model: User,
-            as: 'user',
-            attributes: ['firstName', 'lastName', 'email', 'phone', 'profileImage']
-          },
-          {
-            model: DoctorSchedule,
-            as: 'schedules',
-            where: { isAvailable: true },
-            required: false
-          }
-        ],
-        attributes: [
-          'id', 'specialization', 'experience', 'consultationFee'
-          // REMOVE: 'rating', 'languages', 'about', 'qualifications' if not in your DB
-        ]
+        where: {
+          isActive: true // Only filter by isActive, or remove this too if you want ALL doctors
+        },
+        include: [{ model: User, as: 'user' }]
       });
 
       // Get unique specializations for tags
