@@ -53,52 +53,57 @@ const DoctorScheduleManager = () => {
     });
   };
 
-  const handleSave = async () => {
+    const handleSave = async () => {
     setLoading(true);
     try {
-      console.log('🔄 Saving schedule...', dateSlots);
-      
-      // Prepare schedules data in the correct format
-      const schedules = Object.entries(dateSlots).flatMap(([date, slots]) =>
-        slots.filter(s => s.isAvailable).map(s => ({
-          date,
-          startTime: s.startTime,
-          endTime: s.endTime,
-          isAvailable: true
-        }))
-      );
-      
-      console.log('📅 Formatted schedules:', schedules);
-      
-      if (schedules.length === 0) {
+        console.log('🔄 Saving schedule...', dateSlots);
+        
+        // Format data correctly for backend
+        const schedules = [];
+        
+        Object.entries(dateSlots).forEach(([date, slots]) => {
+        slots.forEach(slot => {
+            if (slot.isAvailable) {
+            schedules.push({
+                date: date,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                isAvailable: true
+            });
+            }
+        });
+        });
+        
+        console.log('📅 Formatted schedules to send:', schedules);
+        
+        if (schedules.length === 0) {
         toast.error('Please select at least one time slot');
         return;
-      }
-      
-      // Call the updated schedule service
-      const response = await doctorAppointmentService.updateSchedule(schedules);
-      
-      console.log('✅ Schedule updated successfully:', response);
-      toast.success('Availability updated successfully!');
-      
+        }
+        
+        // Send with correct structure
+        const response = await doctorAppointmentService.updateSchedule({ schedules });
+        
+        if (response && response.success !== false) {
+        toast.success('Availability updated successfully!');
+        } else {
+        toast.error(response?.message || 'Failed to update schedule');
+        }
+        
     } catch (error) {
-      console.error('❌ Failed to update schedule:', error);
-      
-      // More detailed error handling
-      if (error.response?.status === 404) {
-        toast.error('Schedule endpoint not found. Please check your API configuration.');
-      } else if (error.response?.status === 401) {
-        toast.error('You are not authorized. Please log in again.');
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error('Failed to update schedule. Please try again.');
-      }
+        console.error('❌ Failed to update schedule:', error);
+        
+        if (error.response?.status === 404) {
+        toast.error('Schedule endpoint not found.');
+        } else if (error.response?.status === 401) {
+        toast.error('Unauthorized. Please log in again.');
+        } else {
+        toast.error(error.response?.data?.message || 'Failed to update schedule');
+        }
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
-
+    };
   // Render a standard calendar for the current month
   const renderCalendar = () => {
     const calendarCells = [];

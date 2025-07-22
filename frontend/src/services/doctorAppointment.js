@@ -113,31 +113,17 @@ export const doctorAppointmentService = {
   },
 
   // ✅ FIXED: Update schedule - now using the correct endpoint
-  async updateSchedule(schedules) {
+  // Replace the existing updateSchedule method
+  updateSchedule: async (data) => {
     try {
-      console.log('🔄 Updating schedule:', schedules);
+      console.log('🔄 Updating doctor schedule:', data);
       
-      // Use the correct endpoint that matches the backend route
-      // The backend route is POST /schedule in doctorAppointments.js
-      // which gets mounted as /api/doctor/schedule in server.js
-      const response = await api.post('/doctor/schedule', { schedules });
+      const response = await api.post('/doctor/schedule', data);
       
-      console.log('✅ Schedule updated successfully:', response.data);
-      return response.data;
+      console.log('✅ Schedule update response:', response);
+      return response;
     } catch (error) {
       console.error('❌ Error updating schedule:', error);
-      
-      // Enhanced error logging for debugging
-      if (error.response) {
-        console.error('Response status:', error.response.status);
-        console.error('Response data:', error.response.data);
-        console.error('Response headers:', error.response.headers);
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-      } else {
-        console.error('Error setting up request:', error.message);
-      }
-      
       throw error;
     }
   },
