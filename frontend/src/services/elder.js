@@ -123,19 +123,30 @@ export const elderService = {
         // Use FormData for file upload
         const formData = new FormData();
         
-        // Add all fields to FormData
-        Object.keys(elderData).forEach(key => {
-          if (key !== 'photo' && elderData[key] !== null && elderData[key] !== undefined && elderData[key] !== '') {
-            formData.append(key, elderData[key]);
-            console.log(`📝 Added ${key}:`, elderData[key]);
+        // Add subscriptionId FIRST
+        formData.append('subscriptionId', elderData.subscriptionId);
+        console.log('📝 Added subscriptionId to FormData:', elderData.subscriptionId);
+        
+        // Add all other fields explicitly
+        const fields = [
+          'firstName', 'lastName', 'dateOfBirth', 'gender', 
+          'address', 'phone', 'emergencyContact', 'bloodType',
+          'medicalHistory', 'currentMedications', 'allergies', 
+          'chronicConditions', 'doctorName', 'doctorPhone',
+          'insuranceProvider', 'insuranceNumber'
+        ];
+        
+        fields.forEach(field => {
+          const value = elderData[field];
+          if (value !== undefined && value !== null && value !== '') {
+            formData.append(field, value);
+            console.log(`📝 Added ${field}:`, value);
           }
         });
         
         // Add photo file
-        if (elderData.photo) {
-          formData.append('photo', elderData.photo);
-          console.log('📸 Added photo file:', elderData.photo.name);
-        }
+        formData.append('photo', elderData.photo);
+        console.log('📸 Added photo file:', elderData.photo.name);
         
         // Debug FormData
         console.log('📋 FormData entries:');

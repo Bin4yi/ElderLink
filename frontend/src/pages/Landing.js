@@ -243,7 +243,9 @@ const Landing = () => {
                 <div className="text-center mb-6">
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
                   <div className="text-4xl font-bold gradient-text mb-2">
-                    {formatCurrency(plan.prices['1_month'])}
+                    {planKey === 'monthly' && formatCurrency(plan.prices['1_month'])}
+                    {planKey === 'six_months' && formatCurrency(plan.prices['6_months'] / 6)}
+                    {planKey === 'one_year' && formatCurrency(plan.prices['1_year'] / 12)}
                   </div>
                   <p className="text-gray-500">per month</p>
                 </div>
