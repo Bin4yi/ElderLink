@@ -65,15 +65,12 @@ class AppointmentController {
         });
       }
 
-      const requestedDate = new Date(date);
-      const dayOfWeek = requestedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-
-      // Get doctor's schedule for the requested day
+      // Query by date, not dayOfWeek
       const schedule = await DoctorSchedule.findOne({
         where: {
           doctorId,
-          dayOfWeek,
-          isActive: true
+          date: date, // <-- use the date string directly
+          isAvailable: true
         }
       });
 
@@ -81,7 +78,7 @@ class AppointmentController {
         return res.json({
           success: true,
           availableSlots: [],
-          message: 'Doctor is not available on this day'
+          message: 'Doctor is not available on this date'
         });
       }
 
@@ -101,11 +98,11 @@ class AppointmentController {
         }
       });
 
-      // Generate available slots
+      // Generate available slots (implement this as needed)
       const availableSlots = AppointmentController.generateAvailableSlots(
         schedule, 
         existingAppointments, 
-        requestedDate
+        new Date(date) // <-- fix here
       );
 
       res.json({
@@ -140,8 +137,8 @@ class AppointmentController {
         const schedule = await DoctorSchedule.findOne({
           where: {
             doctorId,
-            dayOfWeek,
-            isActive: true
+            date: checkDate.toISOString().split('T')[0],
+            isAvailable: true
           }
         });
         
@@ -152,7 +149,7 @@ class AppointmentController {
       
       res.json({
         success: true,
-        availableDates
+        dates: availableDates
       });
     } catch (error) {
       console.error('❌ Error fetching available dates:', error);
@@ -166,6 +163,10 @@ class AppointmentController {
 
   // Helper method to generate available slots
   static generateAvailableSlots(schedule, existingAppointments, date) {
+    // Ensure date is a Date object
+    if (typeof date === 'string') {
+      date = new Date(date);
+    }
     const slots = [];
     const startTime = new Date(`${date.toDateString()} ${schedule.startTime}`);
     const endTime = new Date(`${date.toDateString()} ${schedule.endTime}`);
