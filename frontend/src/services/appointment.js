@@ -16,13 +16,23 @@ class AppointmentService {
     }
   }
 
+  // Get doctor available dates
+  async getDoctorAvailableDates(doctorId) {
+    try {
+      const response = await api.get(`/appointments/doctor/${doctorId}/available-dates`);
+      return response.data.dates; // should be an array of date strings
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Get doctor availability for specific date
   async getDoctorAvailability(doctorId, date) {
     try {
-      const response = await api.get(`/appointments/doctors/${doctorId}/availability`, {
+      const response = await api.get(`/appointments/doctor/${doctorId}/availability`, {
         params: { date }
       });
-      return response.data;
+      return response.data.slots; // should be an array of slot objects
     } catch (error) {
       throw this.handleError(error);
     }
@@ -336,6 +346,7 @@ export const appointmentService = new AppointmentService();
 // Export individual methods for convenience
 export const {
   getAvailableDoctors,
+  getDoctorAvailableDates,
   getDoctorAvailability,
   bookAppointment,
   getAppointments,
