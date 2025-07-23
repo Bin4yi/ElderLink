@@ -19,25 +19,144 @@ import {
   Edit,
   Ban,
   Loader,
-  Filter
+  Filter,
+  Heart,
+  Brain,
+  Shield,
+  Activity,
+  Star,
+  Timer,
+  PlayCircle,
+  PauseCircle,
+  StopCircle,
+  Plus,
+  RefreshCw,
+  Stethoscope,
+  FileText,
+  TrendingUp
 } from 'lucide-react';
 
 const AppointmentManagement = () => {
   const [appointments, setAppointments] = useState([]);
+  const [monthlySessions, setMonthlySessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [monthlySessionsLoading, setMonthlySessionsLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [selectedMonthlySession, setSelectedMonthlySession] = useState(null);
   const [showScheduleManager, setShowScheduleManager] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [rescheduleDateTime, setRescheduleDateTime] = useState('');
   const [rescheduleReason, setRescheduleReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [sessionTimer, setSessionTimer] = useState({});
+  const [activeTimers, setActiveTimers] = useState({});
 
   const today = new Date().toISOString().split('T')[0];
 
+  // Mock family doctor data
+  const familyDoctor = {
+    id: 1,
+    name: "Dr. Sarah Johnson",
+    specialization: "General Medicine & Family Care",
+    experience: "15 years",
+    rating: 4.8,
+    phone: "+1-555-0123",
+    email: "dr.johnson@elderlink.com",
+    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
+    licenseNumber: "MD-12345",
+    hospital: "ElderLink Medical Center",
+    education: "Harvard Medical School",
+    availability: "Mon-Fri: 9:00 AM - 5:00 PM",
+    bio: "Dr. Sarah Johnson is a dedicated family physician with over 15 years of experience in geriatric care."
+  };
+
+  // Mock monthly sessions data
+  const mockMonthlySessions = [
+    {
+      id: 1,
+      title: "Monthly Health Check-up - July",
+      date: "2025-07-23",
+      time: "10:00",
+      duration: 45,
+      type: "health",
+      status: "completed",
+      doctor: familyDoctor,
+      elder: {
+        name: "Margaret Smith",
+        age: 78,
+        photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
+      },
+      notes: "Comprehensive monthly health assessment completed. All vital signs within normal range.",
+      sessionSummary: "Blood pressure: 120/80, Heart rate: 72 bpm, Temperature: 98.6°F, Weight: 145 lbs",
+      vitalSigns: {
+        bloodPressure: "120/80",
+        heartRate: "72 bpm",
+        temperature: "98.6°F",
+        weight: "145 lbs",
+        glucose: "95 mg/dL"
+      }
+    },
+    {
+      id: 2,
+      title: "Monthly Health Check-up - August",
+      date: "2025-08-23",
+      time: "10:00",
+      duration: 45,
+      type: "health",
+      status: "scheduled",
+      doctor: familyDoctor,
+      elder: {
+        name: "Margaret Smith",
+        age: 78,
+        photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
+      },
+      notes: "Scheduled monthly health assessment and medication review.",
+      sessionSummary: ""
+    },
+    {
+      id: 3,
+      title: "Monthly Health Check-up - September",
+      date: "2025-09-23",
+      time: "10:00",
+      duration: 45,
+      type: "health",
+      status: "in-progress",
+      doctor: familyDoctor,
+      elder: {
+        name: "Robert Johnson",
+        age: 82,
+        photo: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&h=150&fit=crop&crop=face"
+      },
+      notes: "Currently conducting monthly health assessment.",
+      sessionSummary: "Session in progress - checking vitals and reviewing medications"
+    }
+  ];
+
   useEffect(() => {
     loadAppointments();
+    loadMonthlySessions();
   }, [filter]);
+
+  // Timer functionality
+  useEffect(() => {
+    const intervals = {};
+    
+    Object.keys(activeTimers).forEach(sessionId => {
+      if (activeTimers[sessionId]) {
+        intervals[sessionId] = setInterval(() => {
+          setSessionTimer(prev => ({
+            ...prev,
+            [sessionId]: (prev[sessionId] || 0) + 1
+          }));
+        }, 1000);
+      }
+    });
+
+    return () => {
+      Object.values(intervals).forEach(clearInterval);
+    };
+  }, [activeTimers]);
 
   const loadAppointments = async () => {
     try {
@@ -55,7 +174,6 @@ const AppointmentManagement = () => {
       
       console.log('📋 Appointments API response:', response);
 
-      // Handle different response structures
       if (response && response.success !== false) {
         const appointmentsData = response.appointments || response.data || response || [];
         setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
@@ -68,7 +186,6 @@ const AppointmentManagement = () => {
     } catch (error) {
       console.error('❌ Error loading appointments:', error);
       
-      // Check if it's a network error
       if (error.code === 'NETWORK_ERROR' || !error.response) {
         toast.error('Network error. Please check your connection.');
       } else if (error.response?.status === 404) {
@@ -87,6 +204,50 @@ const AppointmentManagement = () => {
     }
   };
 
+  const loadMonthlySessions = async () => {
+    try {
+      setMonthlySessionsLoading(true);
+      
+      // For now, use mock data. In real implementation, this would call an API
+      // const response = await doctorAppointmentService.getMonthlySessions();
+      
+      // Simulate API call
+      setTimeout(() => {
+        setMonthlySessions(mockMonthlySessions);
+        setMonthlySessionsLoading(false);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Error loading monthly sessions:', error);
+      toast.error('Failed to load monthly sessions');
+      setMonthlySessions([]);
+      setMonthlySessionsLoading(false);
+    }
+  };
+
+  // Timer functions
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const startTimer = (sessionId) => {
+    setActiveTimers(prev => ({ ...prev, [sessionId]: true }));
+    toast.success('Session timer started');
+  };
+
+  const pauseTimer = (sessionId) => {
+    setActiveTimers(prev => ({ ...prev, [sessionId]: false }));
+    toast.info('Session timer paused');
+  };
+
+  const stopTimer = (sessionId) => {
+    setActiveTimers(prev => ({ ...prev, [sessionId]: false }));
+    setSessionTimer(prev => ({ ...prev, [sessionId]: 0 }));
+    toast.success('Session timer stopped');
+  };
+
   // Handle appointment actions (approve/reject)
   const handleAppointmentAction = async (appointmentId, action, notes = '') => {
     try {
@@ -102,7 +263,7 @@ const AppointmentManagement = () => {
       
       if (response && response.success !== false) {
         toast.success(`Appointment ${action}d successfully`);
-        loadAppointments(); // Reload to get updated data
+        loadAppointments();
         setSelectedAppointment(null);
       } else {
         toast.error(response?.message || `Failed to ${action} appointment`);
@@ -170,6 +331,19 @@ const AppointmentManagement = () => {
   const isFuture = (dateStr) => getDateOnly(dateStr) > today;
   const isPast = (dateStr) => getDateOnly(dateStr) < today;
 
+  // Filter monthly sessions by date
+  const todayMonthlySessions = monthlySessions.filter(
+    s => ['scheduled', 'in-progress'].includes(s.status) && isToday(s.date)
+  );
+
+  const upcomingMonthlySessions = monthlySessions.filter(
+    s => ['scheduled'].includes(s.status) && isFuture(s.date)
+  );
+
+  const completedMonthlySessions = monthlySessions.filter(
+    s => s.status === 'completed'
+  );
+
   // Filter appointments by date
   const todayAppointments = appointments.filter(
     a => ['approved', 'pending'].includes(a.status) && isToday(a.appointmentDate)
@@ -212,10 +386,145 @@ const AppointmentManagement = () => {
       completed: 'bg-blue-100 text-blue-800 border-blue-200',
       cancelled: 'bg-red-100 text-red-800 border-red-200',
       rejected: 'bg-red-100 text-red-800 border-red-200',
-      'no-show': 'bg-gray-100 text-gray-800 border-gray-200'
+      'no-show': 'bg-gray-100 text-gray-800 border-gray-200',
+      'in-progress': 'bg-purple-100 text-purple-800 border-purple-200',
+      'scheduled': 'bg-blue-100 text-blue-800 border-blue-200'
     };
 
     return statusStyles[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  const getSessionIcon = (type) => {
+    switch (type) {
+      case 'health': return <Heart className="w-5 h-5" />;
+      case 'mental': return <Brain className="w-5 h-5" />;
+      case 'specialist': return <Shield className="w-5 h-5" />;
+      case 'therapy': return <Activity className="w-5 h-5" />;
+      default: return <Calendar className="w-5 h-5" />;
+    }
+  };
+
+  // Render monthly session card
+  const renderMonthlySessionCard = (session) => {
+    return (
+      <div
+        key={session.id}
+        className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border-l-4 border-green-500"
+        onClick={() => setSelectedMonthlySession(session)}
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-lg bg-green-100">
+              {getSessionIcon(session.type)}
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">{session.title}</h3>
+              <p className="text-sm text-gray-600">{session.elder.name}, {session.elder.age} years</p>
+            </div>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(session.status)}`}>
+            {session.status.charAt(0).toUpperCase() + session.status.slice(1).replace('-', ' ')}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="flex items-center space-x-2 text-gray-600">
+            <Calendar className="w-4 h-4" />
+            <span className="text-sm">{new Date(session.date).toLocaleDateString()}</span>
+          </div>
+          <div className="flex items-center space-x-2 text-gray-600">
+            <Clock className="w-4 h-4" />
+            <span className="text-sm">{session.time} ({session.duration} min)</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center space-x-3">
+            <img
+              src={session.doctor.avatar}
+              alt={session.doctor.name}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            <div className="flex-1">
+              <p className="font-medium text-gray-900">{session.doctor.name}</p>
+              <p className="text-sm text-gray-600">{session.doctor.specialization}</p>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Star className="w-4 h-4 text-yellow-400 fill-current" />
+              <span className="text-sm font-medium">{session.doctor.rating}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Timer Section */}
+        {session.status === 'in-progress' && (
+          <div className="bg-blue-50 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Timer className="w-5 h-5 text-blue-600" />
+                <span className="font-medium text-blue-900">Session Timer</span>
+              </div>
+              <div className="text-2xl font-mono font-bold text-blue-600">
+                {formatTime(sessionTimer[session.id] || 0)}
+              </div>
+            </div>
+            <div className="flex space-x-2 mt-3">
+              {!activeTimers[session.id] ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startTimer(session.id);
+                  }}
+                  className="flex items-center space-x-1 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <PlayCircle className="w-4 h-4" />
+                  <span>Start</span>
+                </button>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    pauseTimer(session.id);
+                  }}
+                  className="flex items-center space-x-1 px-3 py-1 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                >
+                  <PauseCircle className="w-4 h-4" />
+                  <span>Pause</span>
+                </button>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  stopTimer(session.id);
+                }}
+                className="flex items-center space-x-1 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <StopCircle className="w-4 h-4" />
+                <span>Stop</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {session.notes && (
+          <div className="text-sm text-gray-600 bg-green-50 rounded-lg p-3">
+            <strong>Notes:</strong> {session.notes}
+          </div>
+        )}
+
+        {session.vitalSigns && session.status === 'completed' && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Vital Signs</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>BP: {session.vitalSigns.bloodPressure}</div>
+              <div>HR: {session.vitalSigns.heartRate}</div>
+              <div>Temp: {session.vitalSigns.temperature}</div>
+              <div>Weight: {session.vitalSigns.weight}</div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   // Render appointment card
@@ -311,33 +620,7 @@ const AppointmentManagement = () => {
                   <span className="font-medium">Notes:</span> {appointment.notes}
                 </p>
               )}
-              {appointment.doctorNotes && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Doctor Notes:</span> {appointment.doctorNotes}
-                </p>
-              )}
             </div>
-
-            {/* Medical Information */}
-            {(elder.bloodType || elder.allergies || elder.chronicConditions || elder.currentMedications) && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-2">Medical Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                  {elder.bloodType && (
-                    <p><span className="font-medium">Blood Type:</span> {elder.bloodType}</p>
-                  )}
-                  {elder.allergies && (
-                    <p><span className="font-medium">Allergies:</span> {elder.allergies}</p>
-                  )}
-                  {elder.chronicConditions && (
-                    <p className="md:col-span-2"><span className="font-medium">Chronic Conditions:</span> {elder.chronicConditions}</p>
-                  )}
-                  {elder.currentMedications && (
-                    <p className="md:col-span-2"><span className="font-medium">Current Medications:</span> {elder.currentMedications}</p>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Status and Actions */}
@@ -427,16 +710,25 @@ const AppointmentManagement = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">My Appointments</h2>
-            <p className="text-gray-600 mt-1">Manage your patient appointments and schedule</p>
+            <h2 className="text-2xl font-bold text-gray-900">My Appointments & Sessions</h2>
+            <p className="text-gray-600 mt-1">Manage your patient appointments and monthly health sessions</p>
           </div>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            onClick={() => setShowScheduleManager(true)}
-          >
-            <Calendar className="w-4 h-4" />
-            Manage Availability
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={loadMonthlySessions}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh Sessions
+            </button>
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              onClick={() => setShowScheduleManager(true)}
+            >
+              <Calendar className="w-4 h-4" />
+              Manage Availability
+            </button>
+          </div>
         </div>
 
         {/* Filter Buttons */}
@@ -465,15 +757,27 @@ const AppointmentManagement = () => {
         </div>
 
         {/* Loading State */}
-        {loading ? (
+        {(loading || monthlySessionsLoading) ? (
           <div className="flex justify-center items-center h-64">
             <div className="flex items-center gap-3">
               <Loader className="w-8 h-8 animate-spin text-blue-500" />
-              <p className="text-gray-600">Loading appointments...</p>
+              <p className="text-gray-600">Loading appointments and sessions...</p>
             </div>
           </div>
         ) : (
           <>
+            {/* Today's Monthly Sessions */}
+            {todayMonthlySessions.length > 0 && (
+              <section className="mb-8">
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  🏥 Today's Monthly Sessions ({todayMonthlySessions.length})
+                </h3>
+                <div className="space-y-4">
+                  {todayMonthlySessions.map(renderMonthlySessionCard)}
+                </div>
+              </section>
+            )}
+
             {/* Today's Appointments */}
             {todayAppointments.length > 0 && (
               <section className="mb-8">
@@ -486,6 +790,18 @@ const AppointmentManagement = () => {
               </section>
             )}
 
+            {/* Upcoming Monthly Sessions */}
+            {upcomingMonthlySessions.length > 0 && (
+              <section className="mb-8">
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  🗓️ Upcoming Monthly Sessions ({upcomingMonthlySessions.length})
+                </h3>
+                <div className="space-y-4">
+                  {upcomingMonthlySessions.map(renderMonthlySessionCard)}
+                </div>
+              </section>
+            )}
+
             {/* Upcoming Appointments */}
             {upcomingAppointments.length > 0 && (
               <section className="mb-8">
@@ -494,6 +810,18 @@ const AppointmentManagement = () => {
                 </h3>
                 <div className="space-y-4">
                   {upcomingAppointments.map(renderAppointmentCard)}
+                </div>
+              </section>
+            )}
+
+            {/* Completed Monthly Sessions */}
+            {completedMonthlySessions.length > 0 && (
+              <section className="mb-8">
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  ✅ Completed Monthly Sessions ({completedMonthlySessions.length})
+                </h3>
+                <div className="space-y-4">
+                  {completedMonthlySessions.map(renderMonthlySessionCard)}
                 </div>
               </section>
             )}
@@ -515,19 +843,19 @@ const AppointmentManagement = () => {
               )}
             </section>
 
-            {/* No Appointments Message */}
-            {appointments.length === 0 && (
+            {/* No Data Message */}
+            {appointments.length === 0 && monthlySessions.length === 0 && (
               <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No appointments found</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No appointments or sessions found</h3>
                 <p className="text-gray-500 mb-4">
                   {filter === 'all' 
-                    ? "You don't have any appointments yet." 
-                    : `No ${filter} appointments found.`
+                    ? "You don't have any appointments or monthly sessions yet." 
+                    : `No ${filter} appointments or sessions found.`
                   }
                 </p>
                 <p className="text-sm text-gray-400">
-                  Appointments will appear here when patients book with you.
+                  Appointments and sessions will appear here when patients book with you.
                 </p>
               </div>
             )}
@@ -599,24 +927,6 @@ const AppointmentManagement = () => {
                       <p className="text-gray-700 mt-1">{selectedAppointment.doctorNotes}</p>
                     </div>
                   )}
-                  {selectedAppointment.elder?.allergies && (
-                    <div>
-                      <strong>Allergies:</strong>
-                      <p className="text-red-600 mt-1">{selectedAppointment.elder.allergies}</p>
-                    </div>
-                  )}
-                  {selectedAppointment.elder?.chronicConditions && (
-                    <div>
-                      <strong>Chronic Conditions:</strong>
-                      <p className="text-gray-700 mt-1">{selectedAppointment.elder.chronicConditions}</p>
-                    </div>
-                  )}
-                  {selectedAppointment.elder?.currentMedications && (
-                    <div>
-                      <strong>Current Medications:</strong>
-                      <p className="text-gray-700 mt-1">{selectedAppointment.elder.currentMedications}</p>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -649,6 +959,144 @@ const AppointmentManagement = () => {
                   </button>
                 </div>
               )}
+            </div>
+          </Modal>
+        )}
+
+        {/* Modal: View Monthly Session Details */}
+        {selectedMonthlySession && (
+          <Modal onClose={() => setSelectedMonthlySession(null)}>
+            <div className="max-w-3xl">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <Heart className="w-5 h-5 text-green-600" />
+                Monthly Session Details
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Patient Information */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2 text-green-800">Patient Information</h3>
+                  <div className="flex items-center space-x-3 mb-4">
+                    {selectedMonthlySession.elder.photo ? (
+                      <img 
+                        src={selectedMonthlySession.elder.photo} 
+                        alt={selectedMonthlySession.elder.name}
+                        className="w-16 h-16 rounded-full object-cover border-2 border-green-200"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                        <User className="w-8 h-8 text-green-600" />
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-medium text-lg">{selectedMonthlySession.elder.name}</h4>
+                      <p className="text-gray-600">{selectedMonthlySession.elder.age} years old</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Session Information */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2 text-green-800">Session Information</h3>
+                  <div className="space-y-2">
+                    <p><strong>Date:</strong> {new Date(selectedMonthlySession.date).toLocaleDateString()}</p>
+                    <p><strong>Time:</strong> {selectedMonthlySession.time}</p>
+                    <p><strong>Duration:</strong> {selectedMonthlySession.duration} minutes</p>
+                    <p><strong>Type:</strong> {selectedMonthlySession.type.charAt(0).toUpperCase() + selectedMonthlySession.type.slice(1)} Session</p>
+                    <p><strong>Status:</strong> <span className={`px-2 py-1 rounded text-xs ${getStatusBadge(selectedMonthlySession.status)}`}>
+                      {selectedMonthlySession.status.charAt(0).toUpperCase() + selectedMonthlySession.status.slice(1).replace('-', ' ')}
+                    </span></p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Doctor Information */}
+              <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                <h3 className="font-semibold text-lg mb-3 text-green-800">Family Doctor</h3>
+                <div className="flex items-center space-x-3">
+                  <img
+                    src={selectedMonthlySession.doctor.avatar}
+                    alt={selectedMonthlySession.doctor.name}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{selectedMonthlySession.doctor.name}</p>
+                    <p className="text-sm text-gray-600">{selectedMonthlySession.doctor.specialization}</p>
+                    <p className="text-xs text-gray-500">{selectedMonthlySession.doctor.experience} experience</p>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                    <span className="text-sm font-medium">{selectedMonthlySession.doctor.rating}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Session Notes */}
+              <div className="mt-6 space-y-4">
+                <h3 className="font-semibold text-lg border-b pb-2 text-green-800">Session Notes</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-700">{selectedMonthlySession.notes}</p>
+                </div>
+                {selectedMonthlySession.sessionSummary && (
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-900 mb-2">Session Summary</h4>
+                    <p className="text-blue-800">{selectedMonthlySession.sessionSummary}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Vital Signs (if completed) */}
+              {selectedMonthlySession.vitalSigns && selectedMonthlySession.status === 'completed' && (
+                <div className="mt-6 space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2 text-green-800">Vital Signs Recorded</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-red-50 p-3 rounded-lg text-center">
+                      <div className="text-sm text-red-600 font-medium">Blood Pressure</div>
+                      <div className="text-lg font-bold text-red-700">{selectedMonthlySession.vitalSigns.bloodPressure}</div>
+                    </div>
+                    <div className="bg-pink-50 p-3 rounded-lg text-center">
+                      <div className="text-sm text-pink-600 font-medium">Heart Rate</div>
+                      <div className="text-lg font-bold text-pink-700">{selectedMonthlySession.vitalSigns.heartRate}</div>
+                    </div>
+                    <div className="bg-orange-50 p-3 rounded-lg text-center">
+                      <div className="text-sm text-orange-600 font-medium">Temperature</div>
+                      <div className="text-lg font-bold text-orange-700">{selectedMonthlySession.vitalSigns.temperature}</div>
+                    </div>
+                    <div className="bg-purple-50 p-3 rounded-lg text-center">
+                      <div className="text-sm text-purple-600 font-medium">Weight</div>
+                      <div className="text-lg font-bold text-purple-700">{selectedMonthlySession.vitalSigns.weight}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setSelectedMonthlySession(null)}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+                {selectedMonthlySession.status === 'scheduled' && (
+                  <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+                    <PlayCircle className="w-4 h-4" />
+                    Start Session
+                  </button>
+                )}
+                {selectedMonthlySession.status === 'in-progress' && (
+                  <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Complete Session
+                  </button>
+                )}
+                {selectedMonthlySession.status === 'completed' && (
+                  <button className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Generate Report
+                  </button>
+                )}
+              </div>
             </div>
           </Modal>
         )}
@@ -734,4 +1182,3 @@ const AppointmentManagement = () => {
 };
 
 export default AppointmentManagement;
-
