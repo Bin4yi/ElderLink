@@ -1,1432 +1,809 @@
-# ElderLink - Complete Learning Guide for Beginners 🎓
+# ElderLink - Smart Elder Care Platform
 
-A comprehensive step-by-step tutorial to build a complete elder care management system from database to deployment. This guide will teach you full-stack development using modern web technologies.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12+-blue.svg)](https://www.postgresql.org/)
+
+A comprehensive elder care management platform that connects immigrant families with their elderly parents through technology and healthcare services. Built with modern web technologies and designed for scalability and ease of use.
 
 ![ElderLink Banner](https://via.placeholder.com/800x200/3B82F6/FFFFFF?text=ElderLink+-+Smart+Elder+Care+Platform)
 
-## 🎯 What You'll Learn
-
-### Database Skills ✅
-- **Table Creation**: Design and create database tables (models) with proper data types
-- **Relationships**: Understand foreign keys, associations, and table connections
-- **Data Operations**: Query, insert, update, and delete data using Sequelize ORM
-- **Validation**: Implement data validation and constraints
-- **Sample Data**: Seed databases with initial test data
-
-### Backend Skills ✅
-- **REST APIs**: Build RESTful APIs with Express.js framework
-- **Controllers**: Organize business logic in controller functions
-- **Routes**: Define URL endpoints and HTTP methods
-- **Error Handling**: Implement proper error handling and status codes
-- **Middleware**: Use middleware for authentication, logging, and data parsing
-- **Database Integration**: Connect backend to PostgreSQL database
-
-### Frontend Skills ✅
-- **React Components**: Build functional components with hooks
-- **State Management**: Use useState and useEffect for component state
-- **Form Handling**: Create forms with validation and submission
-- **API Integration**: Make HTTP requests to backend APIs
-- **Routing**: Implement client-side routing with React Router
-- **UI/UX**: Style components with Tailwind CSS and icons
-
-### Security Skills ✅
-- **Authentication**: Implement JWT-based user authentication
-- **Password Security**: Hash passwords with bcryptjs
-- **Route Protection**: Secure routes based on user roles
-- **Input Validation**: Validate and sanitize user inputs
-- **CORS**: Configure cross-origin resource sharing
-
-### Full-Stack Integration ✅
-- **Frontend-Backend Communication**: Connect React to Express API
-- **Data Flow**: Understand how data flows through the application
-- **Error Handling**: Handle errors gracefully across the stack
-- **Development Workflow**: Set up and manage both frontend and backend
-
-## 🔄 Next Steps to Master Development
-
-### 1. Add More Features 🚀
-```javascript
-// Add real-time notifications
-const io = require('socket.io')(server);
-
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-  
-  socket.on('health_alert', (data) => {
-    // Send alert to family members
-    socket.broadcast.emit('emergency_alert', data);
-  });
-});
-```
-
-```javascript
-// Add file upload functionality
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
-
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  res.json({ file: req.file });
-});
-```
-
-### 2. Improve User Experience 💫
-- **Loading Animations**: Add skeleton loaders and spinners
-- **Better Error Messages**: Show user-friendly error messages
-- **Mobile Responsiveness**: Ensure app works on all devices
-- **Offline Support**: Implement service workers for offline functionality
-- **Push Notifications**: Add browser notifications for alerts
-
-### 3. Add Testing 🧪
-```javascript
-// Backend testing with Jest
-const request = require('supertest');
-const app = require('../server');
-
-describe('User API', () => {
-  test('GET /api/users should return users', async () => {
-    const response = await request(app)
-      .get('/api/users')
-      .expect(200);
-    
-    expect(response.body.success).toBe(true);
-  });
-});
-```
-
-```javascript
-// Frontend testing with React Testing Library
-import { render, screen } from '@testing-library/react';
-import UserList from './UserList';
-
-test('renders user list component', () => {
-  render(<UserList />);
-  const heading = screen.getByText(/Users/i);
-  expect(heading).toBeInTheDocument();
-});
-```
-
-### 4. Deploy to Production 🌐
-- **Cloud Services**: Deploy to Heroku, Vercel, or AWS
-- **CI/CD Pipelines**: Set up automated testing and deployment
-- **Environment Management**: Separate dev, staging, and production
-- **Performance Monitoring**: Track application performance and errors
-- **Backup Strategies**: Implement database backup and recovery
-
-### 5. Advanced Features 🔥
-- **Real-time Chat**: Add messaging between family and staff
-- **Payment Processing**: Integrate Stripe for subscription payments
-- **Email Notifications**: Send automated emails for appointments
-- **Data Analytics**: Create dashboards with charts and reports
-- **Mobile App**: Build React Native mobile application
-
-## 🆘 Troubleshooting
-
-### Common Problems & Solutions
-
-#### ❌ Database Connection Error
-```bash
-# Check your DATABASE_URL in .env file
-node -e "console.log(process.env.DATABASE_URL)"
-
-# Verify PostgreSQL is running
-sudo systemctl status postgresql  # Linux
-brew services list | grep postgres  # Mac
-```
-
-#### ❌ "Cannot GET /api/users"
-```bash
-# Make sure backend server is running on port 5000
-curl http://localhost:5000/health
-
-# Check if route is properly defined
-console.log('Routes registered:', app._router.stack);
-```
-
-#### ❌ CORS Error in Browser
-```javascript
-// Add cors() middleware in server.js
-const cors = require('cors');
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
-}));
-```
-
-#### ❌ "Module not found"
-```bash
-# Run npm install in both directories
-cd backend && npm install
-cd frontend && npm install
-
-# Clear npm cache if needed
-npm cache clean --force
-```
-
-#### ❌ JWT Token Errors
-```bash
-# Check if JWT_SECRET is set in .env
-node -e "console.log(process.env.JWT_SECRET)"
-
-# Verify token format in localStorage
-console.log(localStorage.getItem('token'));
-```
-
-#### ❌ React Component Not Updating
-```javascript
-// Check if state is being updated correctly
-const [data, setData] = useState([]);
-
-// Use useEffect for side effects
-useEffect(() => {
-  console.log('Data updated:', data);
-}, [data]);
-```
-
-#### ❌ Database Tables Not Created
-```bash
-# Run database initialization script
-npm run init-db
-
-# Check if tables exist
-psql -d elderlink -c "\dt"
-```
-
-### Debug Commands 🔍
-
-```bash
-# Backend debugging
-# Check server logs
-npm run dev  # Nodemon shows detailed logs
-
-# Test API endpoints
-curl -X GET http://localhost:5000/api/users
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password"}'
-
-# Frontend debugging
-# Check browser console for errors
-# Use React Developer Tools
-# Inspect network requests in browser DevTools
-```
-
-## 📚 Learning Resources
-
-### Documentation & Guides
-- **Express.js**: [expressjs.com](https://expressjs.com/) - Web framework for Node.js
-- **React**: [react.dev](https://react.dev/) - Frontend library documentation
-- **Sequelize**: [sequelize.org](https://sequelize.org/) - PostgreSQL ORM
-- **PostgreSQL**: [postgresql.org/docs](https://www.postgresql.org/docs/) - Database documentation
-- **Tailwind CSS**: [tailwindcss.com](https://tailwindcss.com/) - Utility-first CSS framework
-
-### Tutorials & Courses
-- **Node.js Tutorial**: [nodejs.org/learn](https://nodejs.org/en/learn/)
-- **React Tutorial**: [react.dev/learn](https://react.dev/learn)
-- **SQL Tutorial**: [w3schools.com/sql](https://www.w3schools.com/sql/)
-- **JWT Authentication**: [jwt.io/introduction](https://jwt.io/introduction)
-- **Full-Stack Development**: [freecodecamp.org](https://www.freecodecamp.org/)
-
-### Tools & Extensions
-- **VS Code Extensions**:
-  - ES7+ React/Redux/React-Native snippets
-  - Prettier - Code formatter
-  - Auto Rename Tag
-  - Bracket Pair Colorizer
-  - REST Client (for API testing)
-- **Browser Tools**:
-  - React Developer Tools
-  - Redux DevTools (if using Redux)
-  - JSON Viewer extension
-
-### Practice Projects
-1. **Blog System**: Create a simple blog with posts and comments
-2. **Todo App**: Build a task management application
-3. **E-commerce**: Develop a product catalog with shopping cart
-4. **Social Media**: Create a simple social platform with posts and likes
-5. **Chat Application**: Build real-time messaging with Socket.io
-
-## 🌟 Project Structure
-
-```
-elderlink/
-├── backend/
-│   ├── config/
-│   │   ├── database.js
-│   │   └── jwt.js
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   ├── userController.js
-│   │   └── elderController.js
-│   ├── models/
-│   │   ├── User.js
-│   │   ├── Elder.js
-│   │   ├── Subscription.js
-│   │   └── index.js
-│   ├── routes/
-│   │   ├── auth.js
-│   │   ├── user.js
-│   │   └── elder.js
-│   ├── middleware/
-│   │   ├── auth.js
-│   │   └── validation.js
-│   ├── scripts/
-│   │   └── initializeDatabase.js
-│   ├── .env
-│   ├── package.json
-│   └── server.js
-├── frontend/
-│   ├── public/
-│   │   ├── index.html
-│   │   └── favicon.ico
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── UserList.js
-│   │   │   ├── AddElder.js
-│   │   │   ├── Login.js
-│   │   │   └── Dashboard.js
-│   │   ├── pages/
-│   │   │   ├── Home.js
-│   │   │   ├── About.js
-│   │   │   └── Contact.js
-│   │   ├── utils/
-│   │   │   ├── api.js
-│   │   │   └── helpers.js
-│   │   ├── App.js
-│   │   ├── index.js
-│   │   └── index.css
-│   ├── .env
-│   ├── package.json
-│   └── tailwind.config.js
-└── README.md
-```
-
-## 🎮 Interactive Features You Can Add
-
-### Real-time Health Monitoring
-```javascript
-// Backend - Socket.io integration
-const io = require('socket.io')(server);
-
-io.on('connection', (socket) => {
-  socket.on('health_update', (data) => {
-    // Broadcast to family members
-    socket.broadcast.to(`family_${data.elderId}`).emit('health_alert', data);
-  });
-});
-```
-
-### Payment Integration
-```javascript
-// Stripe payment processing
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
-const createSubscription = async (customerId, priceId) => {
-  const subscription = await stripe.subscriptions.create({
-    customer: customerId,
-    items: [{ price: priceId }],
-  });
-  return subscription;
-};
-```
-
-### Email Notifications
-```javascript
-// Nodemailer setup
-const nodemailer = require('nodemailer');
-
-const transporter = nodemailer.createTransporter({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
-
-const sendWelcomeEmail = async (email, name) => {
-  await transporter.sendMail({
-    from: '"ElderLink" <noreply@elderlink.com>',
-    to: email,
-    subject: 'Welcome to ElderLink!',
-    html: `<h1>Welcome ${name}!</h1><p>Thank you for joining ElderLink.</p>`
-  });
-};
-```
-
-## 🏆 Achievement Badges
-
-As you complete different sections, you can track your progress:
-
-- 🗄️ **Database Master**: Created tables and relationships
-- 🔌 **API Builder**: Built RESTful endpoints
-- 🎨 **Frontend Developer**: Created React components
-- 🔐 **Security Expert**: Implemented authentication
-- 🚀 **Deployment Pro**: Successfully deployed application
-- 🧪 **Testing Ninja**: Added comprehensive tests
-- 📱 **Mobile Ready**: Made responsive design
-- 🔄 **Real-time Guru**: Added live updates
-- 💳 **Payment Processor**: Integrated payments
-- 📧 **Communication Master**: Added email notifications
-
-## 🤝 Contributing
-
-Want to improve this tutorial? Here's how you can contribute:
-
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b improve-tutorial`
-3. **Make your changes**: Add examples, fix typos, improve explanations
-4. **Test your changes**: Ensure all code examples work
-5. **Submit a pull request**: Describe your improvements
-
-### Areas for Improvement
-- Add more code examples
-- Create video tutorials
-- Add troubleshooting sections
-- Improve accessibility examples
-- Add performance optimization tips
-
-## 📄 License
-
-This tutorial is open source and available under the [MIT License](LICENSE).
-
-## 🙏 Acknowledgments
-
-Special thanks to:
-- **React Team** for the amazing frontend library
-- **Express.js Community** for the robust backend framework  
-- **Sequelize Team** for the excellent ORM
-- **PostgreSQL** for the reliable database
-- **Open Source Community** for endless learning resources
-
----
-
-## 🎉 Congratulations! 
-
-**You've built a complete full-stack application from scratch!** 
-
-You now understand how databases, backends, and frontends work together to create modern web applications. This is the foundation for building any web application - from simple websites to complex enterprise systems.
-
-The pattern you've learned here (**Database → Backend API → Frontend**) is used by companies like:
-- 🔵 **Facebook/Meta** - Social media platforms
-- 🔴 **Netflix** - Video streaming services  
-- 🟢 **Spotify** - Music streaming applications
-- 🟡 **Uber** - Ride-sharing platforms
-- 🟣 **Airbnb** - Accommodation booking systems
-
-### What's Next? 🚀
-
-1. **Build Your Own Project**: Take what you've learned and create something unique
-2. **Join Developer Communities**: Connect with other developers on GitHub, Stack Overflow, Reddit
-3. **Keep Learning**: Explore advanced topics like microservices, Docker, Kubernetes
-4. **Contribute to Open Source**: Help improve existing projects
-5. **Share Your Knowledge**: Write blog posts, create tutorials, mentor others
-
-### Remember 💡
-
-- **Every expert was once a beginner** - you've taken the first major step
-- **Practice makes perfect** - keep building and experimenting  
-- **Community is key** - don't hesitate to ask for help
-- **Stay curious** - technology evolves, and so should you
-
-**You're now ready to build amazing applications!** 🌟
-
-*Happy coding!* 💻✨
-
----
-
-*Made with ❤️ for aspiring full-stack developers*📋 Table of Contents
-
-1. [🗄️ Database Development](#️-database-development)
-2. [🔌 Backend API Development](#-backend-api-development)  
-3. [🎨 Frontend Development](#-frontend-development)
-4. [🔐 Authentication & Security](#-authentication--security)
-5. [🚀 Deployment](#-deployment)
-6. [🎯 What You'll Learn](#-what-youll-learn)
-7. [🔄 Next Steps](#-next-steps)
-8. [🆘 Troubleshooting](#-troubleshooting)
-
-## 🌟 Project Overview
-
-**ElderLink** is a smart elder care platform that connects immigrant families with their elderly parents through technology and healthcare services. This tutorial will guide you through building:
-
-- **Health Management**: Digital health records with real-time monitoring
-- **Family Connection**: Real-time health dashboard for remote family members  
+## 🌟 Features
+
+### Core Functionality
+- **Multi-Role User System**: Admin, Family Members, Doctors, Staff, Elders, Pharmacists
+- **Health Monitoring**: Real-time vital signs tracking and health alerts
+- **Appointment Management**: Schedule and manage doctor appointments
+- **Prescription Management**: Digital prescriptions with pharmacy integration
 - **Medicine Delivery**: Monthly prescription delivery and smart pill dispensers
-- **Emergency Response**: 24/7 emergency alerts and rapid response
-- **Multi-role System**: Family members, elders, staff, doctors, and admin users
+- **Emergency Response**: 24/7 emergency alerts and rapid response system
+
+### Advanced Features
+- **Zoom Integration**: Video consultations for monthly health sessions
+- **Real-time Notifications**: Socket.IO powered instant alerts
+- **Payment Processing**: Stripe integration for subscription management
+- **Mobile Application**: React Native app for on-the-go access
+- **Analytics Dashboard**: Comprehensive reporting and analytics
+- **File Upload**: Document and image management system
+
+### Communication & Collaboration
+- **Family Connection**: Real-time health dashboard for remote family members
+- **Staff Coordination**: Multi-role staff management and assignment
+- **Doctor Portal**: Patient management and session scheduling
+- **Pharmacy Integration**: Prescription fulfillment and delivery tracking
 
 ## 🛠️ Technology Stack
 
 ### Backend
-- **Node.js** with Express.js
-- **PostgreSQL** database with Sequelize ORM
-- **JWT** authentication
-- **bcryptjs** for password hashing
-- **CORS** for cross-origin requests
+- **Runtime**: Node.js 16+
+- **Framework**: Express.js
+- **Database**: PostgreSQL with Sequelize ORM
+- **Authentication**: JWT (JSON Web Tokens)
+- **Real-time**: Socket.IO
+- **File Upload**: Multer
+- **Email**: Nodemailer
+- **Payments**: Stripe
+- **Video**: Zoom API Integration
 
-### Frontend  
-- **React 18** with modern hooks
-- **React Router** for navigation
-- **Tailwind CSS** for styling
-- **Lucide React** for icons
-- **Fetch API** for HTTP requests
+### Frontend
+- **Framework**: React 18 with Hooks
+- **Routing**: React Router v6
+- **Styling**: Tailwind CSS
+- **Charts**: Chart.js & Recharts
+- **Icons**: Lucide React
+- **HTTP Client**: Axios
+- **State Management**: React Context + Hooks
+
+### Mobile
+- **Framework**: React Native with Expo
+- **Navigation**: React Navigation
+- **Storage**: AsyncStorage
+- **Maps**: React Native Maps
+- **Camera**: Expo Camera
+- **Notifications**: Expo Notifications
+
+### DevOps & Tools
+- **Containerization**: Docker & Docker Compose
+- **Process Management**: PM2 (production)
+- **Testing**: Jest
+- **Linting**: ESLint
+- **Version Control**: Git
 
 ## 📋 Prerequisites
 
-Before starting this tutorial, make sure you have:
+Before running ElderLink, ensure you have the following installed:
 
 - **Node.js** (v16 or higher) - [Download here](https://nodejs.org/)
 - **PostgreSQL** (v12 or higher) - [Download here](https://www.postgresql.org/download/)
-- **Code Editor** (VS Code recommended) - [Download here](https://code.visualstudio.com/)
-- **Basic knowledge** of JavaScript, HTML, and CSS
+- **Git** - [Download here](https://git-scm.com/)
+- **Docker** (optional, for containerized deployment) - [Download here](https://www.docker.com/)
 
-## 🗄️ Database Development
+## 🚀 Installation & Setup
 
-### What is a Database? 🤔
+### 1. Clone the Repository
 
-Think of a database like a **digital filing cabinet** where we organize information into different folders (tables):
-- 👥 **Users** folder - stores people who use our system
-- 👴 **Elders** folder - stores elderly people information  
-- 💳 **Subscriptions** folder - stores payment plans
-- 🔔 **Notifications** folder - stores messages
-
-### Step 1: Setting Up Database Connection
-
-First, create the database connection configuration:
-
-```javascript
-// backend/config/database.js
-const { Sequelize } = require('sequelize');
-
-// This is like giving directions to your filing cabinet
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: 'postgres',
-  logging: console.log, // Shows what database is doing (helpful for learning)
-});
-
-// Test if we can reach the filing cabinet
-const testConnection = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('✅ Database connected successfully!');
-  } catch (error) {
-    console.error('❌ Database connection failed:', error);
-  }
-};
-
-module.exports = sequelize;
+```bash
+git clone https://github.com/your-username/elderlink.git
+cd elderlink
 ```
 
-### Step 2: Creating Your First Table (Model)
+### 2. Environment Configuration
 
-Create a **Users** table to store people information:
-
-```javascript
-// backend/models/User.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const bcrypt = require('bcryptjs');
-
-const User = sequelize.define('User', {
-  // ID - Like a unique student number for each person
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  
-  // Personal information
-  firstName: {
-    type: DataTypes.STRING,
-    allowNull: false, // REQUIRED - can't be empty
-    validate: {
-      len: [2, 50] // Must be 2-50 characters long
-    }
-  },
-  
-  lastName: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-      len: [2, 50]
-    }
-  },
-  
-  // Email - Like their digital address  
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true, // Only one person can have this email
-    validate: {
-      isEmail: true // Must look like: someone@example.com
-    }
-  },
-  
-  // Password - Their secret key
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-      len: [6, 100] // Must be at least 6 characters
-    }
-  },
-  
-  // Role - What job they do in our system
-  role: {
-    type: DataTypes.ENUM(
-      'admin',           // 👑 Boss
-      'family_member',   // 👨‍👩‍👧‍👦 Family
-      'doctor',          // 👨‍⚕️ Doctor
-      'staff',           // 👥 Care worker
-      'elder'            // 👴 Elderly person
-    ),
-    allowNull: false,
-    defaultValue: 'family_member'
-  }
-}, {
-  tableName: 'Users',
-  timestamps: true, // Automatically adds createdAt and updatedAt
-  
-  // This happens automatically before saving user
-  hooks: {
-    beforeCreate: async (user) => {
-      // Encrypt password for security
-      if (user.password) {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password, salt);
-      }
-    }
-  }
-});
-
-// Function to check if password is correct
-User.prototype.validatePassword = async function(password) {
-  return await bcrypt.compare(password, this.password);
-};
-
-module.exports = User;
+#### Backend Configuration
+```bash
+cd backend
+cp .env.example .env
 ```
 
-### Step 3: Creating Related Tables
+Edit `backend/.env` with your configuration:
 
-Create an **Elders** table that connects to Users:
+```env
+# Database Configuration
+DATABASE_URL=postgresql://username:password@localhost:5432/elderlink
 
-```javascript
-// backend/models/Elder.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-here
+JWT_EXPIRE=7d
 
-const Elder = sequelize.define('Elder', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  
-  // This connects to a subscription (like a membership card)
-  subscriptionId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'Subscriptions',
-      key: 'id'
-    }
-  },
-  
-  // Personal information
-  firstName: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  
-  lastName: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  
-  dateOfBirth: {
-    type: DataTypes.DATE,
-    allowNull: false
-  },
-  
-  // Health information
-  currentMedications: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  
-  allergies: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  }
-}, {
-  tableName: 'Elders',
-  timestamps: true
-});
+# Server Configuration
+PORT=5000
+NODE_ENV=development
 
-module.exports = Elder;
+# Email Configuration (for notifications)
+EMAIL_SERVICE=gmail
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-app-specific-password
+
+# Zoom Integration (optional)
+ZOOM_ACCOUNT_ID=your_zoom_account_id
+ZOOM_CLIENT_ID=your_zoom_client_id
+ZOOM_CLIENT_SECRET=your_zoom_client_secret
+
+# Stripe Payment (optional)
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 ```
 
-### Step 4: Connecting Tables (Relationships)
-
-Create relationships between tables:
-
-```javascript
-// backend/models/index.js
-const User = require('./User');
-const Elder = require('./Elder');
-const Subscription = require('./Subscription');
-
-// 🔗 RELATIONSHIPS - How tables connect to each other
-
-// One user can have many subscriptions
-User.hasMany(Subscription, { 
-  foreignKey: 'userId', 
-  as: 'subscriptions' 
-});
-
-Subscription.belongsTo(User, { 
-  foreignKey: 'userId', 
-  as: 'user' 
-});
-
-// One subscription can have one elder
-Subscription.hasOne(Elder, { 
-  foreignKey: 'subscriptionId', 
-  as: 'elder' 
-});
-
-Elder.belongsTo(Subscription, { 
-  foreignKey: 'subscriptionId', 
-  as: 'subscription' 
-});
-
-module.exports = { User, Elder, Subscription };
+#### Frontend Configuration
+```bash
+cd ../frontend
+cp .env.example .env
 ```
 
-## 🔌 Backend API Development
+Edit `frontend/.env`:
 
-### What is an API? 🤔
-
-An API is like a **waiter in a restaurant**:
-- You (frontend) order food (make request)
-- Waiter (API) takes your order to kitchen (database)  
-- Kitchen prepares food (processes data)
-- Waiter brings food back (returns response)
-
-### Step 1: Creating Your First API Endpoint
-
-Create an endpoint to get all users:
-
-```javascript
-// backend/controllers/userController.js
-const { User } = require('../models');
-
-// Function to get all users
-const getUsers = async (req, res) => {
-  try {
-    console.log('📋 Getting all users...');
-    
-    // Ask database for all users (but don't include passwords)
-    const users = await User.findAll({
-      attributes: { exclude: ['password'] } // Hide password for security
-    });
-    
-    console.log('✅ Found', users.length, 'users');
-    
-    // Send response back to frontend
-    res.json({
-      success: true,
-      message: 'Users retrieved successfully',
-      data: users
-    });
-    
-  } catch (error) {
-    console.error('❌ Error getting users:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Something went wrong'
-    });
-  }
-};
-
-// Function to get one user by ID
-const getUserById = async (req, res) => {
-  try {
-    const { userId } = req.params; // Get ID from URL
-    
-    console.log('🔍 Looking for user with ID:', userId);
-    
-    const user = await User.findByPk(userId, {
-      attributes: { exclude: ['password'] }
-    });
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: user
-    });
-    
-  } catch (error) {
-    console.error('❌ Error getting user:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Something went wrong'
-    });
-  }
-};
-
-module.exports = {
-  getUsers,
-  getUserById
-};
+```env
+REACT_APP_API_URL=http://localhost:5000
+REACT_APP_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 ```
 
-### Step 2: Creating Routes (URL Paths)
-
-Define what happens when someone visits a URL:
-
-```javascript
-// backend/routes/user.js
-const express = require('express');
-const router = express.Router();
-const { getUsers, getUserById } = require('../controllers/userController');
-
-// GET /api/users - Get all users
-router.get('/', getUsers);
-
-// GET /api/users/123 - Get user with ID 123
-router.get('/:userId', getUserById);
-
-module.exports = router;
+#### Mobile Configuration
+```bash
+cd ../ElderlinkMobile
+cp .env.example .env
 ```
 
-### Step 3: Main Server Setup
+Edit `ElderlinkMobile/.env`:
 
-```javascript
-// backend/server.js
-const express = require('express');
-const cors = require('cors');
-const sequelize = require('./config/database');
-
-const app = express();
-
-// Middleware - things that happen for every request
-app.use(cors()); // Allow frontend to talk to backend
-app.use(express.json()); // Understand JSON data
-
-// Connect our routes
-const userRoutes = require('./routes/user');
-app.use('/api/users', userRoutes);
-
-// Health check - test if server is working
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'Server is running!',
-    time: new Date().toISOString()
-  });
-});
-
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, async () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  
-  // Test database connection
-  try {
-    await sequelize.authenticate();
-    console.log('✅ Database connected');
-  } catch (error) {
-    console.error('❌ Database connection failed:', error);
-  }
-});
+```env
+API_URL=http://YOUR_LOCAL_IP:5000/api
 ```
 
-## 🎨 Frontend Development
+### 3. Database Setup
 
-### What is Frontend? 🤔
-
-Frontend is what users see and interact with - like the **face of your app**:
-- Buttons to click
-- Forms to fill  
-- Pages to view
-- Messages to read
-
-### Step 1: Creating Your First React Component
-
-Create a component to display users:
-
-```javascript
-// frontend/src/components/UserList.js
-import React, { useState, useEffect } from 'react';
-import { Users, User } from 'lucide-react'; // Icons
-
-const UserList = () => {
-  // State - information that can change
-  const [users, setUsers] = useState([]); // List of users
-  const [loading, setLoading] = useState(false); // Is data loading?
-  const [error, setError] = useState(''); // Any error messages
-
-  // This runs when component first loads
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  // Function to get users from backend
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      
-      console.log('📋 Loading users from backend...');
-      
-      // Call our backend API
-      const response = await fetch('http://localhost:5000/api/users');
-      const result = await response.json();
-      
-      if (result.success) {
-        setUsers(result.data);
-        console.log('✅ Loaded', result.data.length, 'users');
-      } else {
-        setError(result.message);
-      }
-      
-    } catch (error) {
-      console.error('❌ Error loading users:', error);
-      setError('Failed to load users');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // What to show on screen
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-lg">
-      {/* Header */}
-      <div className="flex items-center mb-6">
-        <Users className="w-6 h-6 text-blue-500 mr-2" />
-        <h2 className="text-2xl font-bold">Users</h2>
-      </div>
-
-      {/* Loading message */}
-      {loading && (
-        <div className="text-center py-8">
-          <div className="text-lg">Loading users...</div>
-        </div>
-      )}
-
-      {/* Error message */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Users list */}
-      {!loading && !error && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {users.map((user) => (
-            <div 
-              key={user.id} 
-              className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center mb-2">
-                <User className="w-5 h-5 text-gray-500 mr-2" />
-                <h3 className="font-semibold">
-                  {user.firstName} {user.lastName}
-                </h3>
-              </div>
-              
-              <p className="text-gray-600 text-sm">{user.email}</p>
-              
-              <span className={`inline-block mt-2 px-2 py-1 text-xs rounded-full ${
-                user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                user.role === 'doctor' ? 'bg-blue-100 text-blue-800' :
-                user.role === 'family_member' ? 'bg-green-100 text-green-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
-                {user.role.replace('_', ' ')}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* No users message */}
-      {!loading && !error && users.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          No users found
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default UserList;
+#### Option A: Using Docker (Recommended)
+```bash
+# From project root
+docker-compose up -d postgres
 ```
 
-### Step 2: Creating a Form Component
+#### Option B: Local PostgreSQL
+```bash
+# Create database
+createdb elderlink
 
-Create a form to add new elders:
-
-```javascript
-// frontend/src/components/AddElder.js
-import React, { useState } from 'react';
-import { UserPlus, Calendar, Heart } from 'lucide-react';
-
-const AddElder = ({ onElderAdded }) => {
-  // Form data state
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    dateOfBirth: '',
-    currentMedications: '',
-    allergies: '',
-    subscriptionId: '' // You would get this from props or context
-  });
-  
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  // Handle form field changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent page refresh
-    
-    // Validate required fields
-    if (!formData.firstName || !formData.lastName || !formData.dateOfBirth) {
-      setError('Please fill in all required fields');
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      setError('');
-      
-      console.log('👴 Adding elder:', formData);
-      
-      // Send data to backend
-      const response = await fetch('http://localhost:5000/api/elders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        console.log('✅ Elder added successfully');
-        
-        // Clear form
-        setFormData({
-          firstName: '',
-          lastName: '',
-          dateOfBirth: '',
-          currentMedications: '',
-          allergies: '',
-          subscriptionId: ''
-        });
-        
-        // Tell parent component elder was added
-        if (onElderAdded) {
-          onElderAdded(result.data);
-        }
-        
-        alert('Elder added successfully!');
-      } else {
-        setError(result.message);
-      }
-      
-    } catch (error) {
-      console.error('❌ Error adding elder:', error);
-      setError('Failed to add elder');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center mb-6">
-        <UserPlus className="w-6 h-6 text-green-500 mr-2" />
-        <h2 className="text-2xl font-bold">Add Elder Profile</h2>
-      </div>
-
-      {/* Error message */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Personal Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              First Name *
-            </label>
-            <input
-              type="text"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter first name"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Last Name *
-            </label>
-            <input
-              type="text"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter last name"
-              required
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Calendar className="w-4 h-4 inline mr-1" />
-            Date of Birth *
-          </label>
-          <input
-            type="date"
-            name="dateOfBirth"
-            value={formData.dateOfBirth}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
-
-        {/* Medical Information */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Heart className="w-4 h-4 inline mr-1" />
-            Current Medications
-          </label>
-          <textarea
-            name="currentMedications"
-            value={formData.currentMedications}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows="3"
-            placeholder="List current medications..."
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Allergies
-          </label>
-          <textarea
-            name="allergies"
-            value={formData.allergies}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows="2"
-            placeholder="List any allergies..."
-          />
-        </div>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Adding Elder...' : 'Add Elder'}
-        </button>
-      </form>
-    </div>
-  );
-};
-
-export default AddElder;
+# Or using psql
+psql -U postgres -c "CREATE DATABASE elderlink;"
 ```
 
-## 🔐 Authentication & Security
+### 4. Install Dependencies
 
-### Step 1: Creating Login System
-
-```javascript
-// backend/controllers/authController.js
-const { User } = require('../models');
-const jwt = require('jsonwebtoken');
-
-const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    console.log('🔐 Login attempt for:', email);
-    
-    // Find user by email
-    const user = await User.findOne({ where: { email } });
-    
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-    
-    // Check password
-    const isValidPassword = await user.validatePassword(password);
-    
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-    
-    // Create token (like a digital ID card)
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email, 
-        role: user.role 
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    
-    console.log('✅ Login successful for:', email);
-    
-    res.json({
-      success: true,
-      message: 'Login successful',
-      token: token,
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Login failed'
-    });
-  }
-};
-
-module.exports = { login };
+#### Backend
+```bash
+cd backend
+npm install
 ```
 
-### Step 2: Creating Login Form
+#### Frontend
+```bash
+cd ../frontend
+npm install
+```
 
-```javascript
-// frontend/src/components/Login.js
-import React, { useState } from 'react';
-import { Lock, Mail } from 'lucide-react';
+#### Mobile
+```bash
+cd ../ElderlinkMobile
+npm install
+```
 
-const Login = ({ onLoginSuccess }) => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+### 5. Database Initialization
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+```bash
+cd backend
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      setLoading(true);
-      setError('');
-      
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        // Save token and user info
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('user', JSON.stringify(result.user));
-        
-        console.log('✅ Login successful');
-        
-        if (onLoginSuccess) {
-          onLoginSuccess(result.user);
-        }
-      } else {
-        setError(result.message);
-      }
-      
-    } catch (error) {
-      console.error('❌ Login error:', error);
-      setError('Login failed. Please try again.');
-    } finally {
-      setLoading(false);
+# Run migrations
+npm run db:migrate
+
+# Seed initial data (optional)
+npm run db:seed
+npm run db:seed:users
+npm run db:seed:packages
+```
+
+### 6. Start the Application
+
+#### Development Mode
+
+**Terminal 1 - Backend:**
+```bash
+cd backend
+npm run dev
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm start
+```
+
+**Terminal 3 - Mobile:**
+```bash
+cd ElderlinkMobile
+npm start
+```
+
+#### Production Mode
+
+**Backend:**
+```bash
+cd backend
+npm run build
+npm start
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm run build
+serve -s build -l 3000
+```
+
+## 📱 Usage Guide
+
+### User Roles & Access
+
+#### 1. Admin Dashboard
+- **URL**: `/admin`
+- **Features**: User management, analytics, system configuration
+- **Permissions**: Full system access
+
+#### 2. Family Member Portal
+- **URL**: `/family`
+- **Features**: Elder health monitoring, appointment booking, emergency alerts
+- **Permissions**: View elder data, manage subscriptions
+
+#### 3. Doctor Portal
+- **URL**: `/doctor`
+- **Features**: Patient management, appointment scheduling, Zoom consultations
+- **Permissions**: Medical records access, prescription creation
+
+#### 4. Staff Portal
+- **URL**: `/staff`
+- **Features**: Care management, health monitoring, emergency response
+- **Permissions**: Elder care activities, vital signs tracking
+
+#### 5. Elder Mobile App
+- **Features**: Health tracking, medication reminders, emergency SOS
+- **Platform**: iOS & Android via Expo
+
+#### 6. Pharmacist Portal
+- **URL**: `/pharmacist`
+- **Features**: Prescription management, delivery scheduling, inventory
+- **Permissions**: Pharmacy operations, medication dispensing
+
+### Key Workflows
+
+#### Health Monitoring
+1. Staff logs vital signs through mobile app or web portal
+2. System checks for abnormal values and triggers alerts
+3. Family members receive real-time notifications
+4. Doctors can review historical health data
+
+#### Appointment Booking
+1. Family member schedules appointment via portal
+2. System assigns available doctor and time slot
+3. Confirmation sent via email and mobile notification
+4. Doctor receives patient details and medical history
+
+#### Emergency Response
+1. Elder or family member triggers emergency alert
+2. System notifies nearest staff and emergency contacts
+3. GPS location shared with responders
+4. Incident logged for follow-up care
+
+#### Prescription Management
+1. Doctor creates prescription during consultation
+2. System routes to assigned pharmacy
+3. Pharmacist prepares medication
+4. Delivery scheduled based on elder's location
+5. Family member receives delivery confirmation
+
+## 📚 API Documentation
+
+### Authentication Endpoints
+
+#### Login
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+#### Register
+```http
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "role": "family_member"
+}
+```
+
+### Elder Management
+
+#### Get All Elders
+```http
+GET /api/elders
+Authorization: Bearer <token>
+```
+
+#### Create Elder Profile
+```http
+POST /api/elders
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "dateOfBirth": "1950-01-01",
+  "subscriptionId": "subscription-uuid"
+}
+```
+
+### Health Monitoring
+
+#### Record Vital Signs
+```http
+POST /api/vitals
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "elderId": "elder-uuid",
+  "bloodPressure": "120/80",
+  "heartRate": 72,
+  "temperature": 98.6,
+  "oxygenSaturation": 98
+}
+```
+
+#### Get Health Alerts
+```http
+GET /api/health-alerts
+Authorization: Bearer <token>
+```
+
+### Appointments
+
+#### Get Doctor Schedule
+```http
+GET /api/appointments/doctor/:doctorId
+Authorization: Bearer <token>
+```
+
+#### Book Appointment
+```http
+POST /api/appointments
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "doctorId": "doctor-uuid",
+  "elderId": "elder-uuid",
+  "appointmentDate": "2024-01-15T10:00:00Z",
+  "reason": "Regular checkup"
+}
+```
+
+### Zoom Integration
+
+#### Create Meeting
+```http
+POST /api/monthly-sessions/:sessionId/create-zoom
+Authorization: Bearer <doctor_token>
+```
+
+#### Send Meeting Links
+```http
+POST /api/monthly-sessions/:sessionId/send-links
+Authorization: Bearer <doctor_token>
+```
+
+### Prescription Management
+
+#### Get Prescriptions
+```http
+GET /api/prescriptions
+Authorization: Bearer <token>
+```
+
+#### Create Prescription
+```http
+POST /api/prescriptions
+Authorization: Bearer <doctor_token>
+Content-Type: application/json
+
+{
+  "elderId": "elder-uuid",
+  "medications": [
+    {
+      "name": "Lisinopril",
+      "dosage": "10mg",
+      "frequency": "Once daily",
+      "duration": "30 days"
     }
-  };
+  ],
+  "pharmacyId": "pharmacy-uuid"
+}
+```
 
-  return (
-    <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
-      <div className="text-center mb-8">
-        <Lock className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold">Login</h2>
-      </div>
+## 🏗️ Project Structure
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
+```
+elderlink/
+├── backend/                          # Node.js/Express API server
+│   ├── config/                       # Database and service configuration
+│   │   ├── database.js              # Sequelize database connection
+│   │   ├── jwt.js                   # JWT configuration
+│   │   └── stripe.js                # Payment configuration
+│   ├── controllers/                  # Route controllers
+│   │   ├── authController.js        # Authentication logic
+│   │   ├── elderController.js       # Elder management
+│   │   ├── doctorController.js      # Doctor operations
+│   │   └── ...
+│   ├── models/                      # Sequelize data models
+│   │   ├── User.js                  # User model
+│   │   ├── Elder.js                 # Elder model
+│   │   ├── Appointment.js           # Appointment model
+│   │   └── ...
+│   ├── routes/                      # API route definitions
+│   │   ├── auth.js                  # Authentication routes
+│   │   ├── elders.js                # Elder routes
+│   │   └── ...
+│   ├── middleware/                  # Express middleware
+│   │   ├── auth.js                  # JWT authentication
+│   │   └── validation.js            # Input validation
+│   ├── services/                    # Business logic services
+│   │   ├── emailService.js          # Email notifications
+│   │   ├── zoomService.js           # Zoom integration
+│   │   └── notificationService.js   # Push notifications
+│   ├── scripts/                     # Database scripts
+│   ├── uploads/                     # File uploads directory
+│   ├── .env                         # Environment variables
+│   ├── server.js                    # Main server file
+│   └── package.json                 # Dependencies
+├── frontend/                        # React web application
+│   ├── public/                      # Static assets
+│   ├── src/
+│   │   ├── components/              # Reusable React components
+│   │   │   ├── common/             # Shared components
+│   │   │   ├── admin/              # Admin-specific components
+│   │   │   ├── doctor/             # Doctor components
+│   │   │   └── ...
+│   │   ├── pages/                  # Page components
+│   │   ├── services/               # API service functions
+│   │   ├── hooks/                  # Custom React hooks
+│   │   ├── utils/                  # Utility functions
+│   │   ├── App.js                  # Main app component
+│   │   └── index.js                # App entry point
+│   ├── .env                        # Frontend environment
+│   └── package.json                # Dependencies
+├── ElderlinkMobile/                # React Native mobile app
+│   ├── src/
+│   │   ├── screens/                # App screens
+│   │   ├── components/             # Mobile components
+│   │   ├── services/               # Mobile API services
+│   │   └── navigation/             # Navigation configuration
+│   ├── app.json                    # Expo configuration
+│   └── package.json                # Mobile dependencies
+├── docker-compose.yml              # Docker services
+├── .gitignore                      # Git ignore rules
+├── README.md                       # This file
+├── PORT_FIX_SUMMARY.md             # Port configuration guide
+├── ZOOM_SETUP_GUIDE.md             # Zoom integration setup
+└── ZOOM_IMPLEMENTATION_SUMMARY.md  # Zoom features summary
+```
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Mail className="w-4 h-4 inline mr-1" />
-            Email
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your email"
-            required
-          />
-        </div>
+## 🔧 Development
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Lock className="w-4 h-4 inline mr-1" />
-            Password
-          </label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your password"
-            required
-          />
-        </div>
+### Available Scripts
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+#### Backend Scripts
+```bash
+cd backend
 
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg text-sm">
-        <h3 className="font-medium mb-2">Test Accounts:</h3>
-        <div className="space-y-1 text-gray-600">
-          <div>Admin: admin@elderlink.com / Admin@123456</div>
-          <div>Family: family@elderlink.com / Family@123</div>
-        </div>
-      </div>
-    </div>
-  );
-};
+# Development server with auto-reload
+npm run dev
 
-export default Login;
+# Production build
+npm run build
+
+# Start production server
+npm start
+
+# Database operations
+npm run db:migrate          # Run migrations
+npm run db:seed            # Seed database
+npm run db:seed:users      # Seed users only
+npm run db:seed:packages   # Seed subscription packages
+
+# Testing
+npm test                   # Run tests
+npm run test:watch         # Watch mode tests
+```
+
+#### Frontend Scripts
+```bash
+cd frontend
+
+# Development server
+npm start
+
+# Production build
+npm run build
+
+# Testing
+npm test
+
+# Eject from Create React App
+npm run eject
+```
+
+#### Mobile Scripts
+```bash
+cd ElderlinkMobile
+
+# Start Expo development server
+npm start
+
+# Android development
+npm run android
+
+# iOS development
+npm run ios
+
+# Web development
+npm run web
+```
+
+### Code Quality
+
+#### Linting
+```bash
+# Backend linting
+cd backend && npm run lint
+
+# Frontend linting
+cd frontend && npm run lint
+```
+
+#### Testing
+```bash
+# Backend tests
+cd backend && npm test
+
+# Frontend tests
+cd frontend && npm test
+```
+
+### Database Management
+
+#### Creating Migrations
+```bash
+cd backend
+npx sequelize-cli migration:generate --name add-column-to-table
+```
+
+#### Running Migrations
+```bash
+npx sequelize-cli db:migrate
+```
+
+#### Creating Seeders
+```bash
+npx sequelize-cli seed:generate --name demo-users
 ```
 
 ## 🚀 Deployment
 
-### Step 1: Environment Variables
+### Docker Deployment
 
-Create environment files for your secrets:
-
+#### Build and Run
 ```bash
-# backend/.env
-DATABASE_URL=postgresql://username:password@host:port/database
-JWT_SECRET=your-super-secret-key-make-it-long-and-random
-PORT=5000
-NODE_ENV=production
+# Build all services
+docker-compose build
+
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
 ```
 
-```bash
-# frontend/.env
-REACT_APP_API_URL=http://localhost:5000/api
+#### Environment Variables for Docker
+Create a `docker-compose.override.yml` for local development:
+
+```yaml
+version: '3.8'
+services:
+  backend:
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/elderlink
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 ```
 
-### Step 2: Package.json Scripts
+### Manual Deployment
 
-```json
-// backend/package.json
-{
-  "name": "elderlink-backend",
-  "version": "1.0.0",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "init-db": "node scripts/initializeDatabase.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "sequelize": "^6.32.0",
-    "pg": "^8.11.0",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.0",
-    "cors": "^2.8.5"
-  }
-}
-```
-
-### Step 3: Running Your App
-
+#### Backend Deployment
 ```bash
-# Terminal 1 - Start Backend
 cd backend
-npm install
-npm run init-db  # Create database tables and sample data
-npm start        # Server runs on http://localhost:5000
 
-# Terminal 2 - Start Frontend  
-cd frontend
-npm install
-npm start        # App runs on http://localhost:3000
+# Install production dependencies
+npm ci --only=production
+
+# Build application
+npm run build
+
+# Start with PM2
+pm2 start ecosystem.config.js --env production
 ```
 
-##
+#### Frontend Deployment
+```bash
+cd frontend
+
+# Build for production
+npm run build
+
+# Serve static files (using nginx, apache, or static server)
+serve -s build -l 3000
+```
+
+#### Mobile Deployment
+```bash
+cd ElderlinkMobile
+
+# Build for production
+expo build:android
+expo build:ios
+
+# Or use EAS Build
+eas build --platform android
+eas build --platform ios
+```
+
+## 🤝 Contributing
+
+We welcome contributions to ElderLink! Please follow these guidelines:
+
+### Development Workflow
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/your-feature-name`
+3. **Make your changes** following our coding standards
+4. **Write tests** for new functionality
+5. **Update documentation** if needed
+6. **Commit your changes**: `git commit -m 'Add some feature'`
+7. **Push to the branch**: `git push origin feature/your-feature-name`
+8. **Open a Pull Request**
+
+### Coding Standards
+
+#### JavaScript/TypeScript
+- Use ES6+ features
+- Follow Airbnb JavaScript Style Guide
+- Use meaningful variable and function names
+- Add JSDoc comments for functions
+- Write unit tests for business logic
+
+#### React Components
+- Use functional components with hooks
+- Follow component composition patterns
+- Use TypeScript for type safety
+- Implement proper error boundaries
+- Write component tests
+
+#### Database
+- Use migrations for schema changes
+- Follow naming conventions
+- Add proper indexes
+- Use transactions for complex operations
+
+### Commit Message Format
+
+```
+type(scope): description
+
+[optional body]
+
+[optional footer]
+```
+
+Types:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation
+- `style`: Code style changes
+- `refactor`: Code refactoring
+- `test`: Testing
+- `chore`: Maintenance
+
+### Pull Request Process
+
+1. **Title**: Clear, descriptive title
+2. **Description**: Detailed explanation of changes
+3. **Testing**: How to test the changes
+4. **Screenshots**: UI changes screenshots
+5. **Breaking Changes**: List any breaking changes
+
+### Reporting Issues
+
+When reporting bugs, please include:
+- **Steps to reproduce**
+- **Expected behavior**
+- **Actual behavior**
+- **Environment** (OS, browser, Node version)
+- **Error messages** and stack traces
+- **Screenshots** if applicable
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **React Team** for the amazing frontend library
+- **Express.js Community** for the robust backend framework
+- **Sequelize Team** for the excellent ORM
+- **PostgreSQL** for the reliable database
+- **Open Source Community** for endless learning resources
+
+## 📞 Support
+
+For support and questions:
+
+- **Documentation**: Check our [Wiki](https://github.com/your-username/elderlink/wiki)
+- **Issues**: [GitHub Issues](https://github.com/your-username/elderlink/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-username/elderlink/discussions)
+- **Email**: support@elderlink.com
+
+## 🔄 Version History
+
+### v1.0.0 (Current)
+- Complete elder care management system
+- Multi-role user authentication
+- Real-time health monitoring
+- Zoom video consultation integration
+- Mobile application
+- Payment processing with Stripe
+- Comprehensive API
+- Docker containerization
+
+### Future Releases
+- [ ] AI-powered health insights
+- [ ] Advanced analytics dashboard
+- [ ] Multi-language support
+- [ ] Offline mobile capabilities
+- [ ] Integration with wearable devices
+
+---
+
+**Made with ❤️ for families and healthcare providers worldwide**
+
+*Empowering elder care through technology* 🏥👴👵
