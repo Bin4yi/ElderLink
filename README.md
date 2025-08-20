@@ -1975,5 +1975,8 @@ For support and questions:
 - [ ] Offline mobile capabilities
 - [ ] Integration with wearable devices
 
+---
+
+**Made with ❤️ for families and healthcare providers worldwide**
 
 *Empowering elder care through technology* 🏥👴👵
