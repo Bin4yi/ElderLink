@@ -9,7 +9,7 @@ import {
   Edit2, Trash2, Plus, TrendingUp, Activity, Clock, User
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5005/api';
 
 const MedicineProfile = () => {
   const { id } = useParams();
