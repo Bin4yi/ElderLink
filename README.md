@@ -244,94 +244,94 @@ serve -s build -l 3000
 
 ## 🏗️ Building the Project
 
-### Backend Build
+### 🔧 Backend Build
 
 ```bash
 cd backend
 
-# Install dependencies
+# 📦 Install dependencies
 npm install
 
-# Development build (with hot reload)
+# 🚀 Development build (with hot reload)
 npm run dev
 
-# Production build
+# 🏭 Production build
 npm run build
 
-# Start production server
+# ▶️ Start production server
 npm start
 ```
 
-### Frontend Build
+### 🌐 Frontend Build
 
 ```bash
 cd frontend
 
-# Install dependencies
+# 📦 Install dependencies
 npm install
 
-# Development server (with hot reload)
+# 🚀 Development server (with hot reload)
 npm start
 
-# Production build
+# 🏭 Production build
 npm run build
 
-# Serve production build locally for testing
+# 🧪 Serve production build locally for testing
 npx serve -s build -l 3000
 ```
 
-### Mobile App Build
+### 📱 Mobile App Build
 
 ```bash
 cd ElderlinkMobile
 
-# Install dependencies
+# 📦 Install dependencies
 npm install
 
-# Start Expo development server
+# 🚀 Start Expo development server
 npm start
 
-# Build for Android APK
+# 🤖 Build for Android APK
 expo build:android
 
-# Build for iOS IPA
+# 🍎 Build for iOS IPA
 expo build:ios
 
-# Or use EAS Build (recommended for production)
+# ⚡ Or use EAS Build (recommended for production)
 npx eas build --platform android
 npx eas build --platform ios
 ```
 
-### Docker Build (Full Stack)
+### 🐳 Docker Build (Full Stack)
 
 ```bash
 # From project root
 
-# Build all services
+# 🏗️ Build all services
 docker-compose build
 
-# Build specific service
+# 🎯 Build specific service
 docker-compose build backend
 docker-compose build frontend
 
-# Build with no cache
+# 🔄 Build with no cache
 docker-compose build --no-cache
 ```
 
-### Build Artifacts
+### 📂 Build Artifacts
 
 After building, you'll find:
 
-- **Backend**: Compiled JavaScript in `backend/dist/` (if using build script)
-- **Frontend**: Production build in `frontend/build/`
-- **Mobile**: APK/IPA files in Expo dashboard or EAS
-- **Docker**: Container images tagged with project name
+- **🔙 Backend**: Compiled JavaScript in `backend/dist/` (if using build script)
+- **🌐 Frontend**: Production build in `frontend/build/`
+- **📱 Mobile**: APK/IPA files in Expo dashboard or EAS
+- **🐳 Docker**: Container images tagged with project name
 
-### Build Configuration
+### ⚙️ Build Configuration
 
 #### Environment Variables for Production
 
-**Backend (.env.production):**
+**🔙 Backend (.env.production):**
 ```env
 NODE_ENV=production
 DATABASE_URL=postgresql://user:pass@host:5432/db
@@ -340,67 +340,67 @@ EMAIL_USER=your-production-email@gmail.com
 EMAIL_PASSWORD=your-production-app-password
 ```
 
-**Frontend (.env.production):**
+**🌐 Frontend (.env.production):**
 ```env
 REACT_APP_API_URL=https://your-api-domain.com
 REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_live_...
 ```
 
-#### Build Optimization
+#### 🚀 Build Optimization
 
-- **Backend**: Uses PM2 for process management in production
-- **Frontend**: Minified bundle with code splitting
-- **Mobile**: Optimized bundles for app stores
-- **Docker**: Multi-stage builds for smaller images
+- **🔙 Backend**: Uses PM2 for process management in production
+- **🌐 Frontend**: Minified bundle with code splitting
+- **📱 Mobile**: Optimized bundles for app stores
+- **🐳 Docker**: Multi-stage builds for smaller images
 
-### Troubleshooting Builds
+### 🔧 Troubleshooting Builds
 
-#### Common Backend Build Issues
+#### Common Backend Build Issues 🔧
 ```bash
-# Clear node_modules and reinstall
+# 🗑️ Clear node_modules and reinstall
 rm -rf node_modules package-lock.json
 npm install
 
-# Clear npm cache
+# 🧹 Clear npm cache
 npm cache clean --force
 
-# Check Node.js version
+# 🔍 Check Node.js version
 node --version
 ```
 
-#### Common Frontend Build Issues
+#### Common Frontend Build Issues 🌐
 ```bash
-# Clear build cache
+# 🗑️ Clear build cache
 rm -rf build node_modules/.cache
 
-# Check React version compatibility
+# 🔍 Check React version compatibility
 npm ls react
 
-# Fix dependency conflicts
+# 🛠️ Fix dependency conflicts
 npm audit fix
 ```
 
-#### Common Mobile Build Issues
+#### Common Mobile Build Issues 📱
 ```bash
-# Clear Expo cache
+# 🧹 Clear Expo cache
 expo r -c
 
-# Clear Metro bundler cache
+# 🧹 Clear Metro bundler cache
 npx react-native start --reset-cache
 
-# Check Expo CLI version
+# 🔍 Check Expo CLI version
 expo --version
 ```
 
-#### Docker Build Issues
+#### Docker Build Issues 🐳
 ```bash
-# Check Docker version
+# 🔍 Check Docker version
 docker --version
 
-# Clean Docker system
+# 🧹 Clean Docker system
 docker system prune -a
 
-# Rebuild without cache
+# 🔄 Rebuild without cache
 docker-compose build --no-cache
 ```
 
