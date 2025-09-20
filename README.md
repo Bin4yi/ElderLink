@@ -242,6 +242,168 @@ npm run build
 serve -s build -l 3000
 ```
 
+## 🏗️ Building the Project
+
+### Backend Build
+
+```bash
+cd backend
+
+# Install dependencies
+npm install
+
+# Development build (with hot reload)
+npm run dev
+
+# Production build
+npm run build
+
+# Start production server
+npm start
+```
+
+### Frontend Build
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Development server (with hot reload)
+npm start
+
+# Production build
+npm run build
+
+# Serve production build locally for testing
+npx serve -s build -l 3000
+```
+
+### Mobile App Build
+
+```bash
+cd ElderlinkMobile
+
+# Install dependencies
+npm install
+
+# Start Expo development server
+npm start
+
+# Build for Android APK
+expo build:android
+
+# Build for iOS IPA
+expo build:ios
+
+# Or use EAS Build (recommended for production)
+npx eas build --platform android
+npx eas build --platform ios
+```
+
+### Docker Build (Full Stack)
+
+```bash
+# From project root
+
+# Build all services
+docker-compose build
+
+# Build specific service
+docker-compose build backend
+docker-compose build frontend
+
+# Build with no cache
+docker-compose build --no-cache
+```
+
+### Build Artifacts
+
+After building, you'll find:
+
+- **Backend**: Compiled JavaScript in `backend/dist/` (if using build script)
+- **Frontend**: Production build in `frontend/build/`
+- **Mobile**: APK/IPA files in Expo dashboard or EAS
+- **Docker**: Container images tagged with project name
+
+### Build Configuration
+
+#### Environment Variables for Production
+
+**Backend (.env.production):**
+```env
+NODE_ENV=production
+DATABASE_URL=postgresql://user:pass@host:5432/db
+JWT_SECRET=your-production-jwt-secret
+EMAIL_USER=your-production-email@gmail.com
+EMAIL_PASSWORD=your-production-app-password
+```
+
+**Frontend (.env.production):**
+```env
+REACT_APP_API_URL=https://your-api-domain.com
+REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_live_...
+```
+
+#### Build Optimization
+
+- **Backend**: Uses PM2 for process management in production
+- **Frontend**: Minified bundle with code splitting
+- **Mobile**: Optimized bundles for app stores
+- **Docker**: Multi-stage builds for smaller images
+
+### Troubleshooting Builds
+
+#### Common Backend Build Issues
+```bash
+# Clear node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+
+# Clear npm cache
+npm cache clean --force
+
+# Check Node.js version
+node --version
+```
+
+#### Common Frontend Build Issues
+```bash
+# Clear build cache
+rm -rf build node_modules/.cache
+
+# Check React version compatibility
+npm ls react
+
+# Fix dependency conflicts
+npm audit fix
+```
+
+#### Common Mobile Build Issues
+```bash
+# Clear Expo cache
+expo r -c
+
+# Clear Metro bundler cache
+npx react-native start --reset-cache
+
+# Check Expo CLI version
+expo --version
+```
+
+#### Docker Build Issues
+```bash
+# Check Docker version
+docker --version
+
+# Clean Docker system
+docker system prune -a
+
+# Rebuild without cache
+docker-compose build --no-cache
+```
+
 ## 📱 Usage Guide
 
 ### User Roles & Access
