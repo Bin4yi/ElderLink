@@ -280,42 +280,52 @@ const deleteInventoryItem = async (req, res) => {
 // Get inventory statistics
 const getInventoryStats = async (req, res) => {
   try {
-    const pharmacyId = req.user.id;
+    const pharmacyId = req.user.id; // Get pharmacyId directly from user id
+    
+    console.log('📊 Fetching stats for pharmacyId:', pharmacyId);
 
-    console.log('📊 Getting inventory statistics for pharmacy:', pharmacyId);
+    // Get all active medicines with essential attributes only
+    const medicines = await Inventory.findAll({
+      where: {
+        pharmacyId,
+        status: 'active' // Only count active items
+      },
+      attributes: [
+        'id', 
+        'quantity', 
+        'minStockLevel', 
+        'costPrice', 
+        'expirationDate'
+      ]
+    });
 
-    // Get basic counts
-    const [totalItems, lowStockItems, expiredItems, outOfStockItems] = await Promise.all([
-      Inventory.count({ where: { pharmacyId, status: 'active' } }),
-      Inventory.count({ 
-        where: { 
-          pharmacyId, 
-          status: 'active',
-          [Op.and]: [
-            { quantity: { [Op.gt]: 0 } },
-            { quantity: { [Op.lte]: sequelize.col('minStockLevel') } }
-          ]
-        } 
-      }),
-      Inventory.count({ 
-        where: { 
-          pharmacyId, 
-          expirationDate: { [Op.lt]: new Date() },
-          status: 'active'
-        } 
-      }),
-      Inventory.count({ 
-        where: { 
-          pharmacyId, 
-          quantity: 0,
-          status: 'active'
-        } 
-      })
-    ]);
+    // Calculate statistics
+    const totalItems = medicines.length;
+    
+    const lowStockItems = medicines.filter(
+      m => m.quantity > 0 && m.quantity <= m.minStockLevel
+    ).length;
+    
+    const expiredItems = medicines.filter(
+      m => m.expirationDate && new Date(m.expirationDate) < new Date()
+    ).length;
+    
+    const outOfStockItems = medicines.filter(
+      m => m.quantity === 0
+    ).length;
+
+    // Calculate total value with proper parsing of costPrice
+    const totalValue = medicines.reduce(
+      (sum, m) => sum + (m.quantity * parseFloat(m.costPrice || 0)),
+      0
+    );
 
     // Get category distribution
     const categoryStats = await Inventory.findAll({
-      where: { pharmacyId, status: 'active' },
+      where: { 
+        pharmacyId,
+        status: 'active'
+      },
       attributes: [
         'category',
         [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
@@ -325,37 +335,13 @@ const getInventoryStats = async (req, res) => {
       raw: true
     });
 
-    // Get recent transactions
-    const recentTransactions = await InventoryTransaction.findAll({
-      include: [
-        {
-          model: Inventory,
-          as: 'inventory',
-          where: { pharmacyId },
-          attributes: ['name']
-        },
-        {
-          model: User,
-          as: 'performer',
-          attributes: ['firstName', 'lastName']
-        }
-      ],
-      order: [['createdAt', 'DESC']],
-      limit: 10
+    console.log('📈 Stats calculated:', {
+      totalItems,
+      lowStockItems,
+      expiredItems,
+      outOfStockItems,
+      totalValue: totalValue.toFixed(2)
     });
-
-    // Calculate total value using raw SQL to avoid sequelize limitations
-    const totalValueResult = await sequelize.query(
-      'SELECT SUM("sellingPrice" * "quantity") as total FROM inventory WHERE "pharmacyId" = :pharmacyId AND status = :status',
-      {
-        replacements: { pharmacyId, status: 'active' },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
-    
-    const totalValue = totalValueResult[0]?.total || 0;
-
-    console.log('📊 Statistics calculated successfully');
 
     res.json({
       success: true,
@@ -367,17 +353,16 @@ const getInventoryStats = async (req, res) => {
           outOfStockItems,
           totalValue: parseFloat(totalValue).toFixed(2)
         },
-        categoryStats,
-        recentTransactions
+        categoryStats
       },
       message: 'Inventory statistics retrieved successfully'
     });
 
   } catch (error) {
-    console.error('❌ Error getting inventory statistics:', error);
+    console.error('❌ Error fetching inventory stats:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get inventory statistics',
+      message: 'Failed to fetch inventory statistics',
       error: error.message
     });
   }
