@@ -1,292 +1,278 @@
 // backend/controllers/healthMonitoringController.js
-const { HealthMonitoring, Elder, User, Subscription, StaffAssignment } = require('../models');
+const { HealthMonitoring, Elder, User } = require('../models');
 const { Op } = require('sequelize');
 
-// Helper function to check if elder is assigned to staff
-const isElderAssignedToStaff = async (elderId, staffId) => {
+// Get all health monitoring records (for staff) or user's own records (for elder)
+const getAllHealthMonitoring = async (req, res) => {
   try {
-    const assignment = await StaffAssignment.findOne({
-      where: {
-        elderId: elderId,
-        staffId: staffId,
-        isActive: true
+    const { page = 1, limit = 10, elderId, startDate, endDate } = req.query;
+    const offset = (page - 1) * limit;
+    
+    let whereClause = {};
+    
+    // If user is an elder, only show their own records
+    if (req.user.role === 'elder') {
+      // Find the elder record associated with this user by userId
+      const elder = await Elder.findOne({ where: { userId: req.user.id } });
+      if (!elder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Elder profile not found'
+        });
+      }
+      whereClause.elderId = elder.id;
+    } else if (req.user.role === 'staff' && elderId) {
+      // Staff can filter by specific elder
+      whereClause.elderId = elderId;
+    }
+    
+    // Add date filtering if provided
+    if (startDate && endDate) {
+      whereClause.monitoringDate = {
+        [Op.between]: [new Date(startDate), new Date(endDate)]
+      };
+    }
+
+    const healthRecords = await HealthMonitoring.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: Elder,
+          as: 'elder',
+          attributes: ['id', 'firstName', 'lastName', 'userId'],
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'email']
+            }
+          ]
+        }
+      ],
+      order: [['monitoringDate', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    res.json({
+      success: true,
+      data: healthRecords.rows,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(healthRecords.count / limit),
+        totalRecords: healthRecords.count,
+        hasNext: page * limit < healthRecords.count,
+        hasPrev: page > 1
       }
     });
-    return !!assignment;
+
   } catch (error) {
-    console.error('Error checking elder assignment:', error);
-    return false;
-  }
-};
-
-// Get all health monitoring records - only for assigned elders
-const getAllHealthRecords = async (req, res) => {
-  try {
-    const staffId = req.user.id;
-    console.log('🔍 Getting all health monitoring records for staff:', staffId);
-    
-    // Get all elder IDs assigned to this staff member
-    const assignments = await StaffAssignment.findAll({
-      where: {
-        staffId: staffId,
-        isActive: true
-      },
-      attributes: ['elderId']
-    });
-
-    if (assignments.length === 0) {
-      return res.json({
-        success: true,
-        data: [],
-        total: 0,
-        message: 'No elders assigned to this staff member'
-      });
-    }
-
-    const elderIds = assignments.map(assignment => assignment.elderId);
-    
-    const allRecords = await HealthMonitoring.findAll({
-      where: {
-        elderId: elderIds
-      },
-      include: [
-        {
-          model: User,
-          as: 'staff',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        },
-        {
-          model: Elder,
-          as: 'elder',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        }
-      ],
-      order: [['monitoringDate', 'DESC']]
-    });
-
-    console.log('✅ Found', allRecords.length, 'health monitoring records for assigned elders');
-
-    res.json({
-      success: true,
-      data: allRecords,
-      total: allRecords.length,
-      message: 'Health monitoring records retrieved successfully'
-    });
-  } catch (error) {
-    console.error('❌ Get all health monitoring records error:', error);
+    console.error('❌ Get all health monitoring error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get health monitoring records',
+      message: 'Failed to fetch health monitoring records',
       error: error.message
     });
   }
 };
 
-// Get today's health monitoring records - only for assigned elders
-const getTodayRecords = async (req, res) => {
+// Get today's health monitoring records
+const getTodayHealthMonitoring = async (req, res) => {
   try {
-    const staffId = req.user.id;
-    console.log('🔍 Getting today\'s health monitoring records for staff:', staffId);
-    
-    // Get all elder IDs assigned to this staff member
-    const assignments = await StaffAssignment.findAll({
-      where: {
-        staffId: staffId,
-        isActive: true
-      },
-      attributes: ['elderId']
-    });
-
-    if (assignments.length === 0) {
-      return res.json({
-        success: true,
-        data: [],
-        total: 0,
-        message: 'No elders assigned to this staff member'
-      });
-    }
-
-    const elderIds = assignments.map(assignment => assignment.elderId);
-    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const todayRecords = await HealthMonitoring.findAll({
-      where: {
-        elderId: elderIds,
-        monitoringDate: {
-          [Op.gte]: today,
-          [Op.lt]: tomorrow
-        }
-      },
+
+    let whereClause = {
+      monitoringDate: {
+        [Op.gte]: today,
+        [Op.lt]: tomorrow
+      }
+    };
+
+    // If user is an elder, only show their own records
+    if (req.user.role === 'elder') {
+      const elder = await Elder.findOne({ where: { userId: req.user.id } });
+      if (!elder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Elder profile not found'
+        });
+      }
+      whereClause.elderId = elder.id;
+    }
+
+    const healthRecords = await HealthMonitoring.findAll({
+      where: whereClause,
       include: [
-        {
-          model: User,
-          as: 'staff',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        },
         {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
+          attributes: ['id', 'firstName', 'lastName', 'userId'],
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'email']
+            }
+          ]
         }
       ],
       order: [['monitoringDate', 'DESC']]
     });
 
-    console.log('✅ Found', todayRecords.length, 'today\'s health monitoring records for assigned elders');
-
     res.json({
       success: true,
-      data: todayRecords,
-      total: todayRecords.length,
-      message: 'Today\'s health monitoring records retrieved successfully'
+      data: healthRecords
     });
+
   } catch (error) {
-    console.error('❌ Get today\'s health monitoring records error:', error);
+    console.error('❌ Get today\'s health monitoring error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get today\'s health monitoring records',
+      message: 'Failed to fetch today\'s health monitoring records',
       error: error.message
     });
   }
 };
 
-// Get elder health history - only for assigned elders
-const getElderHealthHistory = async (req, res) => {
+// Get health monitoring record by ID
+const getHealthMonitoringById = async (req, res) => {
   try {
-    const { elderId } = req.params;
-    const { days = 7 } = req.query;
-    const staffId = req.user.id;
+    const { id } = req.params;
     
-    console.log('🔍 Getting health history for elder:', elderId, 'for last', days, 'days');
-    console.log('🔍 Request from staff:', staffId);
-    
-    // Check if elder is assigned to this staff member
-    const isAssigned = await isElderAssignedToStaff(elderId, staffId);
-    
-    if (!isAssigned) {
-      console.log('❌ Elder not assigned to this staff member');
-      return res.status(403).json({
+    let whereClause = { id };
+
+    // If user is an elder, only allow access to their own records
+    if (req.user.role === 'elder') {
+      const elder = await Elder.findOne({ where: { userId: req.user.id } });
+      if (!elder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Elder profile not found'
+        });
+      }
+      whereClause.elderId = elder.id;
+    }
+
+    const healthRecord = await HealthMonitoring.findOne({
+      where: whereClause,
+      include: [
+        {
+          model: Elder,
+          as: 'elder',
+          attributes: ['id', 'firstName', 'lastName', 'userId'],
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'email']
+            }
+          ]
+        }
+      ]
+    });
+
+    if (!healthRecord) {
+      return res.status(404).json({
         success: false,
-        message: 'You can only access health records for elders assigned to you'
+        message: 'Health monitoring record not found'
       });
     }
-    
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - parseInt(days));
-    
-    console.log('🔍 Start date for query:', startDate);
-    
-    const healthHistory = await HealthMonitoring.findAll({
-      where: {
-        elderId: elderId,
-        monitoringDate: {
-          [Op.gte]: startDate
-        }
-      },
-      include: [
-        {
-          model: User,
-          as: 'staff',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        },
-        {
-          model: Elder,
-          as: 'elder',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        }
-      ],
-      order: [['monitoringDate', 'DESC']]
-    });
-
-    console.log('✅ Found', healthHistory.length, 'health records for assigned elder');
 
     res.json({
       success: true,
-      data: healthHistory,
-      total: healthHistory.length,
-      message: 'Elder health history retrieved successfully'
+      data: healthRecord
     });
+
   } catch (error) {
-    console.error('❌ Get elder health history error:', error);
+    console.error('❌ Get health monitoring by ID error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get elder health history',
+      message: 'Failed to fetch health monitoring record',
       error: error.message
     });
   }
 };
 
-// Create health monitoring record - only for assigned elders
-const createHealthRecord = async (req, res) => {
+// Create health monitoring record (staff only)
+const createHealthMonitoring = async (req, res) => {
   try {
-    console.log('🔍 Creating health monitoring record');
-    console.log('📋 Request body:', req.body);
-    
-    const { elderId, ...healthData } = req.body;
-    const staffId = req.user.id;
-    
+    const {
+      elderId,
+      bloodPressureSystolic,
+      bloodPressureDiastolic,
+      heartRate,
+      temperature,
+      weight,
+      bloodSugar,
+      oxygenSaturation,
+      sleepHours,
+      notes,
+      symptoms,
+      medications
+    } = req.body;
+
+    // Validate required fields
     if (!elderId) {
       return res.status(400).json({
         success: false,
         message: 'Elder ID is required'
       });
     }
-    
-    // Check if elder is assigned to this staff member
-    const isAssigned = await isElderAssignedToStaff(elderId, staffId);
-    
-    if (!isAssigned) {
-      console.log('❌ Elder not assigned to this staff member');
-      return res.status(403).json({
+
+    // Check if elder exists
+    const elder = await Elder.findByPk(elderId);
+    if (!elder) {
+      return res.status(404).json({
         success: false,
-        message: 'You can only create health records for elders assigned to you'
+        message: 'Elder not found'
       });
     }
-    
-    const recordData = {
-      ...healthData,
-      elderId: elderId,
-      staffId: staffId
-    };
-    
-    const healthRecord = await HealthMonitoring.create(recordData);
-    
-    // Fetch the complete record with associations
-    const completeRecord = await HealthMonitoring.findByPk(healthRecord.id, {
+
+    const healthRecord = await HealthMonitoring.create({
+      elderId,
+      bloodPressureSystolic,
+      bloodPressureDiastolic,
+      heartRate,
+      temperature,
+      weight,
+      bloodSugar,
+      oxygenSaturation,
+      sleepHours,
+      notes,
+      symptoms,
+      medications,
+      recordedBy: req.user.id,
+      monitoringDate: new Date()
+    });
+
+    const createdRecord = await HealthMonitoring.findByPk(healthRecord.id, {
       include: [
-        {
-          model: User,
-          as: 'staff',
-          attributes: ['id', 'firstName', 'lastName']
-        },
         {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName']
+          attributes: ['id', 'firstName', 'lastName', 'userId'],
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'email']
+            }
+          ]
         }
       ]
     });
-    
-    console.log('✅ Health monitoring record created:', healthRecord.id);
-    
+
     res.status(201).json({
       success: true,
-      data: completeRecord,
-      message: 'Health monitoring record created successfully'
+      message: 'Health monitoring record created successfully',
+      data: createdRecord
     });
+
   } catch (error) {
-    console.error('❌ Create health monitoring record error:', error);
+    console.error('❌ Create health monitoring error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create health monitoring record',
@@ -295,61 +281,47 @@ const createHealthRecord = async (req, res) => {
   }
 };
 
-// Update health monitoring record - only for assigned elders
-const updateHealthRecord = async (req, res) => {
+// Update health monitoring record (staff only)
+const updateHealthMonitoring = async (req, res) => {
   try {
     const { id } = req.params;
-    const staffId = req.user.id;
-    
-    console.log('🔍 Updating health monitoring record:', id);
-    
+    const updateData = req.body;
+
     const healthRecord = await HealthMonitoring.findByPk(id);
-    
     if (!healthRecord) {
       return res.status(404).json({
         success: false,
         message: 'Health monitoring record not found'
       });
     }
-    
-    // Check if elder is assigned to this staff member
-    const isAssigned = await isElderAssignedToStaff(healthRecord.elderId, staffId);
-    
-    if (!isAssigned) {
-      console.log('❌ Elder not assigned to this staff member');
-      return res.status(403).json({
-        success: false,
-        message: 'You can only update health records for elders assigned to you'
-      });
-    }
-    
-    await healthRecord.update(req.body);
-    
-    // Fetch the updated record with associations
+
+    await healthRecord.update(updateData);
+
     const updatedRecord = await HealthMonitoring.findByPk(id, {
       include: [
         {
-          model: User,
-          as: 'staff',
-          attributes: ['id', 'firstName', 'lastName']
-        },
-        {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName']
+          attributes: ['id', 'firstName', 'lastName', 'userId'],
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'email']
+            }
+          ]
         }
       ]
     });
-    
-    console.log('✅ Health monitoring record updated:', id);
-    
+
     res.json({
       success: true,
-      data: updatedRecord,
-      message: 'Health monitoring record updated successfully'
+      message: 'Health monitoring record updated successfully',
+      data: updatedRecord
     });
+
   } catch (error) {
-    console.error('❌ Update health monitoring record error:', error);
+    console.error('❌ Update health monitoring error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update health monitoring record',
@@ -358,44 +330,28 @@ const updateHealthRecord = async (req, res) => {
   }
 };
 
-// Delete health monitoring record - only for assigned elders
-const deleteHealthRecord = async (req, res) => {
+// Delete health monitoring record (staff only)
+const deleteHealthMonitoring = async (req, res) => {
   try {
     const { id } = req.params;
-    const staffId = req.user.id;
-    
-    console.log('🔍 Deleting health monitoring record:', id);
-    
+
     const healthRecord = await HealthMonitoring.findByPk(id);
-    
     if (!healthRecord) {
       return res.status(404).json({
         success: false,
         message: 'Health monitoring record not found'
       });
     }
-    
-    // Check if elder is assigned to this staff member
-    const isAssigned = await isElderAssignedToStaff(healthRecord.elderId, staffId);
-    
-    if (!isAssigned) {
-      console.log('❌ Elder not assigned to this staff member');
-      return res.status(403).json({
-        success: false,
-        message: 'You can only delete health records for elders assigned to you'
-      });
-    }
-    
+
     await healthRecord.destroy();
-    
-    console.log('✅ Health monitoring record deleted:', id);
-    
+
     res.json({
       success: true,
       message: 'Health monitoring record deleted successfully'
     });
+
   } catch (error) {
-    console.error('❌ Delete health monitoring record error:', error);
+    console.error('❌ Delete health monitoring error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete health monitoring record',
@@ -404,29 +360,101 @@ const deleteHealthRecord = async (req, res) => {
   }
 };
 
-const getLatestForElder = async (req, res) => {
+// Get health monitoring statistics
+const getHealthMonitoringStats = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const elder = await Elder.findOne({ where: { userId } });
-    if (!elder) {
-      return res.status(404).json({ success: false, message: 'Elder not found' });
+    const { elderId, period = '7' } = req.query;
+    const days = parseInt(period);
+    
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    let whereClause = {
+      monitoringDate: {
+        [Op.gte]: startDate
+      }
+    };
+
+    // If user is an elder, only show their own stats
+    if (req.user.role === 'elder') {
+      const elder = await Elder.findOne({ where: { userId: req.user.id } });
+      if (!elder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Elder profile not found'
+        });
+      }
+      whereClause.elderId = elder.id;
+    } else if (elderId) {
+      whereClause.elderId = elderId;
     }
-    const latestRecord = await HealthMonitoring.findOne({
-      where: { elderId: elder.id },
+
+    const healthRecords = await HealthMonitoring.findAll({
+      where: whereClause,
       order: [['monitoringDate', 'DESC']]
     });
-    res.json({ success: true, record: latestRecord });
+
+    // Calculate statistics
+    const stats = {
+      totalRecords: healthRecords.length,
+      averages: {},
+      trends: {},
+      latest: healthRecords[0] || null
+    };
+
+    if (healthRecords.length > 0) {
+      // Calculate averages
+      const totals = healthRecords.reduce((acc, record) => {
+        if (record.bloodPressureSystolic) acc.systolic += record.bloodPressureSystolic;
+        if (record.bloodPressureDiastolic) acc.diastolic += record.bloodPressureDiastolic;
+        if (record.heartRate) acc.heartRate += record.heartRate;
+        if (record.temperature) acc.temperature += record.temperature;
+        if (record.weight) acc.weight += record.weight;
+        if (record.bloodSugar) acc.bloodSugar += record.bloodSugar;
+        if (record.oxygenSaturation) acc.oxygenSaturation += record.oxygenSaturation;
+        return acc;
+      }, {
+        systolic: 0,
+        diastolic: 0,
+        heartRate: 0,
+        temperature: 0,
+        weight: 0,
+        bloodSugar: 0,
+        oxygenSaturation: 0
+      });
+
+      const count = healthRecords.length;
+      stats.averages = {
+        bloodPressure: `${Math.round(totals.systolic / count)}/${Math.round(totals.diastolic / count)}`,
+        heartRate: Math.round(totals.heartRate / count),
+        temperature: (totals.temperature / count).toFixed(1),
+        weight: (totals.weight / count).toFixed(1),
+        bloodSugar: Math.round(totals.bloodSugar / count),
+        oxygenSaturation: Math.round(totals.oxygenSaturation / count)
+      };
+    }
+
+    res.json({
+      success: true,
+      data: stats
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to get latest health monitoring', error: error.message });
+    console.error('❌ Get health monitoring stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch health monitoring statistics',
+      error: error.message
+    });
   }
 };
 
 module.exports = {
-  getAllHealthRecords,
-  getTodayRecords,
-  getElderHealthHistory,
-  createHealthRecord,
-  updateHealthRecord,
-  deleteHealthRecord,
-  getLatestForElder
+  getAllHealthMonitoring,
+  getTodayHealthMonitoring,
+  getHealthMonitoringById,
+  createHealthMonitoring,
+  updateHealthMonitoring,
+  deleteHealthMonitoring,
+  getHealthMonitoringStats
 };

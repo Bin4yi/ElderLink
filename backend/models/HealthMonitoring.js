@@ -28,6 +28,19 @@ const HealthMonitoring = sequelize.define('HealthMonitoring', {
     allowNull: false,
     defaultValue: DataTypes.NOW
   },
+  recordedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    defaultValue: DataTypes.NOW
+  },
+  recordedBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
   heartRate: {
     type: DataTypes.INTEGER,
     allowNull: true,
@@ -84,7 +97,23 @@ const HealthMonitoring = sequelize.define('HealthMonitoring', {
       max: 100
     }
   },
+  bloodSugar: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    validate: {
+      min: 50,
+      max: 600
+    }
+  },
   notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  symptoms: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  medications: {
     type: DataTypes.TEXT,
     allowNull: true
   },
@@ -101,5 +130,25 @@ const HealthMonitoring = sequelize.define('HealthMonitoring', {
   tableName: 'health_monitoring',
   timestamps: true
 });
+
+// Add the associate function
+HealthMonitoring.associate = function(models) {
+  HealthMonitoring.belongsTo(models.Elder, {
+    foreignKey: 'elderId',
+    as: 'elder'
+  });
+  
+  if (models.User) {
+    HealthMonitoring.belongsTo(models.User, {
+      foreignKey: 'recordedBy',
+      as: 'recordedByUser'
+    });
+    
+    HealthMonitoring.belongsTo(models.User, {
+      foreignKey: 'staffId',
+      as: 'staff'
+    });
+  }
+};
 
 module.exports = HealthMonitoring;

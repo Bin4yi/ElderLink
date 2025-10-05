@@ -112,4 +112,23 @@ const Elder = sequelize.define('Elder', {
   }
 });
 
+// Add or update the associate function
+Elder.associate = function(models) {
+  if (models.HealthMonitoring) {
+    Elder.hasMany(models.HealthMonitoring, {
+      foreignKey: 'elderId',
+      as: 'healthRecords'
+    });
+  }
+  
+  if (models.User) {
+    Elder.belongsTo(models.User, {
+      foreignKey: 'userId',
+      as: 'user'
+    });
+  }
+  
+  // ...other existing associations...
+};
+
 module.exports = Elder;

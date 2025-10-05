@@ -9,7 +9,7 @@ import {
   FileText, Download, Eye, Edit2, Trash2, Calendar, DollarSign
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5005/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
 const InventoryManagement = () => {
   const navigate = useNavigate();
