@@ -20,6 +20,9 @@ import AdminDashboard from './components/admin/dashboard/AdminDashboard';
 import UserManagement from './components/admin/UserManagement';
 import AdminPortal from './pages/AdminPortal';
 
+// Coordinator (Ambulance)
+import CoordinatorDashboard from './components/coordinator/CoordinatorDashboard';
+
 // Doctor
 import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
 import PatientList from './components/doctor/patients/PatientList';
@@ -103,6 +106,9 @@ function App() {
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
                   <Route path="/admin/users" element={<UserManagement />} />
                   <Route path="/admin/portal" element={<AdminPortal />} />
+                  
+                  {/* Coordinator (Ambulance) routes */}
+                  <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
                   
                   {/* Doctor routes */}
                   <Route path="/doctor/dashboard" element={<DoctorDashboard />} />

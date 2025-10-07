@@ -21,6 +21,12 @@ const InventoryTransaction = require('./InventoryTransaction');
 const Prescription = require('./Prescription');
 const PrescriptionItem = require('./PrescriptionItem');
 
+// Import ambulance and emergency models
+const Ambulance = require('./Ambulance');
+const EmergencyAlert = require('./EmergencyAlert');
+const AmbulanceDispatch = require('./AmbulanceDispatch');
+const EmergencyLocation = require('./EmergencyLocation');
+
 
 // Clear any existing associations to prevent conflicts
 const clearAssociations = (model) => {
@@ -33,7 +39,8 @@ const clearAssociations = (model) => {
 
 // Clear associations for all models
 [User, Elder, Subscription, HealthMonitoring, Notification, StaffAssignment, DoctorAssignment, 
- Inventory, InventoryTransaction, Prescription, PrescriptionItem].forEach(clearAssociations);
+ Inventory, InventoryTransaction, Prescription, PrescriptionItem, Ambulance, EmergencyAlert, 
+ AmbulanceDispatch, EmergencyLocation].forEach(clearAssociations);
 
 // User associations
 User.hasMany(Elder, { foreignKey: 'userId', as: 'elders' });
@@ -193,6 +200,41 @@ User.hasMany(Prescription, { foreignKey: 'filledBy', as: 'filledPrescriptions' }
 Elder.hasMany(Prescription, { foreignKey: 'elderId', as: 'prescriptions' });
 
 
+// === AMBULANCE AND EMERGENCY SYSTEM ASSOCIATIONS ===
+
+// Ambulance associations
+Ambulance.belongsTo(User, { foreignKey: 'driverId', as: 'driver' });
+Ambulance.hasMany(AmbulanceDispatch, { foreignKey: 'ambulanceId', as: 'dispatches' });
+
+// EmergencyAlert associations
+EmergencyAlert.belongsTo(Elder, { foreignKey: 'elderId', as: 'elder' });
+EmergencyAlert.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+EmergencyAlert.belongsTo(User, { foreignKey: 'acknowledgedBy', as: 'acknowledgedByUser' });
+EmergencyAlert.hasMany(AmbulanceDispatch, { foreignKey: 'emergencyAlertId', as: 'dispatches' });
+EmergencyAlert.hasMany(EmergencyLocation, { foreignKey: 'emergencyAlertId', as: 'locations' });
+
+// AmbulanceDispatch associations
+AmbulanceDispatch.belongsTo(EmergencyAlert, { foreignKey: 'emergencyAlertId', as: 'emergencyAlert' });
+AmbulanceDispatch.belongsTo(Ambulance, { foreignKey: 'ambulanceId', as: 'ambulance' });
+AmbulanceDispatch.belongsTo(User, { foreignKey: 'driverId', as: 'driver' });
+AmbulanceDispatch.belongsTo(User, { foreignKey: 'coordinatorId', as: 'coordinator' });
+AmbulanceDispatch.hasMany(EmergencyLocation, { foreignKey: 'ambulanceDispatchId', as: 'locations' });
+
+// EmergencyLocation associations
+EmergencyLocation.belongsTo(EmergencyAlert, { foreignKey: 'emergencyAlertId', as: 'emergencyAlert' });
+EmergencyLocation.belongsTo(AmbulanceDispatch, { foreignKey: 'ambulanceDispatchId', as: 'dispatch' });
+
+// Reverse associations
+User.hasMany(Ambulance, { foreignKey: 'driverId', as: 'ambulances' });
+User.hasOne(Ambulance, { foreignKey: 'driverId', as: 'assignedAmbulance' }); // For getting single ambulance
+User.hasMany(EmergencyAlert, { foreignKey: 'userId', as: 'emergencyAlerts' });
+User.hasMany(EmergencyAlert, { foreignKey: 'acknowledgedBy', as: 'acknowledgedEmergencies' });
+User.hasMany(AmbulanceDispatch, { foreignKey: 'driverId', as: 'driverDispatches' });
+User.hasMany(AmbulanceDispatch, { foreignKey: 'coordinatorId', as: 'coordinatedDispatches' });
+
+Elder.hasMany(EmergencyAlert, { foreignKey: 'elderId', as: 'emergencyAlerts' });
+
+
 module.exports = {
   sequelize,
   User,
@@ -209,6 +251,10 @@ module.exports = {
   Inventory,
   InventoryTransaction,
   Prescription,
-  PrescriptionItem
+  PrescriptionItem,
+  Ambulance,
+  EmergencyAlert,
+  AmbulanceDispatch,
+  EmergencyLocation
 };
 

@@ -1,6 +1,8 @@
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
-import { API_ENDPOINTS, QSTASH_CONFIG, SOS_CONFIG } from '../utils/constants';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_ENDPOINTS, QSTASH_CONFIG, SOS_CONFIG, STORAGE_KEYS } from '../utils/constants';
 import { StorageUtils } from '../utils/storage';
 import apiService from './api';
 
@@ -199,10 +201,12 @@ export const emergencyService = {
   sendToBackend: async (emergencyData) => {
     try {
       console.log('📡 Sending emergency alert to backend...');
+      console.log('📍 Backend URL:', API_ENDPOINTS.EMERGENCY.TRIGGER);
+      console.log('📦 Emergency Data:', JSON.stringify(emergencyData, null, 2));
       
       const response = await apiService.post(API_ENDPOINTS.EMERGENCY.TRIGGER, emergencyData);
       
-      console.log('✅ Backend emergency response:', response);
+      console.log('✅ Backend emergency response:', JSON.stringify(response, null, 2));
       
       if (response.success) {
         return {
@@ -215,6 +219,9 @@ export const emergencyService = {
       }
     } catch (error) {
       console.error('❌ Backend emergency error:', error);
+      console.error('❌ Error type:', error.constructor.name);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       
       // If it's a 404 error (route not found), store for later sync
       if (error.message.includes('not found') || error.message.includes('404')) {
@@ -655,4 +662,205 @@ export const emergencyService = {
       };
     }
   },
+};
+
+
+/**
+ * Trigger emergency alert with multiple fallback methods
+ */
+export const triggerEmergencyAlert = async (elderData) => {
+  try {
+    console.log('\n🚨🚨🚨 TRIGGERING EMERGENCY ALERT 🚨🚨🚨');
+    console.log('Elder data:', JSON.stringify(elderData, null, 2));
+
+    const emergencyPayload = {
+      elderId: elderData.id,
+      elderName: `${elderData.firstName} ${elderData.lastName}`,
+      elderPhone: elderData.phone || 'Not available',
+      location: elderData.location || { available: false },
+      timestamp: new Date().toISOString(),
+      alertType: 'SOS',
+      vitals: elderData.vitals || null,
+    };
+
+    console.log('📦 Emergency payload:', JSON.stringify(emergencyPayload, null, 2));
+
+    // Try both methods simultaneously
+    const results = await Promise.allSettled([
+      // Method 1: Direct API call
+      directEmergencyCall(emergencyPayload),
+      
+      // Method 2: QStash (for reliability)
+      QSTASH_CONFIG.ENABLED ? qstashEmergencyCall(emergencyPayload) : Promise.resolve({ success: false, method: 'qstash_disabled' }),
+    ]);
+
+    console.log('📊 Emergency alert results:', JSON.stringify(results, null, 2));
+
+    // Check if at least one method succeeded
+    const successfulResults = results.filter(r => r.status === 'fulfilled' && r.value?.success);
+    
+    if (successfulResults.length > 0) {
+      console.log('✅✅✅ EMERGENCY ALERT SENT SUCCESSFULLY! ✅✅✅');
+      return {
+        success: true,
+        message: 'Emergency alert sent successfully',
+        results: results.map(r => ({
+          success: r.status === 'fulfilled' && r.value?.success,
+          method: r.value?.method || 'unknown',
+          error: r.reason?.message || r.value?.error,
+        })),
+      };
+    } else {
+      console.error('❌❌❌ ALL EMERGENCY METHODS FAILED ❌❌❌');
+      throw new Error('All emergency alert methods failed');
+    }
+
+  } catch (error) {
+    console.error('❌ Error triggering emergency alert:', error);
+    throw error;
+  }
+};
+
+/**
+ * Direct API call to backend
+ */
+const directEmergencyCall = async (payload) => {
+  try {
+    console.log('\n📡 METHOD 1: Direct API Call');
+    console.log('Endpoint:', API_ENDPOINTS.EMERGENCY.TRIGGER);
+    
+    // Get auth token
+    const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+    console.log('Auth token:', token ? 'Found' : 'Not found');
+
+    if (!token) {
+      console.warn('⚠️ No auth token found, attempting without authentication');
+    }
+
+    const response = await axios.post(
+      API_ENDPOINTS.EMERGENCY.TRIGGER,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        timeout: 15000,
+      }
+    );
+
+    console.log('✅ Direct API call SUCCESS');
+    console.log('Response:', JSON.stringify(response.data, null, 2));
+    
+    return {
+      success: true,
+      method: 'direct_api',
+      data: response.data,
+    };
+  } catch (error) {
+    console.error('❌ Direct API call FAILED');
+    console.error('Error message:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', JSON.stringify(error.response.data, null, 2));
+    }
+    throw error;
+  }
+};
+
+/**
+ * QStash emergency call
+ */
+const qstashEmergencyCall = async (payload) => {
+  try {
+    console.log('\n📡 METHOD 2: QStash Call');
+    
+    const qstashUrl = `${QSTASH_CONFIG.URL}/${encodeURIComponent(QSTASH_CONFIG.EMERGENCY_WEBHOOK)}`;
+    console.log('QStash URL:', qstashUrl);
+    console.log('Webhook URL:', QSTASH_CONFIG.EMERGENCY_WEBHOOK);
+    
+    const response = await axios.post(
+      qstashUrl,
+      payload,
+      {
+        headers: {
+          'Authorization': `Bearer ${QSTASH_CONFIG.TOKEN}`,
+          'Content-Type': 'application/json',
+          'Upstash-Forward-Content-Type': 'application/json',
+        },
+        timeout: 15000,
+      }
+    );
+
+    console.log('✅ QStash call SUCCESS');
+    console.log('Message ID:', response.data.messageId);
+    
+    return {
+      success: true,
+      method: 'qstash',
+      messageId: response.data.messageId,
+    };
+  } catch (error) {
+    console.error('❌ QStash call FAILED');
+    console.error('Error message:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', JSON.stringify(error.response.data, null, 2));
+    }
+    return {
+      success: false,
+      method: 'qstash',
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Get emergency contacts for an elder
+ */
+export const getEmergencyContacts = async (elderId) => {
+  try {
+    console.log(`📞 Fetching emergency contacts for elder: ${elderId}`);
+    const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+    
+    const response = await axios.get(
+      API_ENDPOINTS.EMERGENCY.CONTACTS(elderId),
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+    
+    console.log('✅ Emergency contacts fetched:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching emergency contacts:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get emergency history for an elder
+ */
+export const getEmergencyHistory = async (elderId) => {
+  try {
+    console.log(`📜 Fetching emergency history for elder: ${elderId}`);
+    const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+    
+    const response = await axios.get(
+      API_ENDPOINTS.EMERGENCY.HISTORY(elderId),
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+    
+    console.log('✅ Emergency history fetched:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching emergency history:', error);
+    throw error;
+  }
 };

@@ -55,7 +55,9 @@ const User = sequelize.define('User', {
       'staff',
       'elder',
       'pharmacist',
-      'mental_health_consultant'
+      'mental_health_consultant',
+      'coordinator',
+      'ambulance_driver'
     ),
     allowNull: false,
     defaultValue: 'family_member'

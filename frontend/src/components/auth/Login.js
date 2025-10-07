@@ -35,6 +35,12 @@ const Login = ({ onClose, onSwitchToRegister }) => {
       case "doctor":
         redirectPath = "/doctor/dashboard";
         break;
+      case "coordinator":
+        redirectPath = "/coordinator/dashboard";
+        break;
+      case "ambulance_driver":
+        redirectPath = "/driver/dashboard";
+        break;
       case "staff":
         redirectPath = "/staff/dashboard";
         break;
