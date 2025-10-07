@@ -12,11 +12,14 @@ class AuthService {
   async login(email, password) {
     try {
       console.log('🔐 Auth service login...');
+      console.log('📧 Email:', email);
+      console.log('🔑 Password:', password ? '***' : 'undefined');
+      console.log('🎯 Endpoint:', API_ENDPOINTS.AUTH.LOGIN);
       
-      const response = await apiService.post(API_ENDPOINTS.AUTH.LOGIN, {
-        email,
-        password,
-      });
+      const loginData = { email, password };
+      console.log('📦 Login data object:', loginData);
+      
+      const response = await apiService.post(API_ENDPOINTS.AUTH.LOGIN, loginData);
 
       console.log('🔐 Auth service response:', response);
 

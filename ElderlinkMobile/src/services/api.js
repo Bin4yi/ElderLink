@@ -26,48 +26,71 @@ class ApiService {
 
   /**
    * Make HTTP request with proper error handling
+   * @param {string} method - HTTP method (GET, POST, PUT, DELETE, PATCH)
+   * @param {string} url - API endpoint path
+   * @param {object} data - Request body data (for POST/PUT/PATCH)
+   * @param {object} options - Additional fetch options
    */
-  async makeRequest(url, options = {}) {
+  async makeRequest(method, url, data = null, options = {}) {
     try {
+      console.log(`🔍 makeRequest called with:`);
+      console.log(`  - method: "${method}" (type: ${typeof method})`);
+      console.log(`  - url: "${url}"`);
+      console.log(`  - data: ${JSON.stringify(data)} (type: ${typeof data})`);
+      console.log(`  - data truthy?: ${!!data}`);
+      
       const headers = await this.getAuthHeaders();
       
       const config = {
-        method: 'GET',
+        method: method.toUpperCase(),
         headers,
         ...options,
       };
 
-      // Add body for POST/PUT requests
-      if (config.body && typeof config.body === 'object') {
-        config.body = JSON.stringify(config.body);
+      console.log(`  - config.method: "${config.method}"`);
+      console.log(`  - Is POST?: ${config.method === 'POST'}`);
+      console.log(`  - Includes POST?: ${['POST', 'PUT', 'PATCH'].includes(config.method)}`);
+      console.log(`  - Should add body?: ${data && ['POST', 'PUT', 'PATCH'].includes(config.method)}`);
+
+      // Add body for POST/PUT/PATCH requests
+      if (data && ['POST', 'PUT', 'PATCH'].includes(config.method)) {
+        config.body = JSON.stringify(data);
+        console.log(`📦 Request data:`, JSON.stringify(data, null, 2));
+        console.log(`📦 Request body (stringified):`, config.body);
+      } else {
+        console.log(`❌ NOT adding body! data=${!!data}, method=${config.method}`);
       }
 
-      console.log(`Making ${config.method} request to: ${this.baseURL}${url}`);
+      console.log(`🌐 Making ${config.method} request to: ${this.baseURL}${url}`);
+      console.log(`📋 Headers:`, JSON.stringify(config.headers, null, 2));
       
       const response = await fetch(`${this.baseURL}${url}`, config);
       
       console.log(`Response status: ${response.status}`);
 
       // Handle different response statuses
-      if (response.status === 401) {
-        // Token expired or invalid
-        await StorageUtils.auth.logout();
-        throw new Error(ERROR_MESSAGES.AUTHENTICATION);
-      }
-
-      if (response.status === 403) {
-        throw new Error(ERROR_MESSAGES.UNAUTHORIZED);
-      }
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        
+        // Only treat 401 as token expiration if we're NOT on the login endpoint
+        if (response.status === 401 && !url.includes('/auth/login')) {
+          // Token expired or invalid
+          await StorageUtils.auth.logout();
+          throw new Error(ERROR_MESSAGES.AUTHENTICATION);
+        }
+
+        if (response.status === 403) {
+          throw new Error(ERROR_MESSAGES.UNAUTHORIZED);
+        }
+
+        // For all other errors (including login 401), throw the server's message
         throw new Error(errorData.message || ERROR_MESSAGES.SERVER_ERROR);
       }
 
-      const data = await response.json();
-      console.log('API Response:', data);
+      const responseData = await response.json();
+      console.log('API Response:', responseData);
       
-      return data;
+      return responseData;
     } catch (error) {
       console.error('API Request Error:', error);
       
@@ -87,46 +110,35 @@ class ApiService {
     const queryString = new URLSearchParams(params).toString();
     const fullUrl = queryString ? `${url}?${queryString}` : url;
     
-    return this.makeRequest(fullUrl);
+    return this.makeRequest('GET', fullUrl);
   }
 
   /**
    * POST request
    */
   async post(url, data = {}) {
-    return this.makeRequest(url, {
-      method: 'POST',
-      body: data,
-    });
+    return this.makeRequest('POST', url, data);
   }
 
   /**
    * PUT request
    */
   async put(url, data = {}) {
-    return this.makeRequest(url, {
-      method: 'PUT',
-      body: data,
-    });
+    return this.makeRequest('PUT', url, data);
   }
 
   /**
    * DELETE request
    */
   async delete(url) {
-    return this.makeRequest(url, {
-      method: 'DELETE',
-    });
+    return this.makeRequest('DELETE', url);
   }
 
   /**
    * PATCH request
    */
   async patch(url, data = {}) {
-    return this.makeRequest(url, {
-      method: 'PATCH',
-      body: data,
-    });
+    return this.makeRequest('PATCH', url, data);
   }
 
   /**

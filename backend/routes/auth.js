@@ -14,6 +14,26 @@ router.get('/test', (req, res) => {
   });
 });
 
+// Debug route to test request body parsing
+router.post('/test-body', (req, res) => {
+  console.log('🧪 Test endpoint received:');
+  console.log('  - Headers:', req.headers);
+  console.log('  - Body:', req.body);
+  console.log('  - Body type:', typeof req.body);
+  console.log('  - Body keys:', Object.keys(req.body));
+  
+  res.json({
+    success: true,
+    message: 'Body test endpoint',
+    received: {
+      headers: req.headers,
+      body: req.body,
+      bodyType: typeof req.body,
+      bodyKeys: Object.keys(req.body)
+    }
+  });
+});
+
 // Make sure all these functions are properly exported from authController
 router.post('/register', validateRegistration, register);
 router.post('/login', validateLogin, login);

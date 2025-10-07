@@ -6,8 +6,6 @@ import { COLORS } from '../utils/colors';
 
 // Import main screens
 import HomeScreen from '../screens/main/HomeScreen';
-import AppointmentsScreen from '../screens/main/AppointmentsScreen';
-import HealthMetricsScreen from '../screens/main/HealthMetricsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
 
@@ -64,12 +62,6 @@ const TabNavigator = () => {
             case ROUTES.HOME:
               iconName = focused ? 'home' : 'home-outline';
               break;
-            case ROUTES.APPOINTMENTS:
-              iconName = focused ? 'calendar' : 'calendar-outline';
-              break;
-            case ROUTES.HEALTH_METRICS:
-              iconName = focused ? 'heart' : 'heart-outline';
-              break;
             case ROUTES.PROFILE:
               iconName = focused ? 'person' : 'person-outline';
               break;
@@ -100,26 +92,6 @@ const TabNavigator = () => {
           title: 'Home',
           headerTitle: 'ElderLink Home',
           tabBarLabel: 'Home',
-        }}
-      />
-      
-      <Tab.Screen 
-        name={ROUTES.APPOINTMENTS} 
-        component={AppointmentsScreen}
-        options={{
-          title: 'Appointments',
-          headerTitle: 'My Appointments',
-          tabBarLabel: 'Appointments',
-        }}
-      />
-      
-      <Tab.Screen 
-        name={ROUTES.HEALTH_METRICS} 
-        component={HealthMetricsScreen}
-        options={{
-          title: 'Health',
-          headerTitle: 'Health Metrics',
-          tabBarLabel: 'Health',
         }}
       />
       

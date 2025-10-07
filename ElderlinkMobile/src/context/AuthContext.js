@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from '../services/auth';
+import { testLogin } from '../services/testLogin';
 
 /**
  * Authentication Context for managing user state and authentication
@@ -142,9 +143,13 @@ export const AuthProvider = ({ children }) => {
         console.log('✅ Found stored auth data:', { 
           userEmail: user?.email, 
           userId: user?.id || user?.userId,
+          userRole: user?.role,
           elderName: elder?.firstName,
           elderId: elder?.id || elder?.userId
         });
+        
+        console.log('📦 Loaded user data:', JSON.stringify(user, null, 2));
+        console.log('📦 Loaded user role:', user?.role, 'Type:', typeof user?.role);
         
         dispatch({
           type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -155,7 +160,7 @@ export const AuthProvider = ({ children }) => {
           },
         });
 
-        console.log('✅ User already authenticated:', user?.email);
+        console.log('✅ User already authenticated:', user?.email, 'Role:', user?.role);
       } else {
         dispatch({
           type: AUTH_ACTIONS.SET_AUTHENTICATION_STATE,
@@ -192,11 +197,21 @@ export const AuthProvider = ({ children }) => {
 
       console.log('🔐 Attempting login...');
       console.log(`🔐 Attempting login for: ${email}`);
+      console.log('⚡ NEW CODE VERSION - Oct 7, 2025 - 3:30 PM');
+      
+      // USE TEST LOGIN FUNCTION
+      console.log('🧪 Using test login function...');
+      const testResponse = await testLogin(email, password);
+      console.log('🧪 Test response:', testResponse);
       
       const response = await authService.login(email, password);
       console.log('✅ Login response:', response);
 
       if (response.success && response.token && response.user) {
+        // Debug: Log what we're storing
+        console.log('📦 Storing user data:', JSON.stringify(response.user, null, 2));
+        console.log('📦 User role:', response.user?.role, 'Type:', typeof response.user?.role);
+
         // Store auth data
         await AsyncStorage.setItem('auth_token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
@@ -215,7 +230,7 @@ export const AuthProvider = ({ children }) => {
           },
         });
 
-        console.log('✅ Login successful');
+        console.log('✅ Login successful - User role:', response.user?.role);
         return { success: true };
       } else {
         throw new Error('Invalid response format');

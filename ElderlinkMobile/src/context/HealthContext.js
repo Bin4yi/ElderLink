@@ -541,6 +541,7 @@ export const HealthProvider = ({ children }) => {
     loadHealthData,
     loadElderHealthData,
     createHealthRecord,
+    addHealthRecord: createHealthRecord, // Alias for backward compatibility
     updateHealthRecord,
     deleteHealthRecord,
     loadHealthAlerts,

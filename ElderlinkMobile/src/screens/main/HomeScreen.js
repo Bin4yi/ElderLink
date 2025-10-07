@@ -11,76 +11,32 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useEmergency } from '../../context/EmergencyContext';
-import { useHealthData } from '../../hooks/useHealthData';
-import { appointmentsService } from '../../services/appointments';
 import { COLORS } from '../../utils/colors';
 import { ROUTES } from '../../utils/constants';
 
 import Card from '../../components/common/Card';
 import Alert from '../../components/common/Alert';
 import SosButton from '../../components/SosButton';
-import AppointmentCard from '../../components/AppointmentCard';
-import HealthMetricCard from '../../components/HealthMetricCard';
 
 const { width } = Dimensions.get('window');
 
 /**
  * Home Screen - Main dashboard for elderly users
- * Shows health summary, upcoming appointments, and emergency access
+ * Shows emergency access and system status
  */
 const HomeScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
-  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
-  const [healthSummary, setHealthSummary] = useState(null);
 
   const { user, elder } = useAuth();
   const { isSystemReady, hasEmergencyContacts, error: emergencyError } = useEmergency();
-  const { 
-    latestVitalSigns, 
-    recordedToday, 
-    alertsCount,
-    loadElderHealthData 
-  } = useHealthData();
 
   useEffect(() => {
-    loadDashboardData();
+    // Component mounted - no additional data to load
   }, []);
-
-  const loadDashboardData = async () => {
-    // Use elder data if available, otherwise use user data
-    const currentUser = elder || user;
-    const userId = currentUser?.id || currentUser?.userId || currentUser?._id;
-    
-    console.log('🏠 Loading dashboard data for user:', { 
-      hasElder: !!elder, 
-      hasUser: !!user, 
-      userId,
-      userKeys: currentUser ? Object.keys(currentUser) : []
-    });
-    
-    if (!userId) {
-      console.warn('⚠️ No user ID available for dashboard');
-      return;
-    }
-
-    try {
-      // Load upcoming appointments
-      const appointmentsResult = await appointmentsService.getUpcomingAppointments(userId);
-      if (appointmentsResult.success) {
-        setUpcomingAppointments(appointmentsResult.appointments.slice(0, 2)); // Show only next 2
-      }
-
-      // Load health data
-      await loadElderHealthData(userId, 7);
-
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    }
-  };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDashboardData();
+    // Refresh any necessary data here
     setRefreshing(false);
   };
 
@@ -100,14 +56,6 @@ const HomeScreen = ({ navigation }) => {
       console.log('🏠 ❌ Emergency failed:', result.error);
       console.error('💔💔💔 EMERGENCY ALERT FAILED! Please call 911 directly! 💔💔💔');
     }
-  };
-
-  const navigateToAppointments = () => {
-    navigation.navigate(ROUTES.APPOINTMENTS);
-  };
-
-  const navigateToHealthMetrics = () => {
-    navigation.navigate(ROUTES.HEALTH_METRICS);
   };
 
   const navigateToProfile = () => {
@@ -196,106 +144,6 @@ const HomeScreen = ({ navigation }) => {
         />
       </Card>
 
-      {/* Health Summary */}
-      <Card style={styles.sectionCard}>
-        <TouchableOpacity 
-          style={styles.sectionHeader}
-          onPress={navigateToHealthMetrics}
-        >
-          <View style={styles.sectionTitleContainer}>
-            <Ionicons name="heart" size={28} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Health Summary</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color={COLORS.gray400} />
-        </TouchableOpacity>
-
-        {recordedToday ? (
-          <View style={styles.healthStatus}>
-            <View style={styles.healthStatusGood}>
-              <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
-              <Text style={styles.healthStatusText}>Health data recorded today</Text>
-            </View>
-            
-            {latestVitalSigns && (
-              <View style={styles.vitalSignsPreview}>
-                {latestVitalSigns.heartRate && (
-                  <View style={styles.vitalItem}>
-                    <Text style={styles.vitalLabel}>Heart Rate</Text>
-                    <Text style={styles.vitalValue}>
-                      {latestVitalSigns.heartRate} bpm
-                    </Text>
-                  </View>
-                )}
-                
-                {latestVitalSigns.bloodPressure?.systolic && (
-                  <View style={styles.vitalItem}>
-                    <Text style={styles.vitalLabel}>Blood Pressure</Text>
-                    <Text style={styles.vitalValue}>
-                      {latestVitalSigns.bloodPressure.systolic}/{latestVitalSigns.bloodPressure.diastolic}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        ) : (
-          <View style={styles.healthStatus}>
-            <View style={styles.healthStatusReminder}>
-              <Ionicons name="information-circle" size={24} color={COLORS.warning} />
-              <Text style={styles.healthReminderText}>
-                Don't forget to record your vital signs today
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {alertsCount > 0 && (
-          <View style={styles.alertsContainer}>
-            <Ionicons name="warning" size={20} color={COLORS.warning} />
-            <Text style={styles.alertsText}>
-              {alertsCount} health alert{alertsCount > 1 ? 's' : ''} need attention
-            </Text>
-          </View>
-        )}
-      </Card>
-
-      {/* Upcoming Appointments */}
-      <Card style={styles.sectionCard}>
-        <TouchableOpacity 
-          style={styles.sectionHeader}
-          onPress={navigateToAppointments}
-        >
-          <View style={styles.sectionTitleContainer}>
-            <Ionicons name="calendar" size={28} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Upcoming Appointments</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color={COLORS.gray400} />
-        </TouchableOpacity>
-
-        {upcomingAppointments.length > 0 ? (
-          <View style={styles.appointmentsContainer}>
-            {upcomingAppointments.map((appointment, index) => (
-              <AppointmentCard
-                key={appointment.id || index}
-                appointment={appointment}
-                onPress={() => navigateToAppointments()}
-                style={styles.appointmentPreview}
-              />
-            ))}
-          </View>
-        ) : (
-          <View style={styles.noAppointments}>
-            <Ionicons name="calendar-outline" size={48} color={COLORS.gray300} />
-            <Text style={styles.noAppointmentsText}>
-              No upcoming appointments
-            </Text>
-            <Text style={styles.noAppointmentsSubtext}>
-              Your schedule is clear for now
-            </Text>
-          </View>
-        )}
-      </Card>
-
       {/* Quick Actions */}
       <Card style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -303,26 +151,18 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.quickActionsGrid}>
           <TouchableOpacity
             style={styles.quickActionItem}
-            onPress={navigateToHealthMetrics}
-          >
-            <Ionicons name="add-circle" size={32} color={COLORS.primary} />
-            <Text style={styles.quickActionText}>Record Vitals</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.quickActionItem}
-            onPress={navigateToAppointments}
-          >
-            <Ionicons name="calendar-outline" size={32} color={COLORS.primary} />
-            <Text style={styles.quickActionText}>Book Appointment</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.quickActionItem}
             onPress={navigateToProfile}
           >
             <Ionicons name="person-circle" size={32} color={COLORS.primary} />
             <Text style={styles.quickActionText}>My Profile</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickActionItem}
+            onPress={() => navigation.navigate(ROUTES.SETTINGS)}
+          >
+            <Ionicons name="settings" size={32} color={COLORS.primary} />
+            <Text style={styles.quickActionText}>Settings</Text>
           </TouchableOpacity>
         </View>
       </Card>

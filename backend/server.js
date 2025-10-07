@@ -106,6 +106,21 @@ const doctorAppointmentsRoutes = require('./routes/doctorAppointments');
 const inventoryRoutes = require('./routes/inventory');
 const prescriptionRoutes = require('./routes/prescriptions');
 
+// 🚨 ADD: Import emergency routes
+const emergencyRoutes = require('./routes/emergency');
+
+// 🚨 ADD: Import webhook routes
+const webhookRoutes = require('./routes/webhook');
+
+// 🚨 ADD: Import ambulance dispatch routes
+const ambulanceRoutes = require('./routes/ambulance');
+const coordinatorRoutes = require('./routes/coordinator');
+const sosResponseRoutes = require('./routes/sosResponse');
+const driverRoutes = require('./routes/drivers');
+
+// 🚨 ADD: Webhook routes FIRST (no auth required)
+app.use('/api/webhook', webhookRoutes);
+
 // Import and use routes with error checking
 try {
   routeConfigs.forEach(({ path, mount, name }) => {
@@ -135,10 +150,18 @@ try {
 
   app.use('/api/doctor', doctorAppointmentsRoutes);
 
-    // Use new inventory routes
-    
+  // Use new inventory routes
   app.use('/api/inventory', inventoryRoutes);
   app.use('/api/prescriptions', prescriptionRoutes);
+
+  // 🚨 ADD: Use emergency routes
+  app.use('/api/emergency', emergencyRoutes);
+  
+  // 🚨 ADD: Use ambulance dispatch routes
+  app.use('/api/ambulance', ambulanceRoutes);
+  app.use('/api/coordinator', coordinatorRoutes);
+  app.use('/api/sos', sosResponseRoutes);
+  app.use('/api/drivers', driverRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);
@@ -146,12 +169,39 @@ try {
 }
 
 // Socket.io for real-time notifications
+const emergencyWebSocketService = require('./services/emergencyWebSocketService');
+
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
+  // Existing user room functionality
   socket.on('join_user_room', (userId) => {
     socket.join(`user_${userId}`);
     console.log(`User ${userId} joined their room`);
+  });
+
+  // 🚨 NEW: Coordinator room for emergency dashboard
+  socket.on('join_coordinator_room', () => {
+    socket.join('coordinator');
+    console.log(`Socket ${socket.id} joined coordinator room`);
+  });
+
+  // 🚨 NEW: Driver joins their specific room
+  socket.on('join_driver_room', (driverId) => {
+    socket.join(`driver_${driverId}`);
+    console.log(`Driver ${driverId} joined their room`);
+  });
+
+  // 🚨 NEW: Family member joins elder's room for updates
+  socket.on('join_family_room', (elderId) => {
+    socket.join(`family_${elderId}`);
+    console.log(`Family member joined room for elder ${elderId}`);
+  });
+
+  // 🚨 NEW: Ambulance tracking room
+  socket.on('track_ambulance', (ambulanceId) => {
+    socket.join(`ambulance_${ambulanceId}`);
+    console.log(`Socket ${socket.id} tracking ambulance ${ambulanceId}`);
   });
 
   socket.on('disconnect', () => {
