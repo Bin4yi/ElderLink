@@ -10,7 +10,7 @@ const Appointment = sequelize.define('Appointment', {
   },
   familyMemberId: {
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: 'Users',  // ✅ Correct
       key: 'id'
@@ -18,7 +18,7 @@ const Appointment = sequelize.define('Appointment', {
   },
   elderId: {
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: 'Elders',  // ✅ Correct
       key: 'id'
@@ -49,12 +49,12 @@ const Appointment = sequelize.define('Appointment', {
     defaultValue: 'medium'
   },
   status: {
-    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'completed', 'cancelled', 'no-show'),
+    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'completed', 'cancelled', 'no-show', 'reserved'),
     defaultValue: 'pending'
   },
   reason: {
     type: DataTypes.TEXT,
-    allowNull: false
+    allowNull: true
   },
   symptoms: {
     type: DataTypes.TEXT,
@@ -71,6 +71,18 @@ const Appointment = sequelize.define('Appointment', {
   rejectionReason: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  reservedAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  reservedBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
   },
   zoomMeetingId: {
     type: DataTypes.STRING,

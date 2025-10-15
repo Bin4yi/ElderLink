@@ -31,6 +31,8 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
     notes: ''
   });
   const [paymentIntent, setPaymentIntent] = useState(null);
+  const [reservation, setReservation] = useState(null);
+  const [remainingTime, setRemainingTime] = useState(0);
 
   const [elders, setElders] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -42,6 +44,39 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
     loadElders();
     loadDoctors();
   }, []);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (reservation && remainingTime > 0) {
+      const timer = setInterval(() => {
+        setRemainingTime((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            handleReservationExpired();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [reservation, remainingTime]);
+
+  const handleReservationExpired = async () => {
+    toast.error('Your reservation has expired. Please select a new time slot.');
+    if (reservation) {
+      try {
+        await appointmentService.cancelReservation(reservation.id);
+      } catch (error) {
+        console.error('Error cancelling expired reservation:', error);
+      }
+    }
+    setReservation(null);
+    setStep(2);
+    setSelectedDate('');
+    setSelectedTime('');
+  };
 
   const loadElders = async () => {
     try {
@@ -81,66 +116,80 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
     setShowCalendarModal(true);
   };
 
-  const handleSlotSelect = (date, time) => {
-    setSelectedDate(date);
-    setSelectedTime(time);
-    setShowCalendarModal(false);
-    setStep(3); // Move to payment step
+  const handleSlotSelect = async (date, time) => {
+    setLoading(true);
+    try {
+      // Create appointment datetime
+      const appointmentDateTime = `${date}T${time}:00`;
+      
+      // Reserve the time slot
+      const reservationResponse = await appointmentService.reserveTimeSlot(
+        selectedDoctor.id,
+        appointmentDateTime
+      );
+      
+      if (reservationResponse.success) {
+        setReservation(reservationResponse.reservation);
+        setRemainingTime(reservationResponse.reservation.remainingSeconds);
+        setSelectedDate(date);
+        setSelectedTime(time);
+        setShowCalendarModal(false);
+        setStep(3); // Move to patient details step
+        toast.success('Time slot reserved for 10 minutes!');
+      }
+    } catch (error) {
+      console.error('Error reserving slot:', error);
+      toast.error(error.response?.data?.message || 'Failed to reserve time slot');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePaymentSuccess = async (paymentResult) => {
-    console.log('✅ Payment successful, proceeding to book appointment');
-    setStep(4); // Move to appointment details
+    console.log('✅ Payment successful, proceeding to complete booking');
+    await handleBooking();
   };
 
   const handleBooking = async () => {
     try {
       setLoading(true);
 
-      if (!selectedElder || !selectedDoctor || !selectedDate || !selectedTime) {
-        toast.error('Please fill in all required fields');
-        return;
-      }
-
       if (!appointmentDetails.reason.trim()) {
         toast.error('Please provide a reason for the appointment');
         return;
       }
 
-      const appointmentDateTime = new Date(`${selectedDate}T${selectedTime}`);
+      console.log('🔄 Completing reservation with booking details...');
 
-      const bookingData = {
+      // Complete the reservation with booking details
+      const response = await appointmentService.completeReservation(reservation.id, {
         elderId: selectedElder.id,
-        doctorId: selectedDoctor.id,
-        appointmentDate: appointmentDateTime.toISOString(),
         duration: 30,
-        ...appointmentDetails
-      };
-
-      console.log('🔄 Booking appointment with data:', bookingData);
-
-      const response = await appointmentService.bookAppointment(bookingData);
-      
-      toast.success('Appointment booked successfully!');
-      onSuccess && onSuccess(response.appointment);
-      
-      // Reset form
-      setStep(1);
-      setSelectedElder(null);
-      setSelectedDoctor(null);
-      setSelectedDate('');
-      setSelectedTime('');
-      setAppointmentDetails({
-        type: 'consultation',
-        priority: 'medium',
-        reason: '',
-        symptoms: '',
-        notes: ''
+        type: appointmentDetails.type,
+        priority: appointmentDetails.priority,
+        reason: appointmentDetails.reason,
+        symptoms: appointmentDetails.symptoms,
+        notes: appointmentDetails.notes
       });
-      
+
+      if (response.success) {
+        toast.success('Appointment booked successfully!');
+        setReservation(null);
+        setRemainingTime(0);
+        
+        // Navigate to appointments list after a short delay
+        setTimeout(() => {
+          navigate('/family/appointments');
+        }, 2000);
+      }
     } catch (error) {
       console.error('❌ Booking error:', error);
-      toast.error(error.message || 'Failed to book appointment');
+      toast.error(error.response?.data?.message || 'Failed to book appointment');
+      
+      // If reservation expired, reset to step 2
+      if (error.response?.data?.message?.includes('expired')) {
+        handleReservationExpired();
+      }
     } finally {
       setLoading(false);
     }
@@ -165,9 +214,9 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
       <div className="flex items-center justify-center space-x-8">
         {[
           { step: 1, label: 'Select Elder' },
-          { step: 2, label: 'Choose Doctor' },
-          { step: 3, label: 'Payment' },
-          { step: 4, label: 'Book Appointment' }
+          { step: 2, label: 'Choose Doctor & Time' },
+          { step: 3, label: 'Patient Details' },
+          { step: 4, label: 'Payment' }
         ].map(({ step: stepNumber, label }) => (
           <div key={stepNumber} className="flex items-center">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -189,10 +238,18 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
         <div className="text-center">
           <div className="text-lg font-semibold text-gray-800">
             {step === 1 && 'Select Elder'}
-            {step === 2 && 'Choose Doctor'}
-            {step === 3 && 'Payment'}
-            {step === 4 && 'Complete Booking'}
+            {step === 2 && 'Choose Doctor & Time'}
+            {step === 3 && 'Patient Details'}
+            {step === 4 && 'Payment'}
           </div>
+          {reservation && remainingTime > 0 && (
+            <div className="mt-2 flex items-center justify-center space-x-2">
+              <Clock className="w-5 h-5 text-red-500 animate-pulse" />
+              <span className="text-red-600 font-semibold">
+                Time remaining: {Math.floor(remainingTime / 60)}:{(remainingTime % 60).toString().padStart(2, '0')}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -240,6 +297,18 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      
+      {/* Navigation */}
+      {selectedElder && (
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={() => setStep(2)}
+            className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+          >
+            Next: Choose Doctor
+          </button>
         </div>
       )}
     </div>
@@ -312,11 +381,12 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
     </div>
   );
 
-  const renderPaymentForm = () => (
+  const renderPatientDetails = () => (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold mb-6">Payment</h2>
+      <h2 className="text-xl font-semibold mb-6">Patient Details</h2>
       
-      <div className="bg-gray-50 p-6 rounded-lg">
+      {/* Appointment Summary */}
+      <div className="bg-blue-50 p-6 rounded-lg">
         <h3 className="font-semibold text-lg mb-4">Appointment Summary</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
@@ -334,7 +404,12 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
           <div className="flex justify-between">
             <span className="text-gray-600">Date:</span>
             <span className="font-medium">
-              {selectedDate && new Date(selectedDate).toLocaleDateString()}
+              {selectedDate && new Date(selectedDate).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
             </span>
           </div>
           <div className="flex justify-between">
@@ -350,24 +425,8 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
         </div>
       </div>
 
-      <Elements stripe={stripePromise}>
-        <AppointmentPaymentForm
-          amount={selectedDoctor?.consultationFee}
-          paymentIntent={paymentIntent}
-          appointmentId="temp" // This will be created after booking
-          onSuccess={handlePaymentSuccess}
-          onBack={() => setStep(2)}
-        />
-      </Elements>
-    </div>
-  );
-
-  const renderAppointmentDetails = () => (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold mb-6">Complete Your Appointment</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Appointment Type */}
+      {/* Appointment Type */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Appointment Type
@@ -377,13 +436,12 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
             onChange={(e) => setAppointmentDetails(prev => ({ ...prev, type: e.target.value }))}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
           >
-            <option value="consultation">General Consultation</option>
+            <option value="consultation">Consultation</option>
             <option value="follow-up">Follow-up</option>
             <option value="emergency">Emergency</option>
           </select>
         </div>
 
-        {/* Priority */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Priority
@@ -444,42 +502,81 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
         />
       </div>
 
-      {/* Final Summary */}
-      <div className="bg-green-50 border border-green-200 p-6 rounded-lg">
-        <h3 className="font-semibold text-lg mb-4 text-green-800">Ready to Book</h3>
+      {/* Navigation */}
+      <div className="flex space-x-4">
+        <button
+          type="button"
+          onClick={() => {
+            if (reservation) {
+              appointmentService.cancelReservation(reservation.id).catch(console.error);
+            }
+            setStep(2);
+          }}
+          className="flex-1 flex items-center justify-center space-x-2 py-3 px-6 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Back</span>
+        </button>
+        
+        <button
+          type="button"
+          onClick={() => setStep(4)}
+          disabled={!appointmentDetails.reason.trim()}
+          className="flex-1 bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Proceed to Payment
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderPaymentForm = () => (
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold mb-6">Payment</h2>
+      
+      <div className="bg-gray-50 p-6 rounded-lg">
+        <h3 className="font-semibold text-lg mb-4">Appointment Summary</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-green-700">Elder:</span>
+            <span className="text-gray-600">Elder:</span>
             <span className="font-medium">
               {selectedElder?.firstName} {selectedElder?.lastName}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-green-700">Doctor:</span>
+            <span className="text-gray-600">Doctor:</span>
             <span className="font-medium">
               Dr. {selectedDoctor?.user?.firstName} {selectedDoctor?.user?.lastName}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-green-700">Date:</span>
+            <span className="text-gray-600">Date:</span>
             <span className="font-medium">
               {selectedDate && new Date(selectedDate).toLocaleDateString()}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-green-700">Time:</span>
+            <span className="text-gray-600">Time:</span>
             <span className="font-medium">{selectedTime}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-green-700">Type:</span>
-            <span className="font-medium capitalize">{appointmentDetails.type}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-green-700">Payment:</span>
-            <span className="font-medium text-green-600">✅ Completed</span>
+          <div className="flex justify-between border-t pt-2 mt-2">
+            <span className="text-gray-600">Consultation Fee:</span>
+            <span className="font-medium text-green-600 text-lg">
+              ${selectedDoctor?.consultationFee}
+            </span>
           </div>
         </div>
       </div>
+
+      <Elements stripe={stripePromise}>
+        <AppointmentPaymentForm
+          amount={selectedDoctor?.consultationFee}
+          paymentIntent={paymentIntent}
+          appointmentId="temp"
+          onSuccess={handlePaymentSuccess}
+          onBack={() => setStep(3)}
+        />
+      </Elements>
     </div>
   );
 
@@ -487,8 +584,8 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
     switch (step) {
       case 1: return selectedElder;
       case 2: return selectedDoctor && selectedDate && selectedTime;
-      case 3: return true; // Payment handled separately
-      case 4: return appointmentDetails.reason.trim().length >= 10;
+      case 3: return appointmentDetails.reason.trim().length >= 10;
+      case 4: return true; // Payment handled by payment form
       default: return false;
     }
   };
@@ -514,81 +611,18 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
         <div className="bg-white rounded-lg shadow-lg p-8">
           {step === 1 && renderElderSelection()}
           {step === 2 && renderDoctorSelection()}
-          {step === 3 && renderPaymentForm()}
-          {step === 4 && renderAppointmentDetails()}
+          {step === 3 && renderPatientDetails()}
+          {step === 4 && renderPaymentForm()}
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t">
-            <button
-              onClick={() => {
-                if (step === 3) {
-                  // If coming back from payment, go to doctor selection but show calendar
-                  setStep(2);
-                  if (selectedDoctor) {
-                    setShowCalendarModal(true);
-                  }
-                } else {
-                  setStep(Math.max(1, step - 1));
-                }
-              }}
-              disabled={step === 1}
-              className={`px-6 py-3 rounded-lg font-medium ${
-                step === 1
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              Previous
-            </button>
-
-            {step < 4 ? (
-              step === 1 ? (
-                <button
-                  onClick={() => setStep(2)}
-                  disabled={!canProceedToNext()}
-                  className={`px-6 py-3 rounded-lg font-medium ${
-                    canProceedToNext()
-                      ? 'bg-red-500 text-white hover:bg-red-600'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  Next
-                </button>
-              ) : null // Step 2 navigation handled by calendar modal, Step 3 by payment form
-            ) : (
-              <button
-                onClick={handleBooking}
-                disabled={loading || !canProceedToNext()}
-                className={`px-8 py-3 rounded-lg font-medium ${
-                  loading || !canProceedToNext()
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-500 text-white hover:bg-green-600'
-                }`}
-              >
-                {loading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Booking...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-5 h-5" />
-                    <span>Book Appointment</span>
-                  </div>
-                )}
-              </button>
-            )}
-          </div>
+          {/* Calendar Modal */}
+          {showCalendarModal && selectedDoctor && (
+            <DoctorCalendarModal
+              doctor={selectedDoctor}
+              onClose={() => setShowCalendarModal(false)}
+              onSlotSelect={handleSlotSelect}
+            />
+          )}
         </div>
-
-        {/* Calendar Modal */}
-        {showCalendarModal && selectedDoctor && (
-          <DoctorCalendarModal
-            doctor={selectedDoctor}
-            onClose={() => setShowCalendarModal(false)}
-            onSlotSelect={handleSlotSelect}
-          />
-        )}
       </div>
     </RoleLayout>
   );

@@ -154,6 +154,10 @@ try {
   app.use('/api/appointments', appointmentRoutes);
 
   app.use('/api/doctor', doctorAppointmentsRoutes);
+  
+  // Use doctor schedule routes
+  const doctorScheduleRoutes = require('./routes/doctorSchedule');
+  app.use('/api/doctor/schedules', doctorScheduleRoutes);
 
   // Use new inventory routes
   app.use('/api/inventory', inventoryRoutes);
@@ -270,6 +274,10 @@ const startServer = async () => {
     
     await sequelize.sync({ alter: true });
     console.log('✅ Database models synchronized');
+    
+    // Start reservation cleanup task
+    const { startReservationCleanup } = require('./utils/reservationCleanup');
+    startReservationCleanup();
     
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
