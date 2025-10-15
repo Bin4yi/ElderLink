@@ -1,567 +1,633 @@
 // src/components/doctor/consultations/ConsultationHistory.js
-
 import React, { useState, useEffect } from 'react';
+import { doctorAppointmentService } from '../../../services/doctorAppointment';
+import toast from 'react-hot-toast';
 import RoleLayout from '../../common/RoleLayout';
+import Modal from '../../common/Modal';
 import { 
-  Stethoscope,
-  Video,
-  Calendar,
-  Clock,
-  Search,
-  Plus,
+  Calendar, 
+  Clock, 
+  User, 
+  Phone, 
+  MapPin, 
+  AlertCircle, 
+  CheckCircle, 
   Eye,
-  FileText,
-  Download,
-  Upload,
-  MoreVertical,
-  RefreshCw,
-  Menu,
-  Bell,
-  Settings,
-  Home,
+  Video,
   Users,
-  CheckCircle,
-  AlertTriangle,
-  Phone,
-  Mail,
-  MapPin,
-  PlayCircle,
-  Pill
+  Loader,
+  FileText,
+  Heart,
+  Activity
 } from 'lucide-react';
 
-const ConsultationsPage = () => {
+const ConsultationHistory = () => {
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('date');
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [selectedConsultations, setSelectedConsultations] = useState([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedConsultation, setSelectedConsultation] = useState(null);
+  const [selectedElder, setSelectedElder] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showElderModal, setShowElderModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Mock consultation data - only 2 patients
-  const mockConsultations = [
-    {
-      id: 1,
-      patient: {
-        name: 'Eleanor Johnson',
-        age: 78,
-        gender: 'Female',
-        phone: '+1 (555) 123-4567',
-        email: 'eleanor.johnson@email.com',
-        address: '123 Oak Street, Springfield, IL',
-        bloodType: 'O+'
-      },
-      date: '2024-07-04',
-      time: '10:30 AM',
-      duration: '45 minutes',
-      type: 'Video Call',
-      status: 'completed',
-      priority: 'medium',
-      chiefComplaint: 'Follow-up for hypertension management',
-      diagnosis: 'Hypertension, well controlled',
-      prescription: ['Lisinopril 10mg daily', 'Amlodipine 5mg daily'],
-      vitals: {
-        bloodPressure: '130/85',
-        heartRate: 72,
-        temperature: '98.6°F',
-        weight: '165 lbs'
-      },
-      notes: 'Patient reports feeling well. Blood pressure well controlled on current medication.',
-      followUp: '3 months',
-      nextOfKin: 'Sarah Johnson (Daughter)',
-      nextOfKinPhone: '+1 (555) 987-6543'
-    },
-    {
-      id: 2,
-      patient: {
-        name: 'Robert Smith',
-        age: 82,
-        gender: 'Male',
-        phone: '+1 (555) 234-5678',
-        email: 'robert.smith@email.com',
-        address: '456 Pine Avenue, Springfield, IL',
-        bloodType: 'A-'
-      },
-      date: '2024-07-04',
-      time: '02:00 PM',
-      duration: '30 minutes',
-      type: 'Video Call',
-      status: 'scheduled',
-      priority: 'high',
-      chiefComplaint: 'Chest pain and shortness of breath',
-      diagnosis: 'Pending evaluation',
-      prescription: [],
-      vitals: {
-        bloodPressure: '160/95',
-        heartRate: 88,
-        temperature: '99.1°F',
-        weight: '180 lbs'
-      },
-      notes: 'Patient experiencing intermittent chest pain. Requires immediate assessment.',
-      followUp: 'Pending',
-      nextOfKin: 'Michael Smith (Son)',
-      nextOfKinPhone: '+1 (555) 876-5432'
-    }
-  ];
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    setTimeout(() => {
-      setConsultations(mockConsultations);
-      setLoading(false);
-    }, 1000);
+    loadConsultations();
   }, []);
 
-  const filteredConsultations = consultations.filter(consultation => {
-    if (!consultation || !consultation.patient) return false;
-    
-    const patientName = consultation.patient.name || '';
-    const patientEmail = consultation.patient.email || '';
-    const patientPhone = consultation.patient.phone || '';
-    const complaint = consultation.chiefComplaint || '';
-    
-    const matchesSearch = 
-      patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patientEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patientPhone.includes(searchTerm) ||
-      complaint.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = selectedFilter === 'all' || 
-                         (selectedFilter === 'completed' && consultation.status === 'completed') ||
-                         (selectedFilter === 'scheduled' && consultation.status === 'scheduled') ||
-                         (selectedFilter === 'in-progress' && consultation.status === 'in-progress') ||
-                         (selectedFilter === 'high-priority' && consultation.priority === 'high') ||
-                         (selectedFilter === 'medium-priority' && consultation.priority === 'medium') ||
-                         (selectedFilter === 'low-priority' && consultation.priority === 'low');
-    
-    return matchesSearch && matchesFilter;
-  });
+  const loadConsultations = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Loading consultations...');
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'scheduled': return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      // Only fetch approved appointments for consultations
+      const params = { status: 'approved' };
+      const response = await doctorAppointmentService.getDoctorAppointments(params);
+      
+      console.log('📋 Consultations response:', response);
+
+      if (response.success !== false) {
+        setConsultations(response.appointments || []);
+        console.log('✅ Loaded consultations:', response.appointments?.length || 0);
+      } else {
+        console.error('API returned error:', response.message);
+        toast.error(response.message || 'Failed to load consultations');
+        setConsultations([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading consultations:', error);
+      toast.error('Failed to load consultations');
+      setConsultations([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+  // Date helper functions
+  const getDateOnly = (dateStr) => new Date(dateStr).toISOString().split('T')[0];
+  const isToday = (dateStr) => getDateOnly(dateStr) === today;
+  const isFuture = (dateStr) => getDateOnly(dateStr) > today;
+  const isPast = (dateStr) => getDateOnly(dateStr) < today;
+
+  // Filter consultations by date
+  const todayConsultations = consultations.filter(
+    c => isToday(c.appointmentDate)
+  );
+
+  const upcomingConsultations = consultations.filter(
+    c => isFuture(c.appointmentDate)
+  );
+
+  const completedConsultations = consultations.filter(
+    c => isPast(c.appointmentDate)
+  );
+
+  // Format date and time
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }),
+      time: date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })
+    };
+  };
+
+  // Handle start meeting
+  const handleStartMeeting = async (consultation) => {
+    try {
+      setActionLoading(true);
+      console.log('🎥 Starting meeting for consultation:', consultation.id);
+      
+      // Here you would integrate with your video call service
+      // For now, we'll just show a success message
+      toast.success('Meeting started successfully');
+      
+      // You could redirect to a video call component or open a new window
+      // window.open(`/video-call/${consultation.id}`, '_blank');
+      
+    } catch (error) {
+      console.error('❌ Error starting meeting:', error);
+      toast.error('Failed to start meeting');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleSelectConsultation = (consultationId) => {
-    setSelectedConsultations(prev => 
-      prev.includes(consultationId) 
-        ? prev.filter(id => id !== consultationId)
-        : [...prev, consultationId]
-    );
+  // Handle view details
+  const handleViewDetails = (consultation) => {
+    setSelectedConsultation(consultation);
+    setShowDetailsModal(true);
   };
 
-  const handleSelectAll = () => {
-    setSelectedConsultations(
-      selectedConsultations.length === filteredConsultations.length 
-        ? [] 
-        : filteredConsultations.map(c => c.id)
-    );
+  // Handle view elder details
+  const handleViewElderDetails = (consultation) => {
+    setSelectedElder(consultation.elder);
+    setShowElderModal(true);
   };
 
-  if (loading) {
+  // Render consultation card
+  const renderConsultationCard = (consultation, showStartMeeting = false) => {
+    const { date, time } = formatDateTime(consultation.appointmentDate);
+    const elder = consultation.elder || {};
+    const familyMember = consultation.familyMember || {};
+
     return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
-          <div className="flex items-center justify-center h-16 bg-blue-600">
-            <h2 className="text-white text-xl font-bold">ElderCare Pro</h2>
-          </div>
-          <nav className="mt-8">
-            <div className="px-4 space-y-2">
-              <a href="#" className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors">
-                <Home className="w-5 h-5 mr-3" />
-                Dashboard
-              </a>
-              <a href="#" className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors">
-                <Users className="w-5 h-5 mr-3" />
-                Patients
-              </a>
-              <a href="#" className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg">
-                <Stethoscope className="w-5 h-5 mr-3" />
-                Consultations
-              </a>
-              <a href="#" className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors">
-                <Calendar className="w-5 h-5 mr-3" />
-                Appointments
-              </a>
-              <a href="#" className="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors">
-                <FileText className="w-5 h-5 mr-3" />
-                Medical Records
-              </a>
+      <div
+        key={consultation.id}
+        className="bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition-all duration-200"
+      >
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex-1">
+            {/* Elder Information */}
+            <div className="flex items-center gap-3 mb-3">
+              {elder.photo ? (
+                <img 
+                  src={elder.photo} 
+                  alt={`${elder.firstName} ${elder.lastName}`}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                  <User className="w-6 h-6 text-gray-500" />
+                </div>
+              )}
+              <div>
+                <h3 className="font-semibold text-lg text-gray-900">
+                  {elder.firstName} {elder.lastName}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {elder.gender && `${elder.gender.charAt(0).toUpperCase()}${elder.gender.slice(1)}`}
+                  {elder.dateOfBirth && ` • ${new Date().getFullYear() - new Date(elder.dateOfBirth).getFullYear()} years old`}
+                </p>
+              </div>
             </div>
-          </nav>
+
+            {/* Consultation Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-sm">{date}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm">{time}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-sm capitalize">{consultation.type}</span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                {elder.phone && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Phone className="w-4 h-4" />
+                    <span className="text-sm">{elder.phone}</span>
+                  </div>
+                )}
+                {familyMember.firstName && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Users className="w-4 h-4" />
+                    <span className="text-sm">Family: {familyMember.firstName} {familyMember.lastName}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Activity className="w-4 h-4" />
+                  <span className="text-sm">Duration: {consultation.duration || 30} min</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Reason */}
+            <div className="space-y-2">
+              <p className="text-gray-700">
+                <span className="font-medium">Reason:</span> {consultation.reason}
+              </p>
+              {consultation.symptoms && (
+                <p className="text-gray-700">
+                  <span className="font-medium">Symptoms:</span> {consultation.symptoms}
+                </p>
+              )}
+            </div>
+
+            {/* Quick Medical Info */}
+            {(elder.bloodType || elder.allergies) && (
+              <div className="mt-3 flex gap-4 text-sm">
+                {elder.bloodType && (
+                  <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full">
+                    <Heart className="w-3 h-3 inline mr-1" />
+                    {elder.bloodType}
+                  </span>
+                )}
+                {elder.allergies && (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">
+                    ⚠️ Allergies
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col items-end gap-2 ml-4">
+            <span className="px-3 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-800 border-green-200">
+              APPROVED
+            </span>
+
+            <div className="flex flex-col gap-2">
+              {/* Start Meeting Button - Only for today's consultations */}
+              {showStartMeeting && (
+                <button
+                  onClick={() => handleStartMeeting(consultation)}
+                  disabled={actionLoading}
+                  className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-1"
+                >
+                  {actionLoading ? (
+                    <Loader className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Video className="w-3 h-3" />
+                  )}
+                  Start Meeting
+                </button>
+              )}
+
+              {/* View Details Button */}
+              <button
+                onClick={() => handleViewDetails(consultation)}
+                className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+              >
+                <Eye className="w-3 h-3" />
+                View Details
+              </button>
+
+              {/* Elder Details Button */}
+              <button
+                onClick={() => handleViewElderDetails(consultation)}
+                className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-1"
+              >
+                <User className="w-3 h-3" />
+                Elder Details
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <RoleLayout>
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Consultation History</h2>
+            <p className="text-gray-600 mt-1">Manage your patient consultations and meetings</p>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Activity className="w-4 h-4" />
+            Total Consultations: {consultations.length}
+          </div>
         </div>
 
-        <div className="flex-1 lg:ml-0">
-          <header className="bg-white shadow-sm border-b border-gray-200 lg:static lg:overflow-y-visible">
-            <div className="px-4 sm:px-6 lg:px-8">
-              <div className="relative flex justify-between h-16">
-                <div className="flex items-center">
-                  <button
-                    className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                  >
-                    <Menu className="w-6 h-6" />
-                  </button>
-                  <h1 className="ml-4 text-2xl font-semibold text-gray-900">Consultations</h1>
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="flex items-center gap-3">
+              <Loader className="w-8 h-8 animate-spin text-blue-500" />
+              <p className="text-gray-600">Loading consultations...</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Today's Consultations */}
+            <section className="mb-8">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                🏥 Today's Consultations ({todayConsultations.length})
+              </h3>
+              {todayConsultations.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <Video className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-500">No consultations scheduled for today.</p>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <button className="p-2 text-gray-400 hover:text-gray-500">
-                    <Bell className="w-6 h-6" />
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-gray-500">
-                    <Settings className="w-6 h-6" />
-                  </button>
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">Dr</span>
+              ) : (
+                <div className="space-y-4">
+                  {todayConsultations.map(consultation => 
+                    renderConsultationCard(consultation, true)
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* Upcoming Consultations */}
+            <section className="mb-8">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                📅 Upcoming Consultations ({upcomingConsultations.length})
+              </h3>
+              {upcomingConsultations.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-500">No upcoming consultations scheduled.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {upcomingConsultations.map(consultation => 
+                    renderConsultationCard(consultation, false)
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* Completed Consultations */}
+            <section>
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                ✅ Completed Consultations ({completedConsultations.length})
+              </h3>
+              {completedConsultations.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-500">No completed consultations found.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {completedConsultations.map(consultation => 
+                    renderConsultationCard(consultation, false)
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* No Consultations Message */}
+            {consultations.length === 0 && (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No consultations found</h3>
+                <p className="text-gray-500">
+                  You don't have any approved appointments for consultations yet.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Modal: View Consultation Details */}
+        {showDetailsModal && selectedConsultation && (
+          <Modal onClose={() => setShowDetailsModal(false)}>
+            <div className="max-w-3xl">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Consultation Details
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Patient Information */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">Patient Information</h3>
+                  <div className="flex items-center gap-3 mb-4">
+                    {selectedConsultation.elder?.photo ? (
+                      <img 
+                        src={selectedConsultation.elder.photo} 
+                        alt={`${selectedConsultation.elder.firstName} ${selectedConsultation.elder.lastName}`}
+                        className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                        <User className="w-8 h-8 text-gray-500" />
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-semibold text-lg">
+                        {selectedConsultation.elder?.firstName} {selectedConsultation.elder?.lastName}
+                      </h4>
+                      <p className="text-gray-600">
+                        {selectedConsultation.elder?.gender} • 
+                        {selectedConsultation.elder?.dateOfBirth && 
+                          ` ${new Date().getFullYear() - new Date(selectedConsultation.elder.dateOfBirth).getFullYear()} years old`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <p><strong>Phone:</strong> {selectedConsultation.elder?.phone || 'N/A'}</p>
+                    <p><strong>Emergency Contact:</strong> {selectedConsultation.elder?.emergencyContact || 'N/A'}</p>
+                    <p><strong>Blood Type:</strong> {selectedConsultation.elder?.bloodType || 'N/A'}</p>
+                    {selectedConsultation.familyMember?.firstName && (
+                      <p><strong>Family Contact:</strong> {selectedConsultation.familyMember.firstName} {selectedConsultation.familyMember.lastName}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Consultation Information */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">Consultation Information</h3>
+                  <div className="space-y-2">
+                    <p><strong>Date:</strong> {formatDateTime(selectedConsultation.appointmentDate).date}</p>
+                    <p><strong>Time:</strong> {formatDateTime(selectedConsultation.appointmentDate).time}</p>
+                    <p><strong>Duration:</strong> {selectedConsultation.duration || 30} minutes</p>
+                    <p><strong>Type:</strong> {selectedConsultation.type}</p>
+                    <p><strong>Priority:</strong> {selectedConsultation.priority}</p>
+                    <p><strong>Status:</strong> 
+                      <span className="ml-2 px-2 py-1 rounded text-xs bg-green-100 text-green-800">
+                        APPROVED
+                      </span>
+                    </p>
                   </div>
                 </div>
               </div>
-            </div>
-          </header>
 
-          <main className="flex-1 p-6">
-            <div className="flex items-center justify-center min-h-96">
-              <div className="text-center">
-                <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-4" />
-                <p className="text-gray-600">Loading consultations...</p>
+              {/* Medical Information */}
+              <div className="mt-6 space-y-4">
+                <h3 className="font-semibold text-lg border-b pb-2">Medical Information</h3>
+                <div className="space-y-3">
+                  <div>
+                    <strong>Reason for Consultation:</strong>
+                    <p className="text-gray-700 mt-1">{selectedConsultation.reason}</p>
+                  </div>
+                  {selectedConsultation.symptoms && (
+                    <div>
+                      <strong>Symptoms:</strong>
+                      <p className="text-gray-700 mt-1">{selectedConsultation.symptoms}</p>
+                    </div>
+                  )}
+                  {selectedConsultation.notes && (
+                    <div>
+                      <strong>Patient Notes:</strong>
+                      <p className="text-gray-700 mt-1">{selectedConsultation.notes}</p>
+                    </div>
+                  )}
+                  {selectedConsultation.doctorNotes && (
+                    <div>
+                      <strong>Doctor Notes:</strong>
+                      <p className="text-gray-700 mt-1">{selectedConsultation.doctorNotes}</p>
+                    </div>
+                  )}
+                  {selectedConsultation.elder?.allergies && (
+                    <div>
+                      <strong>Allergies:</strong>
+                      <p className="text-red-600 mt-1 font-medium">{selectedConsultation.elder.allergies}</p>
+                    </div>
+                  )}
+                  {selectedConsultation.elder?.chronicConditions && (
+                    <div>
+                      <strong>Chronic Conditions:</strong>
+                      <p className="text-gray-700 mt-1">{selectedConsultation.elder.chronicConditions}</p>
+                    </div>
+                  )}
+                  {selectedConsultation.elder?.currentMedications && (
+                    <div>
+                      <strong>Current Medications:</strong>
+                      <p className="text-gray-700 mt-1">{selectedConsultation.elder.currentMedications}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </main>
-        </div>
-      </div>
-    );
-  }
 
-  return (
-    <RoleLayout title="Consultation Management">
-      <div className="space-y-6">
-        {/* Header Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-            <div className="mb-4 lg:mb-0">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Consultation Management</h1>
-              <p className="text-gray-600">View and manage patient consultations and video calls</p>
+              {/* Action Buttons */}
+              {isToday(selectedConsultation.appointmentDate) && (
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => handleStartMeeting(selectedConsultation)}
+                    disabled={actionLoading}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                  >
+                    {actionLoading ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin" />
+                        Starting...
+                      </>
+                    ) : (
+                      <>
+                        <Video className="w-4 h-4" />
+                        Start Meeting
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="flex flex-wrap gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Video className="w-4 h-4" />
-                Start Video Call
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                <Plus className="w-4 h-4" />
-                New Consultation
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <Download className="w-4 h-4" />
-                Export
-              </button>
-            </div>
-          </div>
-        </div>
+          </Modal>
+        )}
 
-        {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Total Consultations */}
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Stethoscope className="w-6 h-6 text-blue-600" />
+        {/* Modal: View Elder Details */}
+        {showElderModal && selectedElder && (
+          <Modal onClose={() => setShowElderModal(false)}>
+            <div className="max-w-2xl">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Elder Details
+              </h2>
+              
+              {/* Elder Profile */}
+              <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                {selectedElder.photo ? (
+                  <img 
+                    src={selectedElder.photo} 
+                    alt={`${selectedElder.firstName} ${selectedElder.lastName}`}
+                    className="w-20 h-20 rounded-full object-cover border-3 border-gray-300"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center">
+                    <User className="w-10 h-10 text-gray-500" />
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {selectedElder.firstName} {selectedElder.lastName}
+                  </h3>
+                  <p className="text-gray-600">
+                    {selectedElder.gender && `${selectedElder.gender.charAt(0).toUpperCase()}${selectedElder.gender.slice(1)}`}
+                    {selectedElder.dateOfBirth && 
+                      ` • ${new Date().getFullYear() - new Date(selectedElder.dateOfBirth).getFullYear()} years old`
+                    }
+                  </p>
+                  {selectedElder.dateOfBirth && (
+                    <p className="text-sm text-gray-500">
+                      Born: {new Date(selectedElder.dateOfBirth).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Consultations</p>
-                <p className="text-2xl font-bold text-gray-900">{consultations.length}</p>
-              </div>
-            </div>
-          </div>
 
-          {/* Completed */}
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {consultations.filter(c => c.status === 'completed').length}
-                </p>
-              </div>
-            </div>
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Contact Information */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg border-b pb-2">Contact Information</h4>
+                  <div className="space-y-3">
+                    {selectedElder.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        <span>{selectedElder.phone}</span>
+                      </div>
+                    )}
+                    {selectedElder.emergencyContact && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-red-500" />
+                        <span>Emergency: {selectedElder.emergencyContact}</span>
+                      </div>
+                    )}
+                    {selectedElder.address && (
+                      <div className="flex items-start gap-2">
+                        <MapPin className="w-4 h-4 text-gray-500 mt-1" />
+                        <span>{selectedElder.address}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-          {/* Scheduled */}
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-yellow-600" />
+                {/* Medical Information */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg border-b pb-2">Medical Information</h4>
+                  <div className="space-y-3">
+                    {selectedElder.bloodType && (
+                      <div className="flex items-center gap-2">
+                        <Heart className="w-4 h-4 text-red-500" />
+                        <span>Blood Type: <strong>{selectedElder.bloodType}</strong></span>
+                      </div>
+                    )}
+                    {selectedElder.allergies && (
+                      <div>
+                        <p className="font-medium text-red-600 mb-1">⚠️ Allergies:</p>
+                        <p className="text-red-700 bg-red-50 p-2 rounded">{selectedElder.allergies}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Scheduled</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {consultations.filter(c => c.status === 'scheduled').length}
-                </p>
-              </div>
-            </div>
-          </div>
 
-          {/* High Priority */}
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">High Priority</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {consultations.filter(c => c.priority === 'high').length}
-                </p>
-              </div>
+              {/* Detailed Medical Information */}
+              {(selectedElder.chronicConditions || selectedElder.currentMedications) && (
+                <div className="mt-6 space-y-4">
+                  <h4 className="font-semibold text-lg border-b pb-2">Detailed Medical History</h4>
+                  {selectedElder.chronicConditions && (
+                    <div>
+                      <p className="font-medium text-gray-800 mb-2">Chronic Conditions:</p>
+                      <p className="text-gray-700 bg-gray-50 p-3 rounded">{selectedElder.chronicConditions}</p>
+                    </div>
+                  )}
+                  {selectedElder.currentMedications && (
+                    <div>
+                      <p className="font-medium text-gray-800 mb-2">Current Medications:</p>
+                      <p className="text-gray-700 bg-gray-50 p-3 rounded">{selectedElder.currentMedications}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search consultations..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-          <div className="flex flex-wrap gap-3">
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={selectedFilter}
-                onChange={(e) => setSelectedFilter(e.target.value)}
-              >
-                <option value="all">All Consultations</option>
-                <option value="completed">Completed</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="in-progress">In Progress</option>
-                <option value="high-priority">High Priority</option>
-                <option value="medium-priority">Medium Priority</option>
-                <option value="low-priority">Low Priority</option>
-              </select>
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="date">Sort by Date</option>
-                <option value="patient">Sort by Patient</option>
-                <option value="priority">Sort by Priority</option>
-              </select>
-              <button
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              >
-                {sortOrder === 'asc' ? '↑' : '↓'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left">
-                    <input
-                      type="checkbox"
-                      checked={selectedConsultations.length === filteredConsultations.length}
-                      onChange={handleSelectAll}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Patient
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Consultation Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date & Time
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Medical Details
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredConsultations.map((consultation) => (
-                  <tr key={consultation.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedConsultations.includes(consultation.id)}
-                        onChange={() => handleSelectConsultation(consultation.id)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium text-gray-700">
-                            {consultation.patient.name.charAt(0)}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{consultation.patient.name}</div>
-                          <div className="text-sm text-gray-500">{consultation.patient.age} years, {consultation.patient.gender}</div>
-                          <div className="text-sm text-gray-500">Blood Type: {consultation.patient.bloodType}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 flex items-center">
-                        <Phone className="w-4 h-4 mr-1" />
-                        {consultation.patient.phone}
-                      </div>
-                      <div className="text-sm text-gray-500 flex items-center">
-                        <Mail className="w-4 h-4 mr-1" />
-                        {consultation.patient.email}
-                      </div>
-                      <div className="text-sm text-gray-500 flex items-center">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {consultation.patient.address.split(',')[0]}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(consultation.status)}`}>
-                          {consultation.status.charAt(0).toUpperCase() + consultation.status.slice(1)}
-                        </span>
-                        <span className={`px-2 py-1 text-xs rounded-full ${getPriorityColor(consultation.priority)}`}>
-                          {consultation.priority.charAt(0).toUpperCase() + consultation.priority.slice(1)} Priority
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        <div className="flex items-center">
-                          <Video className="w-3 h-3 mr-1" />
-                          {consultation.type}
-                        </div>
-                        {consultation.duration && <div>Duration: {consultation.duration}</div>}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {new Date(consultation.date).toLocaleDateString()}
-                      </div>
-                      <div className="text-sm text-gray-500">{consultation.time}</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Next of Kin: {consultation.nextOfKin}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900 mb-1">
-                        {consultation.chiefComplaint}
-                      </div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        Diagnosis: {consultation.diagnosis}
-                      </div>
-                      {consultation.vitals && (
-                        <div className="text-xs text-gray-500 mb-2">
-                          <div>BP: {consultation.vitals.bloodPressure}</div>
-                          <div>HR: {consultation.vitals.heartRate} bpm</div>
-                          <div>Temp: {consultation.vitals.temperature}</div>
-                        </div>
-                      )}
-                      {consultation.prescription && consultation.prescription.length > 0 && (
-                        <div className="text-xs text-gray-500">
-                          <div className="flex items-center mb-1">
-                            <Pill className="w-3 h-3 mr-1" />
-                             Medications ({consultation.prescription.length}):
-                          </div>
-                          {consultation.prescription.slice(0, 2).map((med, index) => (
-                            <div key={index} className="truncate">{med}</div>
-                          ))}
-                        </div>
-                      )}
-                      {consultation.followUp && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Follow-up: {consultation.followUp}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        {consultation.status === 'scheduled' && (
-                          <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                            <Video className="w-4 h-4" />
-                          </button>
-                        )}
-                        {consultation.status === 'in-progress' && (
-                          <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                            <PlayCircle className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-                          <FileText className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-700">
-              Showing {filteredConsultations.length} of {consultations.length} consultations
-            </p>
-            <div className="flex items-center space-x-2">
-              <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                Previous
-              </button>
-              <button className="px-3 py-1 bg-blue-600 text-white rounded-lg">
-                1
-              </button>
-              <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                Next
-              </button>
-            </div>
-          </div>
-        </div>
+          </Modal>
+        )}
       </div>
     </RoleLayout>
   );
-
 };
 
-export default ConsultationsPage;
+export default ConsultationHistory;

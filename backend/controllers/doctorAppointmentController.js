@@ -1,4 +1,5 @@
-// backend/controllers/doctorAppointmentController.js (Doctor Side)
+// backend/controllers/doctorAppointmentController.js
+const { sequelize } = require('../models');
 const { 
   Appointment, 
   Elder, 
@@ -7,17 +8,18 @@ const {
   ConsultationRecord,
   Prescription,
   AppointmentNotification,
-  ElderMedicalHistory 
+  ElderMedicalHistory,
+  DoctorSchedule
 } = require('../models');
 const { Op } = require('sequelize');
-// const ZoomService = require('../services/zoomService');
-// const NotificationService = require('../services/notificationService');
 
 class DoctorAppointmentController {
   
   // Get doctor's appointments
   static async getDoctorAppointments(req, res) {
     try {
+      console.log('🔄 Getting doctor appointments for user:', req.user.id);
+      
       const { status, date, page = 1, limit = 10 } = req.query;
       const offset = (page - 1) * limit;
 
@@ -27,14 +29,24 @@ class DoctorAppointmentController {
       });
 
       if (!doctor) {
+        console.log('❌ Doctor profile not found for user:', req.user.id);
         return res.status(404).json({ 
-          message: 'Doctor profile not found' 
+          success: false,
+          message: 'Doctor profile not found',
+          appointments: [],
+          pagination: {
+            total: 0,
+            page: parseInt(page),
+            pages: 0
+          }
         });
       }
 
+      console.log('✅ Doctor found:', doctor.id);
+
       const whereClause = { doctorId: doctor.id };
       
-      if (status) {
+      if (status && status !== 'all') {
         whereClause.status = status;
       }
 
@@ -47,6 +59,8 @@ class DoctorAppointmentController {
           [Op.between]: [startDate, endDate]
         };
       }
+
+      console.log('🔍 Searching appointments with:', whereClause);
 
       const appointments = await Appointment.findAndCountAll({
         where: whereClause,
@@ -71,7 +85,10 @@ class DoctorAppointmentController {
         offset: offset
       });
 
+      console.log('📋 Found appointments:', appointments.count);
+
       res.json({
+        success: true,
         message: 'Doctor appointments retrieved successfully',
         appointments: appointments.rows,
         pagination: {
@@ -81,15 +98,24 @@ class DoctorAppointmentController {
         }
       });
     } catch (error) {
-      console.error('Get doctor appointments error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Get doctor appointments error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Internal server error',
+        appointments: [],
+        pagination: {
+          total: 0,
+          page: parseInt(req.query.page) || 1,
+          pages: 0
+        }
+      });
     }
   }
 
-  // Approve or reject appointment
+  // Review appointment (approve/reject)
   static async reviewAppointment(req, res) {
     try {
-      const { id } = req.params; // ✅ CHANGED: from appointmentId to id
+      const { id } = req.params;
       const { action, doctorNotes, rejectionReason } = req.body;
 
       console.log('🔄 Reviewing appointment:', { id, action, doctorNotes });
@@ -113,74 +139,63 @@ class DoctorAppointmentController {
         });
       }
 
-      console.log('🔍 Looking for appointment:', { appointmentId: id, doctorId: doctor.id });
-
+      // Find the appointment
       const appointment = await Appointment.findOne({
-        where: { 
-          id: id, // ✅ USING: id instead of appointmentId
-          doctorId: doctor.id,
-          status: 'pending'
+        where: {
+          id: id,
+          doctorId: doctor.id
         },
         include: [
           {
             model: Elder,
-            as: 'elder'
+            as: 'elder',
+            attributes: ['id', 'firstName', 'lastName', 'photo', 'dateOfBirth', 'gender']
           },
           {
             model: User,
-            as: 'familyMember'
+            as: 'familyMember',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
           }
         ]
       });
 
       if (!appointment) {
-        console.log('❌ Appointment not found or cannot be reviewed');
         return res.status(404).json({ 
           success: false,
-          message: 'Appointment not found or cannot be reviewed' 
+          message: 'Appointment not found or access denied' 
         });
       }
 
-      console.log('✅ Found appointment:', appointment.id);
-
-      let updateData = {
-        doctorNotes,
-        status: action === 'approve' ? 'approved' : 'rejected'
-      };
-
-      if (action === 'reject') {
-        updateData.rejectionReason = rejectionReason;
+      // Update appointment
+      const newStatus = action === 'approve' ? 'approved' : 'rejected';
+      appointment.status = newStatus;
+      appointment.doctorNotes = doctorNotes;
+      
+      if (action === 'reject' && rejectionReason) {
+        appointment.rejectionReason = rejectionReason;
       }
 
-      // If approving, you could generate Zoom meeting here
-      if (action === 'approve') {
-        console.log('✅ Appointment approved');
-        // updateData.zoomMeetingId = 'mock_zoom_id';
-        // updateData.zoomJoinUrl = 'https://zoom.us/j/mock_meeting';
-      }
+      await appointment.save();
 
-      await appointment.update(updateData);
+      // Create notification
+      try {
+        await AppointmentNotification.create({
+          appointmentId: appointment.id,
+          recipientId: appointment.familyMemberId,
+          type: action,
+          title: `Appointment ${action === 'approve' ? 'Approved' : 'Rejected'}`,
+          message: `Your appointment for ${appointment.elder.firstName} ${appointment.elder.lastName} has been ${action}d.`
+        });
+      } catch (notificationError) {
+        console.log('Warning: Could not create notification:', notificationError.message);
+      }
 
       console.log('✅ Appointment updated successfully');
-
-      // Mock notification creation
-      console.log('📧 Notification would be sent to family member:', appointment.familyMember?.email);
 
       res.json({
         success: true,
         message: `Appointment ${action}d successfully`,
-        appointment: await appointment.reload({
-          include: [
-            {
-              model: Elder,
-              as: 'elder'
-            },
-            {
-              model: User,
-              as: 'familyMember'
-            }
-          ]
-        })
+        appointment: appointment
       });
     } catch (error) {
       console.error('❌ Review appointment error:', error);
@@ -192,10 +207,20 @@ class DoctorAppointmentController {
     }
   }
 
-  // Get elder's complete medical summary for doctor
-  static async getElderMedicalSummary(req, res) {
+  // Reschedule appointment
+  static async rescheduleAppointment(req, res) {
     try {
-      const { elderId } = req.params;
+      const { id } = req.params;
+      const { newDateTime, reason } = req.body;
+
+      console.log('🔄 Rescheduling appointment:', { id, newDateTime, reason });
+
+      if (!newDateTime) {
+        return res.status(400).json({
+          success: false,
+          message: 'New date and time is required'
+        });
+      }
 
       // Get doctor profile
       const doctor = await Doctor.findOne({
@@ -204,61 +229,186 @@ class DoctorAppointmentController {
 
       if (!doctor) {
         return res.status(404).json({ 
+          success: false,
           message: 'Doctor profile not found' 
         });
       }
 
-      const elder = await Elder.findByPk(elderId, {
-        include: [
-          {
-            model: ConsultationRecord,
-            as: 'consultationRecords',
-            include: [
-              {
-                model: Doctor,
-                as: 'doctor',
-                include: [
-                  {
-                    model: User,
-                    as: 'user',
-                    attributes: ['firstName', 'lastName']
-                  }
-                ]
-              },
-              {
-                model: Prescription,
-                as: 'prescriptions'
-              }
-            ],
-            order: [['sessionDate', 'DESC']],
-            limit: 10
-          },
-          {
-            model: ElderMedicalHistory,
-            as: 'medicalHistory',
-            order: [['date', 'DESC']],
-            limit: 20
-          }
+      // Find the appointment
+      const appointment = await Appointment.findOne({
+        where: {
+          id: id,
+          doctorId: doctor.id
+        }
+      });
+
+      if (!appointment) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Appointment not found or access denied' 
+        });
+      }
+
+      // Convert newDateTime string to Date object
+      const newDateObj = new Date(newDateTime);
+
+      // Update appointment date and status
+      appointment.appointmentDate = newDateObj;
+      appointment.status = 'rescheduled';
+
+      if (reason) {
+        appointment.rescheduleReason = reason;
+      }
+
+      await appointment.save();
+
+      // Create notification
+      try {
+        await AppointmentNotification.create({
+          appointmentId: appointment.id,
+          recipientId: appointment.familyMemberId,
+          type: 'reschedule',
+          title: 'Appointment Rescheduled',
+          message: `Your appointment has been rescheduled to ${newDateObj.toLocaleString()}`
+        });
+      } catch (notificationError) {
+        console.log('Warning: Could not create notification:', notificationError.message);
+      }
+
+      res.json({
+        success: true,
+        message: 'Appointment rescheduled successfully',
+        appointment
+      });
+    } catch (error) {
+      console.error('❌ Reschedule appointment error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Internal server error' 
+      });
+    }
+  }
+
+  // Complete appointment
+  static async completeAppointment(req, res) {
+    try {
+      const { id } = req.params;
+      const { consultation, prescription, followUpRequired, followUpDate } = req.body;
+
+      console.log('🔄 Completing appointment:', { id, consultation, prescription });
+
+      // Get doctor profile
+      const doctor = await Doctor.findOne({
+        where: { userId: req.user.id }
+      });
+
+      if (!doctor) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Doctor profile not found' 
+        });
+      }
+
+      // Find the appointment
+      const appointment = await Appointment.findOne({
+        where: {
+          id: id,
+          doctorId: doctor.id
+        }
+      });
+
+      if (!appointment) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Appointment not found or access denied' 
+        });
+      }
+
+      // Update appointment
+      appointment.status = 'completed';
+      appointment.consultation = consultation;
+      appointment.prescription = prescription;
+      appointment.followUpRequired = followUpRequired || false;
+      appointment.followUpDate = followUpDate || null;
+      appointment.completedAt = new Date();
+
+      await appointment.save();
+
+      // Create consultation record
+      if (consultation) {
+        try {
+          await ConsultationRecord.create({
+            appointmentId: appointment.id,
+            doctorId: doctor.id,
+            elderId: appointment.elderId,
+            consultation: consultation,
+            prescription: prescription,
+            followUpRequired: followUpRequired || false,
+            followUpDate: followUpDate || null
+          });
+        } catch (recordError) {
+          console.log('Warning: Could not create consultation record:', recordError.message);
+        }
+      }
+
+      console.log('✅ Appointment completed successfully');
+
+      res.json({
+        success: true,
+        message: 'Appointment completed successfully',
+        appointment
+      });
+    } catch (error) {
+      console.error('❌ Complete appointment error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
+  }
+
+  // Get elder's medical summary
+  static async getElderMedicalSummary(req, res) {
+    try {
+      const { elderId } = req.params;
+
+      console.log('🔄 Getting medical summary for elder:', elderId);
+
+      // Get doctor profile
+      const doctor = await Doctor.findOne({
+        where: { userId: req.user.id }
+      });
+
+      if (!doctor) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Doctor profile not found' 
+        });
+      }
+
+      // Find elder
+      const elder = await Elder.findOne({
+        where: { id: elderId },
+        attributes: [
+          'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
+          'bloodType', 'medicalHistory', 'currentMedications', 
+          'allergies', 'chronicConditions', 'phone', 'emergencyContact'
         ]
       });
 
       if (!elder) {
         return res.status(404).json({ 
+          success: false,
           message: 'Elder not found' 
         });
       }
 
-      // Get current medications and allergies
-      const currentPrescriptions = await Prescription.findAll({
+      // Get recent appointments and medical history
+      const recentAppointments = await Appointment.findAll({
         where: { 
           elderId,
-          status: 'active',
-          validUntil: {
-            [Op.or]: [
-              { [Op.gte]: new Date() },
-              { [Op.is]: null }
-            ]
-          }
+          status: 'completed'
         },
         include: [
           {
@@ -273,70 +423,31 @@ class DoctorAppointmentController {
             ]
           }
         ],
-        order: [['createdAt', 'DESC']]
+        order: [['appointmentDate', 'DESC']],
+        limit: 5
       });
 
-      // Calculate age
-      const age = Math.floor((new Date() - new Date(elder.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000));
+      console.log('✅ Medical summary retrieved successfully');
 
       res.json({
+        success: true,
         message: 'Elder medical summary retrieved successfully',
-        elderSummary: {
-          personalInfo: {
-            id: elder.id,
-            firstName: elder.firstName,
-            lastName: elder.lastName,
-            dateOfBirth: elder.dateOfBirth,
-            age,
-            gender: elder.gender,
-            bloodType: elder.bloodType,
-            photo: elder.photo,
-            phone: elder.phone,
-            emergencyContact: elder.emergencyContact,
-            address: elder.address
-          },
-          medicalInfo: {
-            allergies: elder.allergies,
-            chronicConditions: elder.chronicConditions,
-            medicalHistory: elder.medicalHistory,
-            currentMedications: elder.currentMedications,
-            doctorName: elder.doctorName,
-            doctorPhone: elder.doctorPhone,
-            insuranceProvider: elder.insuranceProvider,
-            insuranceNumber: elder.insuranceNumber
-          },
-          recentConsultations: elder.consultationRecords,
-          currentPrescriptions,
-          medicalHistoryRecords: elder.medicalHistory
-        }
+        elder,
+        recentAppointments
       });
     } catch (error) {
-      console.error('Get elder medical summary error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Get elder medical summary error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Internal server error' 
+      });
     }
   }
 
-  // Complete appointment and create consultation record
-  static async completeAppointment(req, res) {
+  // Get dashboard stats
+  static async getDashboardStats(req, res) {
     try {
-      const { appointmentId } = req.params;
-      const {
-        diagnosis,
-        treatment,
-        recommendations,
-        vitalSigns,
-        symptoms,
-        sessionSummary,
-        followUpRequired = false,
-        followUpDate,
-        actualDuration
-      } = req.body;
-
-      if (!sessionSummary) {
-        return res.status(400).json({ 
-          message: 'Session summary is required' 
-        });
-      }
+      console.log('🔄 Getting dashboard stats for user:', req.user.id);
 
       // Get doctor profile
       const doctor = await Doctor.findOne({
@@ -345,350 +456,7 @@ class DoctorAppointmentController {
 
       if (!doctor) {
         return res.status(404).json({ 
-          message: 'Doctor profile not found' 
-        });
-      }
-
-      const appointment = await Appointment.findOne({
-        where: { 
-          id: appointmentId,
-          doctorId: doctor.id,
-          status: 'approved'
-        },
-        include: [
-          {
-            model: Elder,
-            as: 'elder'
-          },
-          {
-            model: User,
-            as: 'familyMember'
-          }
-        ]
-      });
-
-      if (!appointment) {
-        return res.status(404).json({ 
-          message: 'Appointment not found or cannot be completed' 
-        });
-      }
-
-      // Create consultation record
-      const consultationRecord = await ConsultationRecord.create({
-        appointmentId: appointment.id,
-        doctorId: doctor.id,
-        elderId: appointment.elderId,
-        sessionDate: new Date(),
-        duration: actualDuration || appointment.duration,
-        diagnosis,
-        treatment,
-        recommendations,
-        vitalSigns,
-        symptoms,
-        sessionSummary,
-        followUpRequired,
-        followUpDate,
-        status: 'completed'
-      });
-
-      // Update appointment status
-      await appointment.update({
-        status: 'completed'
-      });
-
-      // Create medical history record
-      await ElderMedicalHistory.create({
-        elderId: appointment.elderId,
-        recordType: 'consultation',
-        date: new Date(),
-        description: `Consultation: ${diagnosis || 'General consultation'}`,
-        doctorName: `Dr. ${req.user.firstName} ${req.user.lastName}`,
-        createdBy: req.user.id
-      });
-
-      // Send completion notification to family member
-      await NotificationService.createAppointmentNotification({
-        appointmentId: appointment.id,
-        recipientId: appointment.familyMemberId,
-        type: 'completion',
-        title: 'Consultation Completed',
-        message: `Consultation for ${appointment.elder.firstName} ${appointment.elder.lastName} has been completed. Session summary and recommendations are now available.`
-      });
-
-      res.json({
-        message: 'Appointment completed successfully',
-        consultationRecord,
-        appointment
-      });
-    } catch (error) {
-      console.error('Complete appointment error:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  }
-
-  // Create prescription
-  static async createPrescription(req, res) {
-    try {
-      const { consultationId } = req.params;
-      const {
-        medications,
-        instructions,
-        validUntil
-      } = req.body;
-
-      if (!medications || !Array.isArray(medications) || medications.length === 0) {
-        return res.status(400).json({ 
-          message: 'Medications array is required' 
-        });
-      }
-
-      // Get doctor profile
-      const doctor = await Doctor.findOne({
-        where: { userId: req.user.id }
-      });
-
-      if (!doctor) {
-        return res.status(404).json({ 
-          message: 'Doctor profile not found' 
-        });
-      }
-
-      // Verify consultation belongs to doctor
-      const consultation = await ConsultationRecord.findOne({
-        where: { 
-          id: consultationId,
-          doctorId: doctor.id
-        },
-        include: [
-          {
-            model: Elder,
-            as: 'elder'
-          },
-          {
-            model: Appointment,
-            as: 'appointment',
-            include: [
-              {
-                model: User,
-                as: 'familyMember'
-              }
-            ]
-          }
-        ]
-      });
-
-      if (!consultation) {
-        return res.status(404).json({ 
-          message: 'Consultation not found or access denied' 
-        });
-      }
-
-      // Create prescription
-      const prescription = await Prescription.create({
-        consultationId: consultation.id,
-        doctorId: doctor.id,
-        elderId: consultation.elderId,
-        medications,
-        instructions,
-        validUntil: validUntil ? new Date(validUntil) : null,
-        status: 'active'
-      });
-
-      // Update consultation record
-      await consultation.update({
-        prescriptionAttached: true
-      });
-
-      // Create medical history record
-      await ElderMedicalHistory.create({
-        elderId: consultation.elderId,
-        recordType: 'prescription',
-        date: new Date(),
-        description: `Prescription: ${medications.map(med => med.name).join(', ')}`,
-        doctorName: `Dr. ${req.user.firstName} ${req.user.lastName}`,
-        createdBy: req.user.id
-      });
-
-      // Send notification to family member
-      await NotificationService.createAppointmentNotification({
-        appointmentId: consultation.appointment.id,
-        recipientId: consultation.appointment.familyMemberId,
-        type: 'prescription',
-        title: 'Prescription Available',
-        message: `New prescription for ${consultation.elder.firstName} ${consultation.elder.lastName} is now available`
-      });
-
-      res.status(201).json({
-        message: 'Prescription created successfully',
-        prescription
-      });
-    } catch (error) {
-      console.error('Create prescription error:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  }
-
-  // Get doctor's consultation records
-  static async getConsultationRecords(req, res) {
-    try {
-      const { page = 1, limit = 10, elderId } = req.query;
-      const offset = (page - 1) * limit;
-
-      // Get doctor profile
-      const doctor = await Doctor.findOne({
-        where: { userId: req.user.id }
-      });
-
-      if (!doctor) {
-        return res.status(404).json({ 
-          message: 'Doctor profile not found' 
-        });
-      }
-
-      const whereClause = { doctorId: doctor.id };
-      if (elderId) {
-        whereClause.elderId = elderId;
-      }
-
-      const consultations = await ConsultationRecord.findAndCountAll({
-        where: whereClause,
-        include: [
-          {
-            model: Elder,
-            as: 'elder',
-            attributes: ['id', 'firstName', 'lastName', 'photo', 'dateOfBirth']
-          },
-          {
-            model: Appointment,
-            as: 'appointment',
-            attributes: ['id', 'reason', 'type', 'priority']
-          },
-          {
-            model: Prescription,
-            as: 'prescriptions'
-          }
-        ],
-        order: [['sessionDate', 'DESC']],
-        limit: parseInt(limit),
-        offset: offset
-      });
-
-      res.json({
-        message: 'Consultation records retrieved successfully',
-        consultations: consultations.rows,
-        pagination: {
-          total: consultations.count,
-          page: parseInt(page),
-          pages: Math.ceil(consultations.count / limit)
-        }
-      });
-    } catch (error) {
-      console.error('Get consultation records error:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  }
-
-  // Update doctor's schedule
-  static async updateSchedule(req, res) {
-    try {
-      const { schedules } = req.body;
-
-      if (!schedules || !Array.isArray(schedules)) {
-        return res.status(400).json({ 
-          message: 'Schedules array is required' 
-        });
-      }
-
-      // Get doctor profile
-      const doctor = await Doctor.findOne({
-        where: { userId: req.user.id }
-      });
-
-      if (!doctor) {
-        return res.status(404).json({ 
-          message: 'Doctor profile not found' 
-        });
-      }
-
-      // Delete existing schedules
-      await DoctorSchedule.destroy({
-        where: { doctorId: doctor.id }
-      });
-
-      // Create new schedules
-      const newSchedules = schedules.map(schedule => ({
-        ...schedule,
-        doctorId: doctor.id
-      }));
-
-      await DoctorSchedule.bulkCreate(newSchedules);
-
-      res.json({
-        message: 'Schedule updated successfully'
-      });
-    } catch (error) {
-      console.error('Update schedule error:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  }
-
-  // Add schedule exception (holiday, break, etc.)
-  static async addScheduleException(req, res) {
-    try {
-      const {
-        date,
-        startTime,
-        endTime,
-        isUnavailable = true,
-        reason
-      } = req.body;
-
-      if (!date) {
-        return res.status(400).json({ 
-          message: 'Date is required' 
-        });
-      }
-
-      // Get doctor profile
-      const doctor = await Doctor.findOne({
-        where: { userId: req.user.id }
-      });
-
-      if (!doctor) {
-        return res.status(404).json({ 
-          message: 'Doctor profile not found' 
-        });
-      }
-
-      const exception = await ScheduleException.create({
-        doctorId: doctor.id,
-        date: new Date(date),
-        startTime,
-        endTime,
-        isUnavailable,
-        reason
-      });
-
-      res.status(201).json({
-        message: 'Schedule exception added successfully',
-        exception
-      });
-    } catch (error) {
-      console.error('Add schedule exception error:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  }
-
-  // Get doctor's dashboard stats
-  static async getDoctorDashboardStats(req, res) {
-    try {
-      // Get doctor profile
-      const doctor = await Doctor.findOne({
-        where: { userId: req.user.id }
-      });
-
-      if (!doctor) {
-        return res.status(404).json({ 
+          success: false,
           message: 'Doctor profile not found' 
         });
       }
@@ -696,62 +464,146 @@ class DoctorAppointmentController {
       const today = new Date();
       const startOfDay = new Date(today.setHours(0, 0, 0, 0));
       const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-
-      // Today's appointments
-      const todayAppointments = await Appointment.count({
-        where: {
-          doctorId: doctor.id,
-          appointmentDate: {
-            [Op.between]: [startOfDay, endOfDay]
-          },
-          status: {
-            [Op.in]: ['approved', 'completed']
-          }
-        }
-      });
-
-      // Pending appointments
-      const pendingAppointments = await Appointment.count({
-        where: {
-          doctorId: doctor.id,
-          status: 'pending'
-        }
-      });
-
-      // Total patients (unique elders)
-      const totalPatients = await Appointment.count({
-        where: {
-          doctorId: doctor.id,
-          status: 'completed'
-        },
-        distinct: true,
-        col: 'elderId'
-      });
-
-      // Completed consultations this month
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const monthlyConsultations = await ConsultationRecord.count({
-        where: {
-          doctorId: doctor.id,
-          sessionDate: {
-            [Op.gte]: startOfMonth
-          },
-          status: 'completed'
-        }
-      });
+
+      // Get actual statistics from database
+      const [
+        todayAppointments,
+        pendingAppointments,
+        totalPatients,
+        monthlyConsultations,
+        completedToday
+      ] = await Promise.all([
+        Appointment.count({
+          where: {
+            doctorId: doctor.id,
+            appointmentDate: { [Op.between]: [startOfDay, endOfDay] }
+          }
+        }),
+        Appointment.count({
+          where: {
+            doctorId: doctor.id,
+            status: 'pending'
+          }
+        }),
+        Appointment.count({
+          where: { doctorId: doctor.id },
+          distinct: true,
+          col: 'elderId'
+        }),
+        Appointment.count({
+          where: {
+            doctorId: doctor.id,
+            status: 'completed',
+            appointmentDate: { [Op.gte]: startOfMonth }
+          }
+        }),
+        Appointment.count({
+          where: {
+            doctorId: doctor.id,
+            status: 'completed',
+            appointmentDate: { [Op.between]: [startOfDay, endOfDay] }
+          }
+        })
+      ]);
+
+      const stats = {
+        todayAppointments,
+        pendingAppointments,
+        totalPatients,
+        monthlyConsultations,
+        completedToday,
+        emergencyAlerts: 0, // This would need a separate table
+        avgRating: 4.8 // This would need a ratings table
+      };
+
+      console.log('📊 Dashboard stats:', stats);
 
       res.json({
+        success: true,
         message: 'Dashboard stats retrieved successfully',
-        stats: {
-          todayAppointments,
-          pendingAppointments,
-          totalPatients,
-          monthlyConsultations
-        }
+        stats
       });
     } catch (error) {
-      console.error('Get doctor dashboard stats error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Get doctor dashboard stats error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Internal server error' 
+      });
+    }
+  }
+
+  // Update doctor schedule
+  static async updateSchedule(req, res) {
+  try {
+    const { schedules } = req.body;
+
+    console.log('🔄 Updating doctor schedule:', schedules);
+
+    if (!schedules || !Array.isArray(schedules)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Schedules array is required' 
+      });
+    }
+
+    // Get doctor profile
+    const doctor = await Doctor.findOne({
+      where: { userId: req.user.id }
+    });
+
+    if (!doctor) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Doctor profile not found' 
+      });
+    }
+
+    // Begin transaction
+    const transaction = await sequelize.transaction();
+
+    try {
+      // Get unique dates being updated
+      const dates = [...new Set(schedules.map(s => s.date))];
+      
+      // Remove existing schedules for these dates
+      await DoctorSchedule.destroy({
+        where: {
+          doctorId: doctor.id,
+          date: { [Op.in]: dates }
+        },
+        transaction
+      });
+
+      // Create new schedule entries
+      const scheduleData = schedules.map(schedule => ({
+        doctorId: doctor.id,
+        date: schedule.date,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        isAvailable: schedule.isAvailable !== false
+      }));
+
+      await DoctorSchedule.bulkCreate(scheduleData, { transaction });
+      await transaction.commit();
+
+      res.json({
+        success: true,
+        message: 'Schedule updated successfully'
+      });
+
+    } catch (transactionError) {
+      await transaction.rollback();
+      throw transactionError;
+    }
+
+    } catch (error) {
+      console.error('❌ Update schedule error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to update schedule',
+        error: error.message
+      });
     }
   }
 }

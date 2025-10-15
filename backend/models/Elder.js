@@ -17,7 +17,7 @@ const Elder = sequelize.define('Elder', {
   },
   userId: {
     type: DataTypes.UUID,
-    allowNull: true, // Allow null for existing elders
+    allowNull: true, // This can be null if elder doesn't have login access
     references: {
       model: 'Users',
       key: 'id'
@@ -104,7 +104,31 @@ const Elder = sequelize.define('Elder', {
   hasLoginAccess: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  doctorAssignmentData: {  // ✅ Changed from doctorAssignments to doctorAssignmentData
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: []
   }
 });
+
+// Add or update the associate function
+Elder.associate = function(models) {
+  if (models.HealthMonitoring) {
+    Elder.hasMany(models.HealthMonitoring, {
+      foreignKey: 'elderId',
+      as: 'healthRecords'
+    });
+  }
+  
+  if (models.User) {
+    Elder.belongsTo(models.User, {
+      foreignKey: 'userId',
+      as: 'user'
+    });
+  }
+  
+  // ...other existing associations...
+};
 
 module.exports = Elder;

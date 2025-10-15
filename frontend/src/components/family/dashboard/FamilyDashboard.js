@@ -1,7 +1,7 @@
 // frontend/src/pages/Dashboard.js (UPDATED for multiple subscriptions + Appointment sidebar)
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, CreditCard, Bell, Calendar, TrendingUp } from 'lucide-react';
+import { Plus, Users, CreditCard, Bell, Calendar, TrendingUp, UserCheck, Stethoscope, Brain } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Changed: Using RoleLayout like doctor dashboard (consistent sidebar style)
@@ -13,6 +13,9 @@ import ElderList from '../elder/ElderList';
 import ElderProfile from '../elder/ElderProfile';
 import SubscriptionStatus from '../subscription/SubscriptionStatus';
 import AppointmentList from '../appointments/AppointmentList';
+import StaffAssignment from '../staff/StaffAssignment';
+import DoctorAssignment from '../doctors/DoctorAssignment';
+import MentalHealthAssignment from '../mentalhealth/MentalHealthAssignment';
 
 // Services
 import { subscriptionService } from '../../../services/subscription';
@@ -141,6 +144,33 @@ const FamilyDashboard = () => {
     setCurrentView('add-elder');
   };
 
+  const handleStaffAssignment = () => {
+    requireSubscription(
+      () => {
+        setCurrentView('staff-assignment');
+      },
+      'You need an active subscription to assign staff to elders'
+    );
+  };
+
+  const handleDoctorAssignment = () => {
+    requireSubscription(
+      () => {
+        setCurrentView('doctor-assignment');
+      },
+      'You need an active subscription to assign doctors to elders'
+    );
+  };
+
+  const handleMentalHealthAssignment = () => {
+    requireSubscription(
+      () => {
+        setCurrentView('mentalhealth-assignment');
+      },
+      'You need an active subscription to assign mental health coordinators'
+    );
+  };
+
   if (loading) {
     return <Loading text="Loading dashboard..." />;
   }
@@ -202,6 +232,45 @@ const FamilyDashboard = () => {
               ← Back to Dashboard
             </button>
             <AppointmentList />
+          </div>
+        );
+
+      case 'staff-assignment':
+        return (
+          <div className="space-y-6">
+            <button
+              onClick={() => setCurrentView('overview')}
+              className="text-red-500 hover:text-red-600 font-medium"
+            >
+              ← Back to Dashboard
+            </button>
+            <StaffAssignment />
+          </div>
+        );
+
+      case 'doctor-assignment':
+        return (
+          <div className="space-y-6">
+            <button
+              onClick={() => setCurrentView('overview')}
+              className="text-red-500 hover:text-red-600 font-medium"
+            >
+              ← Back to Dashboard
+            </button>
+            <DoctorAssignment />
+          </div>
+        );
+
+      case 'mentalhealth-assignment':
+        return (
+          <div className="space-y-6">
+            <button
+              onClick={() => setCurrentView('overview')}
+              className="text-purple-500 hover:text-purple-600 font-medium"
+            >
+              ← Back to Dashboard
+            </button>
+            <MentalHealthAssignment />
           </div>
         );
       
@@ -275,6 +344,27 @@ const FamilyDashboard = () => {
               </div>
             )}
 
+            {/* Doctor Assignment Prompt */}
+            {elders.length > 0 && hasValidSubscription() && (
+              <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-lg p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold mb-2">Medical Care Assignment</h3>
+                    <p className="text-white/90">
+                      Ensure all your elders have dedicated doctors for their medical care
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleDoctorAssignment}
+                    className="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors flex items-center space-x-2"
+                  >
+                    <Stethoscope className="w-5 h-5" />
+                    <span>Assign Doctors</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <button
@@ -311,6 +401,48 @@ const FamilyDashboard = () => {
                 </div>
               )}
 
+              {/* ✅ DOCTOR ASSIGNMENT CARD */}
+              <button 
+                onClick={handleDoctorAssignment}
+                className={`bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group ${
+                  !hasValidSubscription() ? 'opacity-50' : ''
+                }`}
+              >
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                    <Stethoscope className="w-6 h-6 text-green-500" />
+                  </div>
+                  {!hasValidSubscription() && (
+                    <div className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                      Subscription Required
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Assign Doctor</h3>
+                <p className="text-gray-600">Assign doctors to provide medical care for your elders</p>
+              </button>
+
+              {/* Add Staff Assignment Card */}
+              <button 
+                onClick={handleStaffAssignment}
+                className={`bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group ${
+                  !hasValidSubscription() ? 'opacity-50' : ''
+                }`}
+              >
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                    <UserCheck className="w-6 h-6 text-purple-500" />
+                  </div>
+                  {!hasValidSubscription() && (
+                    <div className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                      Subscription Required
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Assign Care Staff</h3>
+                <p className="text-gray-600">Assign dedicated staff members to your elders</p>
+              </button>
+
               <button 
                 onClick={handleScheduleCheckup}
                 className={`bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group ${
@@ -329,6 +461,26 @@ const FamilyDashboard = () => {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Schedule Checkup</h3>
                 <p className="text-gray-600">Book a health consultation for your elder</p>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('mentalhealth-assignment')}
+                className={`bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group ${
+                  !hasValidSubscription() ? 'opacity-50' : ''
+                }`}
+              >
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                    <Brain className="w-6 h-6 text-purple-500" />
+                  </div>
+                  {!hasValidSubscription() && (
+                    <div className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                      Subscription Required
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Assign Mental Health Coordinator</h3>
+                <p className="text-gray-600">Assign mental health coordinators to support your elders</p>
               </button>
             </div>
 
@@ -382,14 +534,23 @@ const FamilyDashboard = () => {
   const sidebarItems = [
     { key: 'overview', label: 'Dashboard', icon: Users, onClick: () => setCurrentView('overview') },
     { key: 'appointments', label: 'Appointments', icon: Calendar, onClick: () => setCurrentView('appointments') },
+    { key: 'doctor-assignment', label: 'Doctor Assignment', icon: Stethoscope, onClick: () => setCurrentView('doctor-assignment') },
+    { key: 'staff-assignment', label: 'Staff Assignment', icon: UserCheck, onClick: () => setCurrentView('staff-assignment') },
     { key: 'packages', label: 'Packages', icon: CreditCard, onClick: () => setCurrentView('packages') },
     { key: 'add-elder', label: 'Add Elder', icon: Plus, onClick: handleAddElderClick }
   ];
 
   return (
     <RoleLayout
-      title="Family Dashboard"
-      sidebarItems={sidebarItems}
+      role="family"
+      sidebarItems={[
+        { key: 'overview', label: 'Dashboard', icon: Users, onClick: () => setCurrentView('overview') },
+        { key: 'appointments', label: 'Appointments', icon: Calendar, onClick: () => setCurrentView('appointments') },
+        { key: 'doctor-assignment', label: 'Doctor Assignment', icon: Stethoscope, onClick: () => setCurrentView('doctor-assignment') },
+        { key: 'staff-assignment', label: 'Staff Assignment', icon: UserCheck, onClick: () => setCurrentView('staff-assignment') },
+        { key: 'packages', label: 'Packages', icon: CreditCard, onClick: () => setCurrentView('packages') },
+        { key: 'add-elder', label: 'Add Elder', icon: Plus, onClick: handleAddElderClick }
+      ]}
       currentView={currentView}
     >
       {renderContent()}

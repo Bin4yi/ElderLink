@@ -1,4 +1,3 @@
-// src/pages/AdminPortal.js
 import React, { useState } from 'react';
 import { Eye, EyeOff, Loader, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -7,11 +6,11 @@ import UserManagement from '../components/admin/UserManagement';
 
 const AdminPortal = () => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const { login, user } = useAuth();
@@ -25,30 +24,52 @@ const AdminPortal = () => {
   }, [user]);
 
   const handleChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
-    if (error) setError('');
+    if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
       const response = await login(formData);
-      
-      // Check if user is admin
-      if (response.user.role === 'admin') {
-        setShowDashboard(true);
-      } else {
-        setError('Access denied. Admin privileges required.');
+
+      // Check if user is admin, staff, doctor, or pharmacist
+      const allowedRoles = ["admin", "staff", "doctor", "pharmacist"];
+      if (!allowedRoles.includes(response.user.role)) {
+        setError("Access denied. This portal is for staff members only.");
+        return;
+      }
+
+      // Redirect based on role
+      switch (response.user.role) {
+        case "admin":
+          window.location.href = "/admin/dashboard";
+          break;
+        case "doctor":
+          window.location.href = "/doctor/dashboard";
+          break;
+        case "staff":
+          window.location.href = "/staff/dashboard";
+          break;
+        case "pharmacist":
+          window.location.href = "/pharmacy/dashboard";
+          break;
+        case "mental_health_consultant":
+          window.location.href = "/mental-health/dashboard";
+          break;
+        default:
+          window.location.href = "/dashboard";
       }
     } catch (error) {
-      console.error('Login error:', error);
-      setError(error.response?.data?.message || 'Login failed');
+      const message =
+        error.response?.data?.message || "Login failed. Please try again.";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -103,7 +124,7 @@ const AdminPortal = () => {
               </label>
               <div className="relative">
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -118,7 +139,11 @@ const AdminPortal = () => {
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   disabled={isLoading}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
@@ -151,6 +176,13 @@ const AdminPortal = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Back to Main Site */}
+        <div className="text-center mt-6">
+          <a href="/" className="text-sm text-gray-600 hover:text-gray-800">
+            ← Back to ElderLink Home
+          </a>
         </div>
       </div>
     </div>

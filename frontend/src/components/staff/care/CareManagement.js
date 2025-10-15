@@ -1,422 +1,475 @@
 // src/components/staff/care/CareManagement.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import RoleLayout from '../../common/RoleLayout';
-import { FileText, CheckCircle2, ClipboardList, Plus, BarChart3 } from 'lucide-react';
-import jsPDF from 'jspdf';
-
-const eldersData = [
-  {
-    id: 1,
-    name: 'Margaret Thompson',
-    age: 82,
-    gender: 'Female',
-    medicalHistory: [
-      'Hypertension',
-      'Osteoporosis',
-      'Mild cognitive impairment',
-      'Chronic pain in lower back',
-      'Anxiety and depression',
-      'High cholesterol',
-
-    ],
-    careActivities: [
-      { id: 1, time: '08:00 AM', elder: 'Margaret Thompson', activity: 'Morning medication check', status: 'completed' },
-      { id: 2, time: '09:30 AM', elder: 'Robert Wilson', activity: 'Health monitoring', status: 'completed' },
-      { id: 3, time: '11:00 AM', elder: 'Dorothy Davis', activity: 'Physical therapy session', status: 'in-progress' },
-      { id: 4, time: '02:00 PM', elder: 'Harold Johnson', activity: 'Meal assistance', status: 'pending' },
-      { id: 5, time: '04:00 PM', elder: 'Betty Miller', activity: 'Evening medication', status: 'pending' },
-    ],
-    weeklyReport: [],
-  },
-  {
-    id: 2,
-    name: 'Robert Wilson',
-    age: 79,
-    gender: 'Male',
-    medicalHistory: [
-      'Type 2 Diabetes',
-      'Arthritis',
-    ],
-    careActivities: [
-      { id: 1, date: '2024-06-10', activity: 'Weekly checkup', status: 'pending' },
-    ],
-    weeklyReport: [],
-  },
-];
+import { FileText, CheckCircle2, ClipboardList, User, Calendar, Clock, AlertCircle, Heart, Activity, Thermometer, Shield } from 'lucide-react';
+import { elderService } from '../../../services/elder';
+import { healthMonitoringService } from '../../../services/healthMonitoring';
+import toast from 'react-hot-toast';
 
 const CareManagement = () => {
-  // Mental Specialist Plans state
-  const [mentalPlans, setMentalPlans] = useState([
-    {
-      id: 1,
-      activity: 'Cognitive Stimulation Program',
-      date: '2024-06-10',
-      status: 'pending',
-    },
-    {
-      id: 2,
-      activity: 'Emotional Support Session',
-      date: '2024-06-10',
-      status: 'pending',
-    },
-    {
-      id: 3,
-      activity: 'Mindfulness & Relaxation',
-      date: '2024-06-10',
-      status: 'pending',
-    },
-    {
-      id: 4,
-      activity: 'Family Engagement Activity',
-      date: '2024-06-10',
-      status: 'pending',
-    },
-    {
-      id: 5,
-      activity: 'Behavioral Monitoring',
-      date: '2024-06-10',
-      status: 'pending',
-    },
-  ]);
+  const [elders, setElders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedElder, setSelectedElder] = useState(null);
+  const [error, setError] = useState(null);
+  const [healthHistory, setHealthHistory] = useState([]);
+  const [loadingHealth, setLoadingHealth] = useState(false);
 
-  const handleMentalPlanAction = (planId) => {
-    setMentalPlans(prev =>
-      prev.map(plan =>
-        plan.id === planId ? { ...plan, status: 'completed' } : plan
-      )
-    );
-  };
-  const [selectedElder, setSelectedElder] = useState(eldersData[0]);
-  const [showReportForm, setShowReportForm] = useState(false);
-  const [reportText, setReportText] = useState('');
-  const [activeTab, setActiveTab] = useState('care'); // 'care' or 'reports'
-  
-  // Report state
-  const [activities, setActivities] = useState([]);
-  const [form, setForm] = useState({
-    elderName: '',
-    date: '',
-    careManagement: '',
-    healthMonitoring: '',
-  });
-  const [submissionStatus, setSubmissionStatus] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleActivityAction = (activityId) => {
-    setSelectedElder((prev) => ({
-      ...prev,
-      careActivities: prev.careActivities.map((a) =>
-        a.id === activityId ? { ...a, status: 'completed' } : a
-      ),
-    }));
-  };
-
-  const handleCreateReport = () => {
-    if (reportText.trim()) {
-      setSelectedElder((prev) => ({
-        ...prev,
-        weeklyReport: [
-          ...prev.weeklyReport,
-          { date: new Date().toISOString().slice(0, 10), content: reportText },
-        ],
-      }));
-      setReportText('');
-      setShowReportForm(false);
+  // Add this function to calculate age from date of birth
+  const calculateAge = (dateOfBirth) => {
+    if (!dateOfBirth) return null;
+    
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
     }
+    
+    return age;
   };
 
-  // Handle form input changes for reports
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  useEffect(() => {
+    loadElders();
+  }, []);
 
-  // Add new activity
-  const handleAdd = (e) => {
-    e.preventDefault();
-    if (!form.elderName || !form.date || !form.careManagement || !form.healthMonitoring) return;
-    setActivities([...activities, { ...form }]);
-    setForm({ elderName: '', date: '', careManagement: '', healthMonitoring: '' });
-  };
-
-  // Delete all activities for a given elder and week
-  const handleDeleteWeek = (elderName, weekKey) => {
-    setActivities(
-      activities.filter((a) => {
-        const weekStart = getWeekStart(a.date);
-        const currentWeekKey = `${weekStart} to ${getWeekEnd(weekStart)}`;
-        return !(a.elderName === elderName && currentWeekKey === weekKey);
-      })
-    );
-  };
-
-  // Group activities by elder and week
-  const groupByElderAndWeek = () => {
-    const grouped = {};
-    activities.forEach((a) => {
-      const weekStart = getWeekStart(a.date);
-      const weekKey = `${weekStart} to ${getWeekEnd(weekStart)}`;
-      if (!grouped[a.elderName]) grouped[a.elderName] = {};
-      if (!grouped[a.elderName][weekKey]) grouped[a.elderName][weekKey] = [];
-      grouped[a.elderName][weekKey].push(a);
-    });
-    return grouped;
-  };
-
-  // Helper to get week start (Monday) from date
-  function getWeekStart(dateStr) {
-    const d = new Date(dateStr);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
-    const monday = new Date(d.setDate(diff));
-    return monday.toISOString().slice(0, 10);
-  }
-
-  // Helper to get week end (Sunday) from week start
-  function getWeekEnd(weekStartStr) {
-    const d = new Date(weekStartStr);
-    d.setDate(d.getDate() + 6);
-    return d.toISOString().slice(0, 10);
-  }
-
-  // Generate care report as PDF
-  const handleGenerateReportPDF = () => {
-    const grouped = groupByElderAndWeek();
-    const doc = new jsPDF();
-    let y = 10;
-    let page = 1;
-
-    Object.entries(grouped).forEach(([elderName, weeks]) => {
-      Object.entries(weeks).forEach(([week, acts]) => {
-        doc.setFontSize(14);
-        doc.text(`Elder: ${elderName}`, 10, y);
-        y += 8;
-        doc.setFontSize(12);
-        doc.text(`Week: ${week}`, 10, y);
-        y += 8;
-        acts.forEach((activity) => {
-          doc.text(`  ${activity.date}`, 12, y);
-          y += 7;
-          doc.text(`    Care Management: ${activity.careManagement}`, 14, y);
-          y += 7;
-          doc.text(`    Health Monitoring: ${activity.healthMonitoring}`, 14, y);
-          y += 10;
-          if (y > 270) {
-            doc.addPage();
-            y = 10;
-            page += 1;
-          }
-        });
-        y += 5;
-      });
-    });
-
-    if (activities.length === 0) {
-      doc.text('No care activities to report.', 10, y);
+  useEffect(() => {
+    if (selectedElder) {
+      loadHealthHistory(selectedElder.id);
     }
+  }, [selectedElder]);
 
-    doc.save('care_report.pdf');
-  };
-
-  // Submit weekly care activity report to the system
-  const handleSubmitReport = async () => {
-    if (activities.length === 0) {
-      setSubmissionStatus('error');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmissionStatus('');
-
+  const loadElders = async () => {
     try {
-      const grouped = groupByElderAndWeek();
-      const reportData = {
-        submittedBy: 'Staff Member', // This would come from auth context
-        submissionDate: new Date().toISOString(),
-        reportType: 'weekly_care_activity',
-        data: grouped,
-        totalActivities: activities.length,
-        elders: Object.keys(grouped)
-      };
-
-      // This would be replaced with actual API call
-      const response = await fetch('/api/care-reports', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // Assuming token auth
-        },
-        body: JSON.stringify(reportData)
-      });
-
-      if (response.ok) {
-        setSubmissionStatus('success');
-        // Optionally clear activities after successful submission
-        // setActivities([]);
+      setLoading(true);
+      setError(null);
+      
+      console.log('🔍 Loading assigned elders for staff...');
+      const response = await elderService.getAllEldersForStaff();
+      
+      console.log('📊 Response received:', response);
+      
+      if (response && response.success && Array.isArray(response.elders)) {
+        setElders(response.elders);
+        if (response.elders.length > 0) {
+          setSelectedElder(response.elders[0]);
+        }
+        
+        console.log('✅ Loaded', response.elders.length, 'assigned elders');
+        
+        if (response.elders.length === 0) {
+          toast.info('No elders are currently assigned to you');
+        }
       } else {
-        setSubmissionStatus('error');
+        setElders([]);
+        setError('No assigned elders found');
+        toast.info('No elders are currently assigned to you');
       }
     } catch (error) {
-      console.error('Error submitting report:', error);
-      setSubmissionStatus('error');
+      console.error('❌ Failed to load assigned elders:', error);
+      setError('Failed to load assigned elders');
+      setElders([]);
+      
+      if (error.response?.status === 403) {
+        toast.error('You can only view elders assigned to you');
+      } else {
+        toast.error('Failed to load assigned elders');
+      }
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
+  const loadHealthHistory = async (elderId) => {
+    try {
+      setLoadingHealth(true);
+      
+      console.log('🔍 Loading health history for elder:', elderId);
+      const response = await healthMonitoringService.getElderHealthHistory(elderId, 7);
+      
+      console.log('📊 Health history response:', response);
+      
+      if (response && response.success && response.data && Array.isArray(response.data)) {
+        setHealthHistory(response.data);
+        console.log('✅ Loaded', response.data.length, 'health records');
+      } else {
+        setHealthHistory([]);
+        console.log('ℹ️ No health history found');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load health history:', error);
+      setHealthHistory([]);
+      
+      if (error.response?.status === 403) {
+        toast.error('You can only access health records for elders assigned to you');
+      } else {
+        toast.error('Failed to load health history');
+      }
+    } finally {
+      setLoadingHealth(false);
+    }
+  };
+
+  // ✅ Fixed: Don't clear health history, let useEffect handle the loading
+  const handleElderSelect = (elder) => {
+    setSelectedElder(elder);
+    // ✅ Removed: setHealthHistory([]); - This was causing the issue
+  };
+
+  const getVitalIcon = (type) => {
+    switch (type) {
+      case 'heartRate':
+        return <Heart className="w-4 h-4 text-red-500" />;
+      case 'bloodPressure':
+        return <Activity className="w-4 h-4 text-blue-500" />;
+      case 'temperature':
+        return <Thermometer className="w-4 h-4 text-orange-500" />;
+      default:
+        return <FileText className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-50 border-green-200 text-green-800';
+      case 'in-progress':
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+      case 'scheduled':
+        return 'bg-blue-50 border-blue-200 text-blue-800';
+      case 'missed':
+        return 'bg-red-50 border-red-200 text-red-800';
+      default:
+        return 'bg-gray-50 border-gray-200 text-gray-800';
+    }
+  };
+
+  const getAlertLevelColor = (alertLevel) => {
+    switch (alertLevel) {
+      case 'critical':
+        return 'text-red-600';
+      case 'warning':
+        return 'text-yellow-600';
+      case 'normal':
+        return 'text-green-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
+  const formatVitals = (monitoring) => {
+    const vitals = [];
+    
+    if (monitoring.heartRate) {
+      vitals.push(`HR: ${monitoring.heartRate} bpm`);
+    }
+    if (monitoring.bloodPressureSystolic && monitoring.bloodPressureDiastolic) {
+      vitals.push(`BP: ${monitoring.bloodPressureSystolic}/${monitoring.bloodPressureDiastolic} mmHg`);
+    }
+    if (monitoring.temperature) {
+      vitals.push(`Temp: ${monitoring.temperature}°F`);
+    }
+    if (monitoring.oxygenSaturation) {
+      vitals.push(`SpO2: ${monitoring.oxygenSaturation}%`);
+    }
+    
+    return vitals.length > 0 ? vitals.join(', ') : 'No vitals recorded';
+  };
+
+  if (loading) {
+    return (
+      <RoleLayout title="Care Management">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      </RoleLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <RoleLayout title="Care Management">
+        <div className="flex flex-col items-center justify-center h-64">
+          <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
+          <p className="text-red-600 text-lg mb-4">{error}</p>
+          <button
+            onClick={loadElders}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+          >
+            Try Again
+          </button>
+        </div>
+      </RoleLayout>
+    );
+  }
+
   return (
-    <RoleLayout title="Elder Care Management & Reports">
+    <RoleLayout title="Care Management">
       <div className="min-h-screen bg-gray-100 p-6">
-        <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-8 space-y-6">
-          {/* Tab Navigation */}
-          <div className="flex border-b border-gray-200 mb-6">
-            <button
-              onClick={() => setActiveTab('care')}
-              className={`px-6 py-3 font-medium text-sm ${
-                activeTab === 'care'
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <ClipboardList className="inline mr-2" size={16} />
-              Care Management
-            </button>
-            <button
-              onClick={() => setActiveTab('reports')}
-              className={`px-6 py-3 font-medium text-sm ${
-                activeTab === 'reports'
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <BarChart3 className="inline mr-2" size={16} />
-              Mental Specialist plans
-            </button>
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Shield className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">Care Management</h1>
+                <p className="text-gray-600">
+                  Manage care plans and monitor wellbeing for your assigned elders
+                </p>
+              </div>
+            </div>
+            
+            {/* Status Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-blue-600" />
+                <span className="text-blue-800 font-medium">
+                  You have {elders.length} elder{elders.length !== 1 ? 's' : ''} assigned to you
+                </span>
+              </div>
+              <p className="text-blue-600 text-sm mt-1">
+                You can only view and manage health records for elders assigned to you.
+              </p>
+            </div>
           </div>
 
-          {/* Care Management Tab */}
-          {activeTab === 'care' && (
-            <div className="space-y-8">
-              <div className="flex flex-col md:flex-row md:gap-8">
-                {/* Elder Details (single assigned elder) */}
-                <div className="md:w-1/3">
-                  <h2 className="text-2xl font-bold text-blue-800 flex items-center gap-2">
-                    <FileText size={22} className="text-blue-600" />
-                    <span>{selectedElder.name}</span>
+          {/* Check if we have elders */}
+          {!elders || elders.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-lg p-8">
+              <div className="text-center">
+                <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Assigned Elders</h3>
+                <p className="text-gray-500 mb-4">
+                  You don't have any elders assigned to you yet. Please contact your administrator to get elder assignments.
+                </p>
+                <button
+                  onClick={loadElders}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Elder List */}
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-blue-600" />
+                    Your Assigned Elders ({elders.length})
                   </h2>
-                  <div className="mt-2 text-gray-700 text-lg">
-                    <div className="mb-1">&nbsp;</div>
-                    <div className="mb-1 font-semibold">Age: {selectedElder.age}</div>
-                    <div className="font-semibold">Gender: {selectedElder.gender}</div>
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="font-semibold text-gray-800 mb-1 text-xl">Medical History</h3>
-                    <ul className="list-disc ml-6 text-gray-700 text-lg">
-                      {selectedElder.medicalHistory.map((item, idx) => (
-                        <li key={idx} className="font-medium">{item}</li>
-                      ))}
-                    </ul>
+                  <div className="space-y-3">
+                    {elders.map((elder) => {
+                      const age = calculateAge(elder.dateOfBirth);
+                      return (
+                        <div
+                          key={elder.id}
+                          className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                            selectedElder?.id === elder.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => handleElderSelect(elder)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                              {elder.photo ? (
+                                <img
+                                  src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/elders/${elder.photo}`}
+                                  alt={`${elder.firstName} ${elder.lastName}`}
+                                  className="w-full h-full object-cover rounded-full"
+                                />
+                              ) : (
+                                <User className="w-5 h-5 text-gray-500" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-800">
+                                {elder.firstName} {elder.lastName}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                {age ? `${age} years old` : 'Age not available'}
+                              </p>
+                              {elder.assignedDate && (
+                                <p className="text-xs text-blue-600">
+                                  Assigned: {new Date(elder.assignedDate).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                {/* Daily Care Activities */}
-                <div className="md:w-2/3 mt-8 md:mt-0">
-                  <h3 className="text-xl font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                    <ClipboardList size={20} className="text-blue-600" />
-                    Care Activities
-                  </h3>
-                  {selectedElder.careActivities.length === 0 ? (
-                    <p className="text-gray-500">No care activities assigned for today.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {selectedElder.careActivities.map(activity => (
-                        <div
-                          key={activity.id}
-                          className={`flex justify-between items-center p-3 border rounded-md ${
-                            activity.status === 'completed'
-                              ? 'bg-green-50 border-green-200'
-                              : activity.status === 'in-progress'
-                              ? 'bg-yellow-50 border-yellow-200'
-                              : 'bg-gray-50 border-gray-200'
-                          }`}
-                        >
-                          <div className="flex-1 pr-4">
-                            <div className="font-medium">{activity.activity}</div>
-                            <div className="text-xs text-gray-500">{activity.date}</div>
-                            <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-opacity-30 font-medium capitalize">
-                              {activity.status}
-                            </span>
-                          </div>
-                          {activity.status !== 'completed' && (
-                            <button
-                              onClick={() => handleActivityAction(activity.id)}
-                              className="mt-2 bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-1"
-                            >
-                              <CheckCircle2 size={25} />
-                              Mark as Done
-                            </button>
+              </div>
+
+              {/* Elder Details */}
+              <div className="lg:col-span-2">
+                {selectedElder ? (
+                  <div className="space-y-6">
+                    {/* Elder Info */}
+                    <div className="bg-white rounded-lg shadow-lg p-6">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+                          {selectedElder.photo ? (
+                            <img
+                              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/elders/${selectedElder.photo}`}
+                              alt={`${selectedElder.firstName} ${selectedElder.lastName}`}
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          ) : (
+                            <User className="w-8 h-8 text-gray-500" />
                           )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Mental Specialist Plans Tab */}
-          {activeTab === 'reports' && (
-            <div className="space-y-8">
-              <div className="mt-4">
-                <h3 className="text-xl font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                  <BarChart3 size={20} className="text-blue-600" />
-                  Mental Specialist Plans
-                </h3>
-                <div className="space-y-3">
-                  {mentalPlans.map(plan => (
-                    <div
-                      key={plan.id}
-                      className={`flex flex-col md:flex-row md:items-center md:justify-between p-3 border rounded-md ${
-                        plan.status === 'completed'
-                          ? 'bg-green-50 border-green-200'
-                          : plan.status === 'in-progress'
-                          ? 'bg-yellow-50 border-yellow-200'
-                          : 'bg-gray-50 border-gray-200'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-medium text-blue-700">{plan.activity}</div>
-                        <div className="text-gray-600 text-sm">
-                          {plan.id === 1 && 'Daily memory games, puzzles, and group discussions to enhance cognitive function.'}
-                          {plan.id === 2 && 'Weekly one-on-one counseling with a mental health specialist to address anxiety, depression, or loneliness.'}
-                          {plan.id === 3 && 'Guided meditation and breathing exercises every morning to reduce stress and promote calmness.'}
-                          {plan.id === 4 && 'Monthly family video calls and shared activities to strengthen social bonds and reduce isolation.'}
-                          {plan.id === 5 && 'Regular check-ins and behavioral assessments to identify early signs of mental health concerns.'}
+                        <div>
+                          <h2 className="text-2xl font-bold text-gray-800">
+                            {selectedElder.firstName} {selectedElder.lastName}
+                          </h2>
+                          <p className="text-gray-600">
+                            {selectedElder.dateOfBirth ? (
+                              <>
+                                Born: {new Date(selectedElder.dateOfBirth).toLocaleDateString()}
+                                {calculateAge(selectedElder.dateOfBirth) && (
+                                  <span className="ml-2 text-sm">
+                                    (Age: {calculateAge(selectedElder.dateOfBirth)})
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              'Date of birth not available'
+                            )}
+                          </p>
+                          {selectedElder.assignedDate && (
+                            <p className="text-sm text-blue-600 mt-1">
+                              Assigned to you on: {new Date(selectedElder.assignedDate).toLocaleDateString()}
+                            </p>
+                          )}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">{plan.date}</div>
-                        <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-opacity-30 font-medium capitalize">
-                          {plan.status}
-                        </span>
                       </div>
-                      {plan.status !== 'completed' && (
-                        <button
-                          onClick={() => handleMentalPlanAction(plan.id)}
-                          className="mt-2 md:mt-0 bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-1"
-                        >
-                          <CheckCircle2 size={25} />
-                          Mark as Done
-                        </button>
+
+                      {/* Contact Info */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h3 className="font-semibold text-gray-700 mb-2">Contact Information</h3>
+                          <p className="text-sm text-gray-600">
+                            <strong>Phone:</strong> {selectedElder.phone || 'Not provided'}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            <strong>Address:</strong> {selectedElder.address || 'Not provided'}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            <strong>Emergency Contact:</strong> {selectedElder.emergencyContact || 'Not provided'}
+                          </p>
+                        </div>
+
+                        <div>
+                          <h3 className="font-semibold text-gray-700 mb-2">Medical Information</h3>
+                          <p className="text-sm text-gray-600">
+                            <strong>Medications:</strong> {selectedElder.currentMedications || selectedElder.medications || 'None listed'}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            <strong>Allergies:</strong> {selectedElder.allergies || 'None listed'}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            <strong>Conditions:</strong> {selectedElder.chronicConditions || selectedElder.medicalConditions || 'None listed'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Recent Health Monitoring Activities */}
+                    <div className="bg-white rounded-lg shadow-lg p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-semibold">Recent Health Monitoring</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500">Last 7 days</span>
+                          {/* ✅ Added refresh button */}
+                          <button
+                            onClick={() => loadHealthHistory(selectedElder.id)}
+                            className="text-blue-600 hover:text-blue-800 p-1 rounded"
+                            title="Refresh health records"
+                          >
+                            <Clock className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {loadingHealth ? (
+                        <div className="flex justify-center items-center h-32">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                        </div>
+                      ) : healthHistory.length === 0 ? (
+                        <div className="text-center py-8">
+                          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                          <p className="text-gray-500">No recent health monitoring records for this elder</p>
+                          <p className="text-sm text-gray-400 mt-2">
+                            Health records will appear here once monitoring sessions are completed
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {healthHistory.map((monitoring) => (
+                            <div
+                              key={monitoring.id}
+                              className={`p-4 rounded-lg border ${getStatusColor(monitoring.status)}`}
+                            >
+                              <div className="flex items-start gap-3">
+                                {getVitalIcon('heartRate')}
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <p className="text-sm font-medium">
+                                      Health Monitoring - {monitoring.status}
+                                    </p>
+                                    <span className={`text-xs font-medium ${getAlertLevelColor(monitoring.alertLevel)}`}>
+                                      {monitoring.alertLevel?.toUpperCase()}
+                                    </span>
+                                  </div>
+                                  
+                                  <p className="text-xs text-gray-600 mb-2">
+                                    {new Date(monitoring.monitoringDate).toLocaleDateString()} at{' '}
+                                    {new Date(monitoring.monitoringDate).toLocaleTimeString([], {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </p>
+                                  
+                                  <div className="text-xs text-gray-700 space-y-1">
+                                    <p><strong>Vitals:</strong> {formatVitals(monitoring)}</p>
+                                    {monitoring.notes && (
+                                      <p><strong>Notes:</strong> {monitoring.notes}</p>
+                                    )}
+                                    {monitoring.staff && (
+                                      <p><strong>Staff:</strong> {monitoring.staff.firstName} {monitoring.staff.lastName}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
-                  ))}
-                  {mentalPlans.length === 0 && (
-                    <p className="text-gray-500">No mental specialist plans assigned for today.</p>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg shadow-lg p-8">
+                    <div className="text-center">
+                      <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Select an Elder</h3>
+                      <p className="text-gray-500">
+                        Choose an elder from your assigned list to view their care management details.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
-
-        
         </div>
       </div>
     </RoleLayout>

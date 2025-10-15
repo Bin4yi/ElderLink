@@ -8,7 +8,7 @@ import PaymentForm from './PaymentForm';
 import stripePromise from '../../../config/stripe';
 
 const PackageSelection = ({ onSubscribe }) => {
-  const [selectedPlan, setSelectedPlan] = useState('premium');
+  const [selectedPlan, setSelectedPlan] = useState('monthly'); // was 'premium'
   const [selectedDuration, setSelectedDuration] = useState('6_months');
   const [showPayment, setShowPayment] = useState(false);
 
@@ -28,17 +28,21 @@ const PackageSelection = ({ onSubscribe }) => {
     return PACKAGE_PLANS[selectedPlan].prices[selectedDuration];
   };
 
-  const getMonthlyPrice = () => {
-    const totalPrice = getCurrentPrice();
-    const months = selectedDuration === '1_month' ? 1 : selectedDuration === '6_months' ? 6 : 12;
+  const getMonthlyPrice = (planKey, duration) => {
+    const plan = PACKAGE_PLANS[planKey];
+    if (!plan || !plan.prices[duration]) return 0;
+    const totalPrice = plan.prices[duration];
+    const months = duration === '1_month' ? 1 : duration === '6_months' ? 6 : 12;
     return totalPrice / months;
   };
 
-  const getSavings = () => {
-    const monthlyPrice = PACKAGE_PLANS[selectedPlan].prices['1_month'];
-    const months = selectedDuration === '1_month' ? 1 : selectedDuration === '6_months' ? 6 : 12;
+  const getSavings = (planKey, duration) => {
+    const plan = PACKAGE_PLANS[planKey];
+    if (!plan || !plan.prices['1_month'] || !plan.prices[duration]) return 0;
+    const monthlyPrice = plan.prices['1_month'];
+    const months = duration === '1_month' ? 1 : duration === '6_months' ? 6 : 12;
     const regularTotal = monthlyPrice * months;
-    const currentTotal = getCurrentPrice();
+    const currentTotal = plan.prices[duration];
     return regularTotal - currentTotal;
   };
 
@@ -90,48 +94,59 @@ const PackageSelection = ({ onSubscribe }) => {
 
       {/* Package Cards */}
       <div className="grid md:grid-cols-3 gap-8 mb-12">
-        {Object.entries(PACKAGE_PLANS).map(([planKey, plan]) => (
-          <div
-            key={planKey}
-            className={`package-card ${planKey === 'premium' ? 'popular' : ''} ${
-              selectedPlan === planKey ? 'ring-2 ring-primary-500' : ''
-            }`}
-            onClick={() => handlePlanSelect(planKey)}
-          >
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-              <div className="text-4xl font-bold gradient-text mb-2">
-                {formatCurrency(getMonthlyPrice())}
-              </div>
-              <p className="text-gray-500">per month</p>
-              {selectedDuration !== '1_month' && (
-                <p className="text-sm text-green-600 font-semibold mt-2">
-                  Save {formatCurrency(getSavings())} total
-                </p>
-              )}
-            </div>
+        {Object.entries(PACKAGE_PLANS).map(([planKey, plan], idx) => {
+          // Map planKey to duration
+          let duration = '1_month';
+          if (planKey === 'six_months') duration = '6_months';
+          if (planKey === 'one_year') duration = '1_year';
 
-            <ul className="space-y-3 mb-8">
-              {plan.features.map((feature, index) => (
-                <li key={index} className="flex items-start">
-                  <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">{feature}</span>
-                </li>
-              ))}
-            </ul>
+          const months = duration === '1_month' ? 1 : duration === '6_months' ? 6 : 12;
+          const monthlyPrice = plan.prices[duration] / months;
 
-            <button
-              onClick={() => handlePlanSelect(planKey)}
-              className={`w-full py-3 px-6 rounded-lg font-semibold transition-all ${
-                selectedPlan === planKey
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-primary-50 hover:text-primary-700'
-              }`}
+          return (
+            <div
+              key={planKey}
+              className={`package-card ${selectedPlan === planKey && selectedDuration === duration ? 'ring-2 ring-primary-500' : ''}`}
+              onClick={() => {
+                setSelectedPlan(planKey);
+                setSelectedDuration(duration);
+              }}
             >
-              {selectedPlan === planKey ? 'Selected' : 'Select Plan'}
-            </button>
-          </div>
-        ))}
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                <div className="text-4xl font-bold gradient-text mb-2">
+                  {formatCurrency(monthlyPrice)}
+                </div>
+                <p className="text-gray-500">per month</p>
+                {duration !== '1_month' && (
+                  <p className="text-sm text-green-600 font-semibold mt-2">
+                    Save {formatCurrency(plan.prices['1_month'] * months - plan.prices[duration])} total
+                  </p>
+                )}
+              </div>
+
+              <ul className="space-y-3 mb-8">
+                {plan.features.map((feature, index) => (
+                  <li key={index} className="flex items-start">
+                    <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => handlePlanSelect(planKey)}
+                className={`w-full py-3 px-6 rounded-lg font-semibold transition-all ${
+                  selectedPlan === planKey
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-primary-50 hover:text-primary-700'
+                }`}
+              >
+                {selectedPlan === planKey ? 'Selected' : 'Select Plan'}
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       {/* Summary and Proceed */}
@@ -151,7 +166,7 @@ const PackageSelection = ({ onSubscribe }) => {
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Monthly Cost:</span>
-            <span className="font-semibold">{formatCurrency(getMonthlyPrice())}</span>
+            <span className="font-semibold">{formatCurrency(getMonthlyPrice(selectedPlan, selectedDuration))}</span>
           </div>
           <div className="border-t pt-4">
             <div className="flex justify-between text-xl font-bold">

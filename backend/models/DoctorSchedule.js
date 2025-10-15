@@ -1,4 +1,3 @@
-// backend/models/DoctorSchedule.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -12,17 +11,13 @@ const DoctorSchedule = sequelize.define('DoctorSchedule', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'doctors', // ✅ Change from 'Doctors' to 'doctors'
+      model: 'doctors',
       key: 'id'
     }
   },
-  dayOfWeek: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    validate: {
-      min: 0,
-      max: 6
-    }
+  date: {
+    type: DataTypes.DATEONLY,
+    allowNull: false
   },
   startTime: {
     type: DataTypes.TIME,
@@ -35,23 +30,10 @@ const DoctorSchedule = sequelize.define('DoctorSchedule', {
   isAvailable: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
-  },
-  slotDuration: {
-    type: DataTypes.INTEGER,
-    defaultValue: 30
-  },
-  maxAppointments: {
-    type: DataTypes.INTEGER,
-    defaultValue: 10
   }
 }, {
-  indexes: [
-    { 
-      unique: true, 
-      fields: ['doctorId', 'dayOfWeek', 'startTime'] 
-    }
-  ]
+  tableName: 'doctor_schedules',
+  timestamps: true
 });
 
 module.exports = DoctorSchedule;
-

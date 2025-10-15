@@ -14,6 +14,7 @@ import RoleLayout from '../../common/RoleLayout';
 import Loading from '../../common/Loading';
 import { useAuth } from '../../../context/AuthContext';
 import { elderService } from '../../../services/elder';
+import { healthMonitoringService } from '../../../services/healthMonitoring';
 import toast from 'react-hot-toast';
 
 const ElderDashboard = () => {
@@ -22,6 +23,8 @@ const ElderDashboard = () => {
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [medications, setMedications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [healthHistory, setHealthHistory] = useState([]);
+  const [loadingHealth, setLoadingHealth] = useState(true);
   
   const { user } = useAuth();
 
@@ -29,15 +32,27 @@ const ElderDashboard = () => {
     loadDashboardData();
   }, []);
 
+  useEffect(() => {
+    const fetchHealthHistory = async () => {
+      setLoadingHealth(true);
+      try {
+        // Get last 7 days of health data for this elder
+        const response = await healthMonitoringService.getElderHealthHistory(profile.id, 7);
+        if (response.success) setHealthHistory(response.data);
+      } catch (error) {
+        setHealthHistory([]);
+      } finally {
+        setLoadingHealth(false);
+      }
+    };
+    if (profile?.id) fetchHealthHistory();
+  }, [profile]);
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       const profileData = await elderService.getElderProfile();
-      setProfile(profileData.elder);
-      
-      // TODO: Load other data (appointments, medications, etc.)
-      // This would be implemented with additional API endpoints
-      
+      setProfile(profileData.elder); // Make sure this matches backend response
     } catch (error) {
       console.error('Failed to load elder dashboard:', error);
       toast.error('Failed to load dashboard data');
@@ -63,6 +78,8 @@ const ElderDashboard = () => {
 
   const menuItems = [
     { icon: Activity, label: 'Health Overview', path: '/elder/dashboard' },
+    { icon: Heart, label: 'Health Monitoring', path: '/elder/health-monitoring' },
+    { icon: Shield, label: 'Health Reports', path: '/elder/health-reports' },
     { icon: Calendar, label: 'Appointments', path: '/elder/appointments' },
     { icon: Pill, label: 'Medications', path: '/elder/medications' },
     { icon: Bell, label: 'Notifications', path: '/elder/notifications' },
@@ -208,6 +225,38 @@ const ElderDashboard = () => {
               <p className="text-gray-600">{profile.chronicConditions || 'None reported'}</p>
             </div>
           </div>
+        </div>
+
+        {/* Recent Health Monitoring */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold mb-4">Recent Health Monitoring</h2>
+          {loadingHealth ? (
+            <div>Loading health data...</div>
+          ) : healthHistory.length === 0 ? (
+            <div>No health records found.</div>
+          ) : (
+            <div className="space-y-4">
+              {healthHistory.map(record => (
+                <div key={record.id} className="border-b pb-4 mb-4">
+                  <div className="flex gap-4 items-center">
+                    <span className="font-semibold">{new Date(record.monitoringDate).toLocaleString()}</span>
+                    <span className={`px-2 py-1 rounded ${record.alertLevel === 'critical' ? 'bg-red-100 text-red-700' : record.alertLevel === 'warning' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                      {record.alertLevel}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2 text-sm">
+                    <div>Heart Rate: {record.heartRate || '--'} bpm</div>
+                    <div>BP: {record.bloodPressureSystolic || '--'}/{record.bloodPressureDiastolic || '--'} mmHg</div>
+                    <div>Temp: {record.temperature || '--'} °F</div>
+                    <div>Weight: {record.weight || '--'} lbs</div>
+                    <div>Oxygen: {record.oxygenSaturation || '--'} %</div>
+                    <div>Sleep: {record.sleepHours || '--'} hrs</div>
+                    <div>Notes: {record.notes || '--'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </RoleLayout>

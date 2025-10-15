@@ -1,148 +1,176 @@
-// backend/controllers/appointmentController.js (Family Member Side)
-const { 
-  Appointment, 
-  Elder, 
-  Doctor, 
-  User, 
-  DoctorSchedule, 
-  ScheduleException,
-  AppointmentNotification,
-  Subscription 
-} = require('../models');
+// backend/controllers/appointmentController.js
+const { Appointment, User, Doctor, Elder, FamilyMember, DoctorSchedule } = require('../models');
 const { Op } = require('sequelize');
-const ZoomService = require('../services/zoomService');
-const NotificationService = require('../services/notificationService');
 
 class AppointmentController {
   
   // Get available doctors
   static async getAvailableDoctors(req, res) {
     try {
+      const { specialization } = req.query;
+      
+      const whereClause = specialization && specialization !== 'all' 
+        ? { specialization } 
+        : {};
+
       const doctors = await Doctor.findAll({
-        where: { 
-          isVerified: true,
-          status: 'active' 
-        },
+
+        where: whereClause,
         include: [
           {
             model: User,
             as: 'user',
-            attributes: ['firstName', 'lastName', 'email', 'profileImage']
-          },
-          {
-            model: DoctorSchedule,
-            as: 'schedules',
-            where: { isAvailable: true },
-            required: false
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'profileImage']
           }
         ],
         attributes: [
-          'id', 'specialization', 'experience', 'consultationFee', 
-          'rating', 'languages', 'about'
+          'id', 
+          'specialization', 
+          'experience', 
+          // 'qualifications', 
+          'consultationFee',
+          // 'rating', // <-- REMOVE or comment out this line
+          // 'about',
+          // 'languages'
         ]
+
       });
 
+      console.log('✅ Found doctors:', doctors.length);
+      
       res.json({
-        message: 'Available doctors retrieved successfully',
-        doctors
+        success: true,
+        doctors: doctors || []
       });
     } catch (error) {
-      console.error('Get available doctors error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error fetching doctors:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to fetch available doctors',
+        error: error.message 
+      });
     }
   }
 
-  // Get doctor availability for a specific date
+  // Get doctor availability for specific date
   static async getDoctorAvailability(req, res) {
     try {
       const { doctorId } = req.params;
       const { date } = req.query;
 
       if (!date) {
-        return res.status(400).json({ message: 'Date is required' });
+        return res.status(400).json({ 
+          success: false,
+          message: 'Date is required' 
+        });
       }
 
-      const requestedDate = new Date(date);
-      const dayOfWeek = requestedDate.getDay();
-
-      // Get doctor's schedule for the day
+      // Query by date, not dayOfWeek
       const schedule = await DoctorSchedule.findOne({
-        where: { 
+        where: {
           doctorId,
-          dayOfWeek,
-          isAvailable: true 
+          date: date, // <-- use the date string directly
+          isAvailable: true
         }
       });
 
       if (!schedule) {
         return res.json({
-          message: 'Doctor not available on this day',
-          availableSlots: []
-        });
-      }
-
-      // Check for schedule exceptions (holidays, breaks)
-      const exception = await ScheduleException.findOne({
-        where: {
-          doctorId,
-          date: requestedDate,
-          isUnavailable: true
-        }
-      });
-
-      if (exception) {
-        return res.json({
-          message: 'Doctor not available on this date',
+          success: true,
           availableSlots: [],
-          reason: exception.reason
+          message: 'Doctor is not available on this date'
         });
       }
 
-      // Get existing appointments for the date
+      // Get existing appointments for this date
+      const startOfDay = new Date(date + 'T00:00:00');
+      const endOfDay = new Date(date + 'T23:59:59');
+
       const existingAppointments = await Appointment.findAll({
         where: {
           doctorId,
           appointmentDate: {
-            [Op.between]: [
-              new Date(date + ' 00:00:00'),
-              new Date(date + ' 23:59:59')
-            ]
+            [Op.between]: [startOfDay, endOfDay]
           },
           status: {
             [Op.in]: ['pending', 'approved']
           }
-        },
-        attributes: ['appointmentDate', 'duration']
+        }
       });
 
-      // Generate available time slots
-      const availableSlots = this.generateAvailableSlots(
+      // Generate available slots (implement this as needed)
+      const availableSlots = AppointmentController.generateAvailableSlots(
         schedule, 
         existingAppointments, 
-        requestedDate
+        new Date(date) // <-- fix here
       );
 
       res.json({
-        message: 'Doctor availability retrieved successfully',
-        availableSlots,
-        schedule: {
-          startTime: schedule.startTime,
-          endTime: schedule.endTime,
-          slotDuration: schedule.slotDuration
-        }
+        success: true,
+        availableSlots
       });
     } catch (error) {
-      console.error('Get doctor availability error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error fetching doctor availability:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to fetch doctor availability',
+        error: error.message 
+      });
+    }
+  }
+
+  // Get doctor's available dates (next 30 days)
+  static async getDoctorAvailableDates(req, res) {
+    try {
+      const { doctorId } = req.params;
+      
+      const availableDates = [];
+      const today = new Date();
+      
+      // Check next 30 days
+      for (let i = 0; i < 30; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(today.getDate() + i);
+        const dayOfWeek = checkDate.getDay();
+        
+        // Check if doctor has schedule for this day
+        const schedule = await DoctorSchedule.findOne({
+          where: {
+            doctorId,
+            date: checkDate.toISOString().split('T')[0],
+            isAvailable: true
+          }
+        });
+        
+        if (schedule) {
+          availableDates.push(checkDate.toISOString().split('T')[0]);
+        }
+      }
+      
+      res.json({
+        success: true,
+        dates: availableDates
+      });
+    } catch (error) {
+      console.error('❌ Error fetching available dates:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to fetch available dates',
+        error: error.message 
+      });
     }
   }
 
   // Helper method to generate available slots
   static generateAvailableSlots(schedule, existingAppointments, date) {
+    // Ensure date is a Date object
+    if (typeof date === 'string') {
+      date = new Date(date);
+    }
     const slots = [];
     const startTime = new Date(`${date.toDateString()} ${schedule.startTime}`);
     const endTime = new Date(`${date.toDateString()} ${schedule.endTime}`);
-    const slotDuration = schedule.slotDuration;
+    const slotDuration = schedule.slotDuration || 30; // Default 30 minutes
 
     let currentSlot = new Date(startTime);
 
@@ -152,7 +180,7 @@ class AppointmentController {
       // Check if slot conflicts with existing appointments
       const isConflict = existingAppointments.some(appointment => {
         const appointmentStart = new Date(appointment.appointmentDate);
-        const appointmentEnd = new Date(appointmentStart.getTime() + (appointment.duration * 60000));
+        const appointmentEnd = new Date(appointmentStart.getTime() + ((appointment.duration || 30) * 60000));
         
         return (currentSlot < appointmentEnd && slotEnd > appointmentStart);
       });
@@ -163,7 +191,7 @@ class AppointmentController {
         slots.push({
           startTime: currentSlot.toTimeString().slice(0, 5),
           endTime: slotEnd.toTimeString().slice(0, 5),
-          available: true
+          status: 'available'
         });
       }
 
@@ -188,87 +216,44 @@ class AppointmentController {
         notes
       } = req.body;
 
-      // Validate required fields
+      console.log('📋 Booking appointment with data:', {
+        elderId, doctorId, appointmentDate, duration, type, priority, reason, symptoms, notes
+      });
+
       if (!elderId || !doctorId || !appointmentDate || !reason) {
         return res.status(400).json({ 
+          success: false,
           message: 'Elder ID, Doctor ID, appointment date, and reason are required' 
         });
       }
 
-      // Verify elder belongs to the family member
-      const elder = await Elder.findOne({
-        where: { id: elderId },
-        include: [
-          {
-            model: Subscription,
-            as: 'subscription',
-            where: { userId: req.user.id }
-          }
-        ]
-      });
-
+      // Check if elder exists
+      const elder = await Elder.findByPk(elderId);
       if (!elder) {
         return res.status(404).json({ 
-          message: 'Elder not found or access denied' 
+          success: false,
+          message: 'Elder not found' 
         });
       }
 
-      // Verify doctor exists and is available
-      const doctor = await Doctor.findOne({
-        where: { 
-          id: doctorId,
-          isVerified: true,
-          status: 'active'
-        }
-      });
-
+      // Check if doctor exists
+      const doctor = await Doctor.findByPk(doctorId);
       if (!doctor) {
         return res.status(404).json({ 
-          message: 'Doctor not found or not available' 
+          success: false,
+          message: 'Doctor not found' 
         });
       }
 
-      // Check if the time slot is still available
-      const requestedDate = new Date(appointmentDate);
-      const dayOfWeek = requestedDate.getDay();
-
-      const schedule = await DoctorSchedule.findOne({
-        where: { 
-          doctorId,
-          dayOfWeek,
-          isAvailable: true 
-        }
-      });
-
-      if (!schedule) {
-        return res.status(400).json({ 
-          message: 'Doctor not available on the selected day' 
-        });
-      }
-
-      // Check for conflicts
-      const conflictingAppointment = await Appointment.findOne({
-        where: {
-          doctorId,
-          appointmentDate: requestedDate,
-          status: {
-            [Op.in]: ['pending', 'approved']
-          }
-        }
-      });
-
-      if (conflictingAppointment) {
-        return res.status(400).json({ 
-          message: 'Time slot is no longer available' 
-        });
-      }
+      // Get family member ID from authenticated user
+      const familyMemberId = req.user.role === 'family_member' ? req.user.id : null;
 
       // Create appointment
       const appointment = await Appointment.create({
-        familyMemberId: req.user.id,
         elderId,
         doctorId,
-        appointmentDate: requestedDate,
+        familyMemberId,
+        appointmentDate: new Date(appointmentDate),
         duration,
         type,
         priority,
@@ -278,31 +263,80 @@ class AppointmentController {
         status: 'pending'
       });
 
-      // Send notification to doctor
-      await NotificationService.createAppointmentNotification({
-        appointmentId: appointment.id,
-        recipientId: doctor.userId,
-        type: 'booking_confirmation',
-        title: 'New Appointment Request',
-        message: `New appointment request from ${elder.firstName} ${elder.lastName} for ${new Date(appointmentDate).toLocaleDateString()}`
-      });
-
-      // Send confirmation to family member
-      await NotificationService.createAppointmentNotification({
-        appointmentId: appointment.id,
-        recipientId: req.user.id,
-        type: 'booking_confirmation',
-        title: 'Appointment Request Submitted',
-        message: `Your appointment request for ${elder.firstName} ${elder.lastName} has been submitted for review`
-      });
-
-      // Fetch complete appointment data
+      // Fetch the complete appointment with relations
       const completeAppointment = await Appointment.findByPk(appointment.id, {
         include: [
           {
             model: Elder,
             as: 'elder',
-            attributes: ['firstName', 'lastName', 'photo']
+            attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
+          },
+          {
+            model: Doctor,
+            as: 'doctor',
+            include: [
+              {
+                model: User,
+                as: 'user',
+                attributes: ['firstName', 'lastName']
+              }
+            ]
+          },
+          {
+            model: FamilyMember,
+            as: 'familyMember',
+            include: [
+              {
+                model: User,
+                as: 'user',
+                attributes: ['firstName', 'lastName']
+              }
+            ]
+          }
+        ]
+      });
+
+      console.log('✅ Appointment created successfully:', appointment.id);
+
+      res.status(201).json({
+        success: true,
+        message: 'Appointment booked successfully',
+        appointment: completeAppointment
+      });
+    } catch (error) {
+      console.error('❌ Error booking appointment:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to book appointment',
+        error: error.message 
+      });
+    }
+  }
+
+  // Get appointments for family member
+  static async getAppointments(req, res) {
+    try {
+      const { status, page = 1, limit = 10 } = req.query;
+      const offset = (page - 1) * limit;
+
+      const whereClause = {};
+      if (req.user.role === 'family_member') {
+        whereClause.familyMemberId = req.user.id;
+      } else if (req.user.role === 'elder') {
+        whereClause.elderId = req.user.id;
+      }
+
+      if (status) {
+        whereClause.status = status;
+      }
+
+      const appointments = await Appointment.findAndCountAll({
+        where: whereClause,
+        include: [
+          {
+            model: Elder,
+            as: 'elder',
+            attributes: ['id', 'firstName', 'lastName', 'phone', 'photo']
           },
           {
             model: Doctor,
@@ -315,81 +349,38 @@ class AppointmentController {
               }
             ]
           }
-        ]
-      });
-
-      res.status(201).json({
-        message: 'Appointment booked successfully',
-        appointment: completeAppointment
-      });
-    } catch (error) {
-      console.error('Book appointment error:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  }
-
-  // Get family member's appointments
-  static async getAppointments(req, res) {
-    try {
-      const { status, page = 1, limit = 10 } = req.query;
-      const offset = (page - 1) * limit;
-
-      const whereClause = { familyMemberId: req.user.id };
-      if (status) {
-        whereClause.status = status;
-      }
-
-      const appointments = await Appointment.findAndCountAll({
-        where: whereClause,
-        include: [
-          {
-            model: Elder,
-            as: 'elder',
-            attributes: ['id', 'firstName', 'lastName', 'photo', 'dateOfBirth']
-          },
-          {
-            model: Doctor,
-            as: 'doctor',
-            attributes: ['id', 'specialization', 'consultationFee'],
-            include: [
-              {
-                model: User,
-                as: 'user',
-                attributes: ['firstName', 'lastName', 'profileImage']
-              }
-            ]
-          }
         ],
         order: [['appointmentDate', 'DESC']],
         limit: parseInt(limit),
-        offset: offset
+        offset: parseInt(offset)
       });
 
       res.json({
-        message: 'Appointments retrieved successfully',
+        success: true,
         appointments: appointments.rows,
         pagination: {
-          total: appointments.count,
-          page: parseInt(page),
-          pages: Math.ceil(appointments.count / limit)
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(appointments.count / limit),
+          totalItems: appointments.count,
+          itemsPerPage: parseInt(limit)
         }
       });
     } catch (error) {
-      console.error('Get appointments error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error fetching appointments:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to fetch appointments',
+        error: error.message 
+      });
     }
   }
 
-  // Get appointment details
+  // Get appointment by ID
   static async getAppointmentById(req, res) {
     try {
-      const { appointmentId } = req.params;
+      const { id } = req.params;
 
-      const appointment = await Appointment.findOne({
-        where: { 
-          id: appointmentId,
-          familyMemberId: req.user.id 
-        },
+      const appointment = await Appointment.findByPk(id, {
         include: [
           {
             model: Elder,
@@ -402,7 +393,18 @@ class AppointmentController {
               {
                 model: User,
                 as: 'user',
-                attributes: ['firstName', 'lastName', 'email', 'profileImage']
+                attributes: ['firstName', 'lastName']
+              }
+            ]
+          },
+          {
+            model: FamilyMember,
+            as: 'familyMember',
+            include: [
+              {
+                model: User,
+                as: 'user',
+                attributes: ['firstName', 'lastName']
               }
             ]
           }
@@ -411,189 +413,142 @@ class AppointmentController {
 
       if (!appointment) {
         return res.status(404).json({ 
+          success: false,
           message: 'Appointment not found' 
         });
       }
 
       res.json({
-        message: 'Appointment details retrieved successfully',
+        success: true,
         appointment
       });
     } catch (error) {
-      console.error('Get appointment by ID error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error fetching appointment:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to fetch appointment',
+        error: error.message 
+      });
     }
   }
 
   // Cancel appointment
   static async cancelAppointment(req, res) {
     try {
-      const { appointmentId } = req.params;
+      const { id } = req.params;
       const { reason } = req.body;
 
-      const appointment = await Appointment.findOne({
-        where: { 
-          id: appointmentId,
-          familyMemberId: req.user.id 
-        },
-        include: [
-          {
-            model: Doctor,
-            as: 'doctor'
-          },
-          {
-            model: Elder,
-            as: 'elder'
-          }
-        ]
-      });
-
+      const appointment = await Appointment.findByPk(id);
       if (!appointment) {
         return res.status(404).json({ 
+          success: false,
           message: 'Appointment not found' 
         });
       }
 
-      if (appointment.status === 'completed' || appointment.status === 'cancelled') {
-        return res.status(400).json({ 
-          message: 'Cannot cancel this appointment' 
-        });
-      }
-
-      // Update appointment status
       await appointment.update({
         status: 'cancelled',
-        notes: reason || 'Cancelled by family member'
-      });
-
-      // Notify doctor
-      await NotificationService.createAppointmentNotification({
-        appointmentId: appointment.id,
-        recipientId: appointment.doctor.userId,
-        type: 'cancellation',
-        title: 'Appointment Cancelled',
-        message: `Appointment with ${appointment.elder.firstName} ${appointment.elder.lastName} has been cancelled`
+        cancellationReason: reason
       });
 
       res.json({
+        success: true,
         message: 'Appointment cancelled successfully',
         appointment
       });
     } catch (error) {
-      console.error('Cancel appointment error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error cancelling appointment:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to cancel appointment',
+        error: error.message 
+      });
     }
   }
 
   // Reschedule appointment
   static async rescheduleAppointment(req, res) {
     try {
-      const { appointmentId } = req.params;
-      const { newDate, reason } = req.body;
+      const { id } = req.params;
+      const { newDateTime, reason } = req.body;
 
-      if (!newDate) {
-        return res.status(400).json({ 
-          message: 'New appointment date is required' 
-        });
-      }
-
-      const appointment = await Appointment.findOne({
-        where: { 
-          id: appointmentId,
-          familyMemberId: req.user.id 
-        },
-        include: [
-          { model: Doctor, as: 'doctor' },
-          { model: Elder, as: 'elder' }
-        ]
-      });
-
+      const appointment = await Appointment.findByPk(id);
       if (!appointment) {
         return res.status(404).json({ 
+          success: false,
           message: 'Appointment not found' 
         });
       }
 
-      if (appointment.status !== 'pending' && appointment.status !== 'approved') {
-        return res.status(400).json({ 
-          message: 'Cannot reschedule this appointment' 
-        });
-      }
-
-      // Check availability for new date
-      const requestedDate = new Date(newDate);
-      const conflictingAppointment = await Appointment.findOne({
-        where: {
-          doctorId: appointment.doctorId,
-          appointmentDate: requestedDate,
-          status: {
-            [Op.in]: ['pending', 'approved']
-          },
-          id: { [Op.ne]: appointmentId }
-        }
-      });
-
-      if (conflictingAppointment) {
-        return res.status(400).json({ 
-          message: 'New time slot is not available' 
-        });
-      }
-
-      // Update appointment
       await appointment.update({
-        appointmentDate: requestedDate,
-        status: 'pending', // Reset to pending for doctor approval
-        notes: `${appointment.notes || ''}\nRescheduled: ${reason || 'No reason provided'}`
-      });
-
-      // Notify doctor
-      await NotificationService.createAppointmentNotification({
-        appointmentId: appointment.id,
-        recipientId: appointment.doctor.userId,
-        type: 'reschedule',
-        title: 'Appointment Rescheduled',
-        message: `Appointment with ${appointment.elder.firstName} ${appointment.elder.lastName} has been rescheduled to ${requestedDate.toLocaleDateString()}`
+        appointmentDate: new Date(newDateTime),
+        rescheduleReason: reason,
+        status: 'approved' // Assuming rescheduled appointments are approved
       });
 
       res.json({
+        success: true,
         message: 'Appointment rescheduled successfully',
         appointment
       });
     } catch (error) {
-      console.error('Reschedule appointment error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error rescheduling appointment:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to reschedule appointment',
+        error: error.message 
+      });
     }
   }
 
-  // Get elder's medical history summary for appointment
+  // Confirm payment
+  static async confirmPayment(req, res) {
+    try {
+      const { id } = req.params;
+
+      const appointment = await Appointment.findByPk(id);
+      if (!appointment) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Appointment not found' 
+        });
+      }
+
+      await appointment.update({
+        paymentStatus: 'completed'
+      });
+
+      res.json({
+        success: true,
+        message: 'Payment confirmed successfully',
+        appointment
+      });
+    } catch (error) {
+      console.error('❌ Error confirming payment:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to confirm payment',
+        error: error.message 
+      });
+    }
+  }
+
+  // Get elder summary
   static async getElderSummary(req, res) {
     try {
       const { elderId } = req.params;
 
-      // Verify elder belongs to family member
-      const elder = await Elder.findOne({
-        where: { id: elderId },
-        include: [
-          {
-            model: Subscription,
-            as: 'subscription',
-            where: { userId: req.user.id }
-          }
-        ]
-      });
-
+      const elder = await Elder.findByPk(elderId);
       if (!elder) {
         return res.status(404).json({ 
-          message: 'Elder not found or access denied' 
+          success: false,
+          message: 'Elder not found' 
         });
       }
 
-      // Get recent appointments and medical history
+      // Get recent appointments
       const recentAppointments = await Appointment.findAll({
-        where: { 
-          elderId,
-          status: 'completed'
-        },
+        where: { elderId },
         include: [
           {
             model: Doctor,
@@ -612,24 +567,17 @@ class AppointmentController {
       });
 
       res.json({
-        message: 'Elder summary retrieved successfully',
-        elder: {
-          id: elder.id,
-          firstName: elder.firstName,
-          lastName: elder.lastName,
-          dateOfBirth: elder.dateOfBirth,
-          gender: elder.gender,
-          bloodType: elder.bloodType,
-          medicalHistory: elder.medicalHistory,
-          currentMedications: elder.currentMedications,
-          allergies: elder.allergies,
-          chronicConditions: elder.chronicConditions
-        },
+        success: true,
+        elder,
         recentAppointments
       });
     } catch (error) {
-      console.error('Get elder summary error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error fetching elder summary:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to fetch elder summary',
+        error: error.message 
+      });
     }
   }
 }

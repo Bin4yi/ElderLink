@@ -1,4 +1,5 @@
-// backend/server.js - Updated with proper error checking
+// backend/server.js - Updated with familyDoctors route
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -29,82 +30,178 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Health check endpoint
+// Health check endpoints
 app.get('/health', (req, res) => {
   res.status(200).json({ 
-    success: true, 
+    status: 'OK', 
+    message: 'ElderLink Backend is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
     message: 'ElderLink API is running',
     timestamp: new Date().toISOString()
   });
 });
 
+// Add this new endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'ElderLink API is running',
+    version: '1.0.0',
+    endpoints: [
+      '/api/health',
+      '/api/auth',
+      '/api/subscriptions',
+      '/api/elders',
+      '/api/notifications',
+      '/api/admin',
+      '/api/inventory',
+      '/api/prescriptions'
+    ]
+  });
+});
+
+// Route configurations
+const routeConfigs = [
+  { path: './routes/auth', mount: '/api/auth', name: 'authRoutes' },
+  { path: './routes/elder', mount: '/api/elder', name: 'elderRoutes' },
+  { path: './routes/healthMonitoring', mount: '/api/health-monitoring', name: 'healthMonitoringRoutes' },
+  { path: './routes/subscription', mount: '/api/subscriptions', name: 'subscriptionRoutes' },
+  { path: './routes/notification', mount: '/api/notifications', name: 'notificationRoutes' },
+  { path: './routes/adminUserRoutes', mount: '/api/admin', name: 'adminUserRoutes' },
+  { path: './routes/adminStatsRoutes', mount: '/api/admin', name: 'adminStatsRoutes' },
+  { path: './routes/staffAssignment', mount: '/api/staff-assignments', name: 'staffAssignmentRoutes' },
+  { path: './routes/doctorAssignment', mount: '/api/doctor-assignments', name: 'doctorAssignmentRoutes' }
+];
+
+// Import health monitoring routes
+const healthMonitoringRoutes = require('./routes/healthMonitoring');
+// Import health reports routes
+const healthReportsRoutes = require('./routes/healthReports');
+
+// Import staff assignment routes
+const staffAssignmentRoutes = require('./routes/staffAssignment');
+
+// Import doctor assignment routes
+const doctorAssignmentRoutes = require('./routes/doctorAssignment');
+
+// Import elder routes
+const elderRoutes = require('./routes/elder');
+
+// Import appointment routes
+const appointmentRoutes = require('./routes/appointments');
+
+// ✅ IMPORTANT: Import doctor appointments routes
+const doctorAppointmentsRoutes = require('./routes/doctorAppointments');
+// Import notification service
+// const notificationService = require('../services/notificationService');
+
+
+// Import new inventory routes
+const inventoryRoutes = require('./routes/inventory');
+const prescriptionRoutes = require('./routes/prescriptions');
+
+// 🚨 ADD: Import emergency routes
+const emergencyRoutes = require('./routes/emergency');
+
+// 🚨 ADD: Import webhook routes
+const webhookRoutes = require('./routes/webhook');
+
+// 🚨 ADD: Import ambulance dispatch routes
+const ambulanceRoutes = require('./routes/ambulance');
+const coordinatorRoutes = require('./routes/coordinator');
+const sosResponseRoutes = require('./routes/sosResponse');
+const driverRoutes = require('./routes/drivers');
+
+// 🚨 ADD: Webhook routes FIRST (no auth required)
+app.use('/api/webhook', webhookRoutes);
+
 // Import and use routes with error checking
 try {
-  const authRoutes = require('./routes/auth');
-  const subscriptionRoutes = require('./routes/subscription');
-  const elderRoutes = require('./routes/elder');
-  const notificationRoutes = require('./routes/notification');
+  routeConfigs.forEach(({ path, mount, name }) => {
+    const route = require(path);
+    
+    // Verify routes are properly exported
+    if (typeof route !== 'function') {
+      throw new Error(`${name} is not a valid router`);
+    }
+    
+    // API Routes
+    app.use(mount, route);
+  });
 
-  const appointmentRoutes = require('./routes/appointments');
-  const doctorAppointmentRoutes = require('./routes/doctorAppointments'); // ✅ ADD THIS LINE
-
-  const adminUserRoutes = require('./routes/adminUserRoutes');
-  const adminStatsRoutes = require('./routes/adminStatsRoutes');
-
-
-  // Verify routes are properly exported
-  if (typeof authRoutes !== 'function') {
-    throw new Error('authRoutes is not a valid router');
-  }
-  if (typeof subscriptionRoutes !== 'function') {
-    throw new Error('subscriptionRoutes is not a valid router');
-  }
-  if (typeof elderRoutes !== 'function') {
-    throw new Error('elderRoutes is not a valid router');
-  }
-  if (typeof notificationRoutes !== 'function') {
-    throw new Error('notificationRoutes is not a valid router');
-  }
-
-  if (typeof appointmentRoutes !== 'function') {
-    throw new Error('appointmentRoutes is not a valid router');
-  }
-  if (typeof doctorAppointmentRoutes !== 'function') { // ✅ ADD THIS CHECK
-    throw new Error('doctorAppointmentRoutes is not a valid router');
-
-  if (typeof adminUserRoutes !== 'function') {
-    throw new Error('adminUserRoutes is not a valid router');
-  }
-  if (typeof adminStatsRoutes !== 'function') {
-    throw new Error('adminStatsRoutes is not a valid router');
-
-  }
-
-  // API Routes
-  app.use('/api/auth', authRoutes);
-  app.use('/api/subscriptions', subscriptionRoutes);
+  // Use health monitoring routes
+  app.use('/api/health-monitoring', healthMonitoringRoutes);
+  // Use health reports routes
+  app.use('/api/health-reports', healthReportsRoutes);
+  // Use staff assignment routes
+  app.use('/api/staff-assignments', staffAssignmentRoutes);
+  // Use doctor assignment routes
+  app.use('/api/doctor-assignments', doctorAssignmentRoutes);
+  // Use elder routes
   app.use('/api/elders', elderRoutes);
-  app.use('/api/notifications', notificationRoutes);
-
+  // Use appointment routes
   app.use('/api/appointments', appointmentRoutes);
-  app.use('/api/doctor', doctorAppointmentRoutes); // ✅ ADD THIS LINE
 
-  app.use('/api/admin', adminUserRoutes);
-  app.use('/api/admin', adminStatsRoutes)
+  app.use('/api/doctor', doctorAppointmentsRoutes);
 
-  console.log('✅ All routes loaded successfully');
+  // Use new inventory routes
+  app.use('/api/inventory', inventoryRoutes);
+  app.use('/api/prescriptions', prescriptionRoutes);
+
+  // 🚨 ADD: Use emergency routes
+  app.use('/api/emergency', emergencyRoutes);
+  
+  // 🚨 ADD: Use ambulance dispatch routes
+  app.use('/api/ambulance', ambulanceRoutes);
+  app.use('/api/coordinator', coordinatorRoutes);
+  app.use('/api/sos', sosResponseRoutes);
+  app.use('/api/drivers', driverRoutes);
+
 } catch (error) {
   console.error('Error loading routes:', error);
   process.exit(1);
 }
 
 // Socket.io for real-time notifications
+const emergencyWebSocketService = require('./services/emergencyWebSocketService');
+
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
+  // Existing user room functionality
   socket.on('join_user_room', (userId) => {
     socket.join(`user_${userId}`);
     console.log(`User ${userId} joined their room`);
+  });
+
+  // 🚨 NEW: Coordinator room for emergency dashboard
+  socket.on('join_coordinator_room', () => {
+    socket.join('coordinator');
+    console.log(`Socket ${socket.id} joined coordinator room`);
+  });
+
+  // 🚨 NEW: Driver joins their specific room
+  socket.on('join_driver_room', (driverId) => {
+    socket.join(`driver_${driverId}`);
+    console.log(`Driver ${driverId} joined their room`);
+  });
+
+  // 🚨 NEW: Family member joins elder's room for updates
+  socket.on('join_family_room', (elderId) => {
+    socket.join(`family_${elderId}`);
+    console.log(`Family member joined room for elder ${elderId}`);
+  });
+
+  // 🚨 NEW: Ambulance tracking room
+  socket.on('track_ambulance', (ambulanceId) => {
+    socket.join(`ambulance_${ambulanceId}`);
+    console.log(`Socket ${socket.id} tracking ambulance ${ambulanceId}`);
   });
 
   socket.on('disconnect', () => {
@@ -119,7 +216,6 @@ app.set('io', io);
 app.use((error, req, res, next) => {
   console.error('Global error handler:', error);
   
-  // Handle specific error types
   if (error.name === 'SequelizeValidationError') {
     return res.status(400).json({
       success: false,
@@ -139,7 +235,6 @@ app.use((error, req, res, next) => {
     });
   }
   
-  // Default error response
   res.status(500).json({ 
     success: false,
     message: process.env.NODE_ENV === 'production' 
@@ -157,19 +252,17 @@ app.use('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // Database connection and server start
 const startServer = async () => {
   try {
-    // Test database connection
     await sequelize.authenticate();
     console.log('✅ Database connected successfully');
     
-    // Sync database models
     await sequelize.sync({ alter: true });
     console.log('✅ Database models synchronized');
     
-    // Start server
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
@@ -182,3 +275,7 @@ const startServer = async () => {
 };
 
 startServer();
+
+// Doctor routes
+// const doctorAppointmentsRoutes = require('./routes/doctorAppointments');
+app.use('/api/doctor', doctorAppointmentsRoutes);

@@ -3,27 +3,23 @@ const { Subscription, User, Elder } = require('../models');
 const stripe = require('../config/stripe');
 
 const PACKAGE_PRICES = {
-  basic: { 1: 99, 6: 534, 12: 1068 },
-  premium: { 1: 199, 6: 1074, 12: 2148 },
-  comprehensive: { 1: 299, 6: 1614, 12: 3228 }
+  '1_month': 99,
+  '6_months': 534,
+  '1_year': 1068
 };
 
 const createSubscription = async (req, res) => {
   try {
-    const { plan, duration, paymentMethodId } = req.body;
+    const { duration, paymentMethodId } = req.body;
     const userId = req.user.id;
 
+    const amount = PACKAGE_PRICES[duration];
+    if (!amount) {
+      return res.status(400).json({ message: 'Invalid duration' });
+    }
+
     console.log('🔵 Creating subscription for user:', userId);
-    console.log('🔵 Plan:', plan, 'Duration:', duration);
-
-    // REMOVED: The blocking check for existing active subscriptions
-    // Users should be able to have multiple active subscriptions
-    // Each subscription can have one elder, so multiple subscriptions = multiple elders
-
-    const durationMonths = duration === '1_month' ? 1 : duration === '6_months' ? 6 : 12;
-    const amount = PACKAGE_PRICES[plan][durationMonths];
-
-    console.log('🔵 Duration months:', durationMonths, 'Amount:', amount);
+    console.log('🔵 Duration:', duration);
 
     // Create Stripe customer
     const customer = await stripe.customers.create({
@@ -53,17 +49,17 @@ const createSubscription = async (req, res) => {
     if (paymentIntent.status === 'succeeded') {
       const startDate = new Date();
       const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + durationMonths);
+      endDate.setMonth(endDate.getMonth() + (duration === '1_month' ? 1 : duration === '6_months' ? 6 : 12));
 
       const subscription = await Subscription.create({
         userId,
         stripeCustomerId: customer.id,
-        plan,
+        plan: 'premium', // or 'basic', or whatever your default is
         status: 'active',
         startDate,
         endDate,
         amount,
-        duration,
+        duration, // <-- this is '1_month', '6_months', or '1_year'
         autoRenew: true
       });
 

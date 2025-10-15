@@ -265,6 +265,247 @@ class EmailService {
       throw error;
     }
   }
+
+  /**
+   * Send emergency alert email
+   */
+  async sendEmergencyAlert(options) {
+    try {
+      const {
+        to,
+        recipientName,
+        elderName,
+        elderPhone,
+        location,
+        timestamp,
+        alertType,
+        recipientRole
+      } = options;
+
+      const formattedTime = new Date(timestamp).toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      // Format location
+      let locationText = 'Location unavailable';
+      if (location && location.available) {
+        if (location.address && location.address.formattedAddress) {
+          locationText = location.address.formattedAddress;
+        } else if (location.latitude && location.longitude) {
+          locationText = `Coordinates: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+        }
+      } else if (typeof location === 'string') {
+        locationText = location;
+      }
+
+      // FIXED: Handle both 'family_member' and other roles
+      const roleMessage = recipientRole === 'family_member' 
+        ? 'You are receiving this alert as a family member.'
+        : 'You are receiving this alert as an assigned caregiver.';
+
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || 'noreply@elderlink.com',
+        to: to,
+        subject: `🚨 EMERGENCY ALERT - ${elderName}`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                margin: 0;
+                padding: 0;
+              }
+              .container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f9f9f9;
+              }
+              .header {
+                background-color: #e74c3c;
+                color: white;
+                padding: 30px 20px;
+                text-align: center;
+                border-radius: 5px 5px 0 0;
+              }
+              .header h1 {
+                margin: 0;
+                font-size: 28px;
+              }
+              .content {
+                background-color: white;
+                padding: 30px;
+                border-radius: 0 0 5px 5px;
+              }
+              .alert-box {
+                background-color: #fff3cd;
+                border-left: 4px solid #ffc107;
+                padding: 15px;
+                margin: 20px 0;
+                font-weight: bold;
+                font-size: 16px;
+              }
+              .info-box {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 5px;
+                padding: 15px;
+                margin: 20px 0;
+              }
+              .info-box h3 {
+                margin-top: 0;
+                color: #495057;
+              }
+              .info-box ul {
+                list-style: none;
+                padding: 0;
+                margin: 10px 0;
+              }
+              .info-box li {
+                padding: 8px 0;
+                border-bottom: 1px solid #e9ecef;
+              }
+              .info-box li:last-child {
+                border-bottom: none;
+              }
+              .info-box strong {
+                display: inline-block;
+                width: 120px;
+                color: #6c757d;
+              }
+              .button {
+                display: inline-block;
+                padding: 12px 24px;
+                background-color: #e74c3c;
+                color: white;
+                text-decoration: none;
+                border-radius: 5px;
+                margin-top: 20px;
+                font-weight: bold;
+              }
+              .footer {
+                text-align: center;
+                margin-top: 20px;
+                color: #666;
+                font-size: 12px;
+                padding: 20px;
+              }
+              .emergency-number {
+                background-color: #d4edda;
+                border: 2px solid #28a745;
+                border-radius: 5px;
+                padding: 15px;
+                margin: 20px 0;
+                text-align: center;
+              }
+              .emergency-number strong {
+                color: #155724;
+                font-size: 18px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🚨 EMERGENCY ALERT</h1>
+              </div>
+              <div class="content">
+                <h2>Hello ${recipientName},</h2>
+                
+                <div class="alert-box">
+                  ⚠️ IMMEDIATE ATTENTION REQUIRED
+                </div>
+                
+                <p style="font-size: 16px;"><strong>${elderName}</strong> has triggered an emergency alert and needs immediate assistance.</p>
+                
+                <div class="info-box">
+                  <h3>📋 Alert Details:</h3>
+                  <ul>
+                    <li><strong>Alert Type:</strong> ${alertType || 'SOS Button'}</li>
+                    <li><strong>Time:</strong> ${formattedTime}</li>
+                    <li><strong>Location:</strong> ${locationText}</li>
+                    <li><strong>Elder Phone:</strong> ${elderPhone || 'Not available'}</li>
+                  </ul>
+                </div>
+                
+                <div class="emergency-number">
+                  <strong>📞 If needed, call emergency services immediately: 911</strong>
+                </div>
+                
+                <p style="color: #666; margin-top: 20px; font-size: 14px;">
+                  ${roleMessage}
+                </p>
+                
+                <div style="text-align: center;">
+                  <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard" class="button">
+                    View Dashboard →
+                  </a>
+                </div>
+                
+                <p style="margin-top: 30px; color: #e74c3c; font-weight: bold; text-align: center;">
+                  Please respond immediately or contact emergency services if needed.
+                </p>
+              </div>
+              <div class="footer">
+                <p>This is an automated emergency alert from ElderLink.</p>
+                <p>For immediate assistance, call emergency services.</p>
+                <p style="margin-top: 10px; color: #999;">
+                  ElderLink Emergency System | ${new Date().getFullYear()}
+                </p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Emergency alert email sent to ${to}`);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error sending emergency alert email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Generic send email method
+   */
+  async sendEmail({ to, subject, html, text }) {
+    try {
+      if (!this.transporter) {
+        console.error('❌ Email transporter not initialized');
+        return { success: false, error: 'Email transporter not initialized' };
+      }
+
+      const mailOptions = {
+        from: `"ElderLink" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        html: html || text,
+        text: text || html?.replace(/<[^>]*>/g, ''), // Strip HTML if no text provided
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Email sent to ${to}: ${subject}`);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error sending email:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 module.exports = new EmailService();

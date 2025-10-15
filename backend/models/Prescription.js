@@ -1,26 +1,22 @@
-// backend/models/Prescription.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const Prescription = sequelize.define('Prescription', {
   id: {
     type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
+    primaryKey: true,
+    defaultValue: DataTypes.UUIDV4
   },
-  consultationId: {
-    type: DataTypes.UUID,
+  prescriptionNumber: {
+    type: DataTypes.STRING,
     allowNull: false,
-    references: {
-      model: 'ConsultationRecords',
-      key: 'id'
-    }
+    unique: true
   },
   doctorId: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'doctors',  // ✅ Change from 'Doctors' to 'doctors'
+      model: 'Users',
       key: 'id'
     }
   },
@@ -32,45 +28,70 @@ const Prescription = sequelize.define('Prescription', {
       key: 'id'
     }
   },
-  prescriptionNumber: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    unique: true
-  },
-  medications: {
-    type: DataTypes.JSONB,
-    allowNull: false
-  },
-  instructions: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  validUntil: {
-    type: DataTypes.DATEONLY,
-    allowNull: true
+  pharmacyId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
   },
   status: {
-    type: DataTypes.ENUM('active', 'expired', 'cancelled'),
-    defaultValue: 'active'
+    type: DataTypes.ENUM('pending', 'filled', 'partially_filled', 'cancelled', 'expired'),
+    allowNull: false,
+    defaultValue: 'pending'
   },
-  digitalSignature: {
+  issuedDate: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  },
+  validUntil: {
+    type: DataTypes.DATE,
+    allowNull: false
+  },
+  filledDate: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  totalAmount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    defaultValue: 0
+  },
+  notes: {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  prescriptionFile: {
-    type: DataTypes.STRING,
+  priority: {
+    type: DataTypes.ENUM('low', 'normal', 'high', 'urgent'),
+    allowNull: false,
+    defaultValue: 'normal'
+  },
+  deliveryRequired: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
+  },
+  deliveryAddress: {
+    type: DataTypes.TEXT,
     allowNull: true
-  }
-}, {
-  hooks: {
-    beforeCreate: async (prescription) => {
-      if (!prescription.prescriptionNumber) {
-        const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const random = Math.floor(1000 + Math.random() * 9000);
-        prescription.prescriptionNumber = `RX${timestamp}${random}`;
-      }
+  },
+  deliveryDate: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  filledBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
     }
   }
+}, {
+  tableName: 'prescriptions',
+  timestamps: true
 });
 
 module.exports = Prescription;

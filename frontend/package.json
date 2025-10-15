@@ -1,6 +1,6 @@
 {
   "name": "elderlink-frontend",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "ElderLink Frontend Application",
   "private": true,
   "dependencies": {
@@ -23,6 +23,7 @@
     "react-hot-toast": "^2.5.2",
     "react-router-dom": "^6.30.1",
     "react-scripts": "^5.0.1",
+    "react-toastify": "^11.0.5",
     "socket.io-client": "^4.7.4",
     "tailwindcss": "^3.3.0"
   },
@@ -50,7 +51,7 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:5000",
+  "proxy": "http://localhost:3000",
   "devDependencies": {
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.5"

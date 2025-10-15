@@ -88,8 +88,3 @@ const ConsultationRecord = sequelize.define('ConsultationRecord', {
 
 
 module.exports = ConsultationRecord;
-
-
-
-
-

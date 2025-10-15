@@ -11,7 +11,21 @@ const RoleLayout = ({ children, title }) => {
   const { user, logout } = useAuth();
   
   const menuItems = getRoleMenuItems(user?.role);
-  const isActive = (path) => location.pathname === path;
+  
+  // Enhanced active check that handles query parameters
+  const isActive = (path) => {
+    const [itemPath, itemQuery] = path.split('?');
+    const currentPath = location.pathname;
+    const currentSearch = location.search;
+    
+    // If no query params in menu item, just match path
+    if (!itemQuery) {
+      return currentPath === itemPath;
+    }
+    
+    // If query params exist, match both path and query
+    return currentPath === itemPath && currentSearch === `?${itemQuery}`;
+  };
 
   const handleLogout = () => {
     logout();

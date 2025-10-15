@@ -1,7 +1,7 @@
 // frontend/src/services/doctorAppointment.js
 import api from './api';
 
-class DoctorAppointmentService {
+export const doctorAppointmentService = {
   // Get doctor's appointments
   async getDoctorAppointments(params = {}) {
     try {
@@ -20,7 +20,7 @@ class DoctorAppointmentService {
       console.error('Error fetching doctor appointments:', error);
       throw error;
     }
-  }
+  },
 
   // Review appointment (approve/reject)
   async reviewAppointment(appointmentId, action, notes = '') {
@@ -39,7 +39,17 @@ class DoctorAppointmentService {
       console.error('❌ Error reviewing appointment:', error);
       throw error;
     }
-  }
+  },
+
+  async rescheduleAppointment(appointmentId, data) {
+    try {
+      const response = await api.patch(`/doctor/appointments/${appointmentId}/reschedule`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error rescheduling appointment:', error);
+      throw error;
+    }
+  },
 
   // Get elder's medical summary
   async getElderMedicalSummary(elderId) {
@@ -50,7 +60,7 @@ class DoctorAppointmentService {
       console.error('Error fetching elder medical summary:', error);
       throw error;
     }
-  }
+  },
 
   // Complete appointment
   async completeAppointment(appointmentId, data) {
@@ -61,7 +71,7 @@ class DoctorAppointmentService {
       console.error('Error completing appointment:', error);
       throw error;
     }
-  }
+  },
 
   // Create prescription
   async createPrescription(appointmentId, prescriptionData) {
@@ -72,7 +82,7 @@ class DoctorAppointmentService {
       console.error('Error creating prescription:', error);
       throw error;
     }
-  }
+  },
 
   // Get consultation records
   async getConsultationRecords(params = {}) {
@@ -89,7 +99,7 @@ class DoctorAppointmentService {
       console.error('Error fetching consultation records:', error);
       throw error;
     }
-  }
+  },
 
   // Get dashboard stats
   async getDashboardStats() {
@@ -100,18 +110,23 @@ class DoctorAppointmentService {
       console.error('Error fetching dashboard stats:', error);
       throw error;
     }
-  }
+  },
 
-  // Update schedule
-  async updateSchedule(scheduleData) {
+  // ✅ FIXED: Update schedule - now using the correct endpoint
+  // Replace the existing updateSchedule method
+  updateSchedule: async (data) => {
     try {
-      const response = await api.patch('/doctor/schedule', scheduleData);
-      return response.data;
+      console.log('🔄 Updating doctor schedule:', data);
+      
+      const response = await api.post('/doctor/schedule', data);
+      
+      console.log('✅ Schedule update response:', response);
+      return response;
     } catch (error) {
-      console.error('Error updating schedule:', error);
+      console.error('❌ Error updating schedule:', error);
       throw error;
     }
-  }
+  },
 
   // Add schedule exception
   async addScheduleException(exceptionData) {
@@ -122,7 +137,35 @@ class DoctorAppointmentService {
       console.error('Error adding schedule exception:', error);
       throw error;
     }
-  }
-}
+  },
 
-export const doctorAppointmentService = new DoctorAppointmentService();
+  // ✅ NEW: Get doctor's current schedule
+  async getDoctorSchedule(params = {}) {
+    try {
+      const { startDate, endDate } = params;
+      const queryParams = new URLSearchParams();
+      
+      if (startDate) queryParams.append('startDate', startDate);
+      if (endDate) queryParams.append('endDate', endDate);
+      
+      const response = await api.get(`/doctor/schedule?${queryParams}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching doctor schedule:', error);
+      throw error;
+    }
+  },
+
+  // ✅ NEW: Delete specific schedule slots
+  async deleteScheduleSlots(scheduleIds) {
+    try {
+      const response = await api.delete('/doctor/schedule', {
+        data: { scheduleIds }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting schedule slots:', error);
+      throw error;
+    }
+  }
+};

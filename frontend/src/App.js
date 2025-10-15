@@ -13,27 +13,40 @@ import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
-
-// Auth Components
 import Login from './components/auth/Login';
 
-// Admin Components
+// Admin
 import AdminDashboard from './components/admin/dashboard/AdminDashboard';
 import UserManagement from './components/admin/UserManagement';
 import AdminPortal from './pages/AdminPortal';
 
-// Doctor Components  
+// Coordinator (Ambulance)
+import CoordinatorDashboard from './components/coordinator/CoordinatorDashboard';
+
+// Doctor
 import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
 import PatientList from './components/doctor/patients/PatientList';
 import AppointmentManagement from './components/doctor/appointments/AppointmentManagement';
 import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
 import MedicalRecords from './components/doctor/records/MedicalRecords';
 
-// Family Components
+
+// Family
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
 import AppointmentList from './components/family/appointments/AppointmentList';
+import MonthlySessions from './components/family/sessions/MonthlySessions';
+import Doctors from './components/family/doctors/Doctors';
+import DoctorAssignment from './components/family/doctors/DoctorAssignment'; // NEW IMPORT
+import AppointmentBooking from './components/family/appointments/AppointmentBooking';
+import FamilySettings from './components/family/settings/FamilySettings';
+import FamilyProfile from './components/family/profile/FamilyProfile';
+import FamilyHealthReports from './components/family/reports/FamilyHealthReports';
+import FamilySubscriptions from './components/family/subscription/FamilySubscriptions';
+import FamilyElders from './components/family/elder/FamilyElders';
+import AppointmentPaymentForm from './components/family/appointments/AppointmentPaymentForm';
+import DoctorCalendarModal from './components/family/appointments/DoctorCalendarModal';
 
-// Pharmacy Components
+// Pharmacy
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
 import MedicationManagement from './components/pharmacist/medications/MedicationManagement';
 import DeliverySchedule from './components/pharmacist/delivery/DeliverySchedule';
@@ -43,43 +56,48 @@ import AddNewItem from './components/pharmacist/inventory/AddNewItem';
 import PharmacyProfile from './components/pharmacist/profile/Pharmacyprofile';
 import MedicineProfile from './components/pharmacist/inventory/MedicineProfile';
 
-// Staff Components
+// Mental Health Consultant Components
+import MentalHealthDashboard from './components/mental-health/dashboard/MentalHealthDashboard';
+import MentalHealthProfile from './components/mental-health/profile/Profile';
+import MentalHealthClients from './components/mental-health/pations/clients';
+import ProgressReport from './components/mental-health/p-reports/p-report';
+import TreatmentPlans from './components/mental-health/t-plans/t-plans';
+import MentalHealthAssessments from './components/mental-health/assessments/assessments';
+import MentalHealthResources from './components/mental-health/m-resources/resources';
+import MentalHealthTherapySessions from './components/mental-health/sessions/sessions';
+
+// Staff
 import StaffDashboard from './components/staff/dashboard/StaffDashboard';
 import AlertsManagement from './components/staff/alerts/AlertsManagement';
 import HealthMonitoring from './components/staff/monitoring/HealthMonitoring';
 import CareManagement from './components/staff/care/CareManagement';
-import Report from './components/staff/reports/Report';
 import Profilestaff from './components/staff/profile/Profilestaff';
+import MentalHealthManagement from './components/staff/mental/Mental';
+import HealthReports from './components/staff/reports/HealthReports';
 
-// Elder Components
+// Elder
 import ElderDashboard from './components/Elder/dashboard/Elder';
+import ElderHealthReports from './components/Elder/dashboard/ElderHealthReports';
+import ElderAppointments from './components/Elder/dashboard/ElderAppointments';
+import ElderMedications from './components/Elder/dashboard/ElderMedications';
+import ElderMentalWellness from './components/Elder/dashboard/ElderMentalWellness';
+import ElderEmergency from './components/Elder/dashboard/ElderEmergency';
+import ElderProfile from './components/Elder/dashboard/ElderProfile';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#667eea',
-    },
-    secondary: {
-      main: '#764ba2',
-    },
-  },
-});
+const theme = createTheme(); // Add this line
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <Router>
+        <SubscriptionProvider>
           <InventoryProvider>
-            <SubscriptionProvider>
+            <Router>
               <div className="App">
                 <Routes>
-                  {/* Public routes */}
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
-                  
-                  {/* General routes */}
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/settings" element={<Settings />} />
@@ -87,7 +105,10 @@ function App() {
                   {/* Admin routes */}
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
                   <Route path="/admin/users" element={<UserManagement />} />
-                  <Route path="/admin-portal" element={<AdminPortal />} />
+                  <Route path="/admin/portal" element={<AdminPortal />} />
+                  
+                  {/* Coordinator (Ambulance) routes */}
+                  <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
                   
                   {/* Doctor routes */}
                   <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
@@ -99,28 +120,60 @@ function App() {
                   {/* Family routes */}
                   <Route path="/family/dashboard" element={<FamilyDashboard />} />
                   <Route path="/family/appointments" element={<AppointmentList />} />
-                  
-                  {/* Pharmacy/Pharmacist routes */}
-                  <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
+                  <Route path="/family/sessions" element={<MonthlySessions />} />
+                  <Route path="/family/doctors" element={<Doctors />} />
+                  <Route path="/family/doctor-assignment" element={<DoctorAssignment />} /> {/* NEW ROUTE */}
+                  <Route path="/family/settings" element={<FamilySettings />} />
+                  <Route path="/family/profile" element={<FamilyProfile />} />
+                  <Route path="/family/health-reports" element={<FamilyHealthReports />} />
+                  <Route path="/family/subscriptions" element={<FamilySubscriptions />} />
+                  <Route path="/family/elders" element={<FamilyElders />} />
+                  <Route path="/family/DoctorCalendar" element={<DoctorCalendarModal />} />
+
+                  {/* Pharmacy routes */}
                   <Route path="/pharmacist/dashboard" element={<PharmacyDashboard />} />
                   <Route path="/pharmacist/medications" element={<MedicationManagement />} />
                   <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
                   <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
                   <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
                   <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
-                  <Route path="/pharmacist/inventory/:id" element={<MedicineProfile />} />
                   <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
+                  <Route path="/pharmacist/medicine/:id" element={<MedicineProfile />} />
+                  
+                  {/* Mental Health routes */}
+                  <Route path="/mental-health/dashboard" element={<MentalHealthDashboard />} />
+                  <Route path="/mental-health/profile" element={<MentalHealthProfile />} />
+                  <Route path="/mental-health/clients" element={<MentalHealthClients />} />
+                  <Route path="/mental-health/progress-reports" element={<ProgressReport />} />
+                  <Route path="/mental-health/treatment-plans" element={<TreatmentPlans />} />
+                  <Route path="/mental-health/assessments" element={<MentalHealthAssessments />} />
+                  <Route path="/mental-health/resources" element={<MentalHealthResources />} />
+                  <Route path="/mental-health/therapy-sessions" element={<MentalHealthTherapySessions />} />
                   
                   {/* Staff routes */}
                   <Route path="/staff/dashboard" element={<StaffDashboard />} />
-                  <Route path="/staff/care" element={<CareManagement />} />
                   <Route path="/staff/alerts" element={<AlertsManagement />} />
                   <Route path="/staff/monitoring" element={<HealthMonitoring />} />
-                  <Route path="/staff/reports" element={<Report />} />
+                  <Route path="/staff/care" element={<CareManagement />} />
+                  <Route path="/staff/reports" element={<HealthReports />} />
                   <Route path="/staff/profile" element={<Profilestaff />} />
+                  <Route path="/staff/mental" element={<MentalHealthManagement />} />
                   
                   {/* Elder routes */}
                   <Route path="/elder/dashboard" element={<ElderDashboard />} />
+              <Route path="/elder/health-reports" element={<ElderHealthReports />} />
+              <Route path="/elder/appointments" element={<ElderAppointments />} />
+              <Route path="/elder/medications" element={<ElderMedications />} />
+              <Route path="/elder/mental-wellness" element={<ElderMentalWellness />} />
+              <Route path="/elder/emergency" element={<ElderEmergency />} />
+              <Route path="/elder/profile" element={<ElderProfile />} />
+              
+              {/* Booking and Payment routes */}
+              <Route path="/appointment-booking" element={<AppointmentBooking />} />
+              <Route path="/appointment-payment" element={<AppointmentPaymentForm />} />
+              
+              {/* Doctor Calendar Modal - Uncomment if needed as a route */}
+              {/* <Route path="/doctor-calendar" element={<DoctorCalendarModal />} /> */}
                 </Routes>
                 
                 {/* Toast notifications */}
@@ -147,9 +200,9 @@ function App() {
                   }}
                 />
               </div>
-            </SubscriptionProvider>
+            </Router>
           </InventoryProvider>
-        </Router>
+        </SubscriptionProvider>
       </AuthProvider>
     </ThemeProvider>
   );
