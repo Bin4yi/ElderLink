@@ -7,6 +7,7 @@ const User = require('./User');
 const Elder = require('./Elder');
 const Subscription = require('./Subscription');
 const HealthMonitoring = require('./HealthMonitoring');
+const HealthAlert = require('./HealthAlert');
 const Notification = require('./Notification');
 const StaffAssignment = require('./StaffAssignment'); // ✅ Changed from StaffAssignmentModel
 const DoctorAssignment = require('./DoctorAssignment'); // ✅ Add this
@@ -38,7 +39,7 @@ const clearAssociations = (model) => {
 };
 
 // Clear associations for all models
-[User, Elder, Subscription, HealthMonitoring, Notification, StaffAssignment, DoctorAssignment, 
+[User, Elder, Subscription, HealthMonitoring, HealthAlert, Notification, StaffAssignment, DoctorAssignment, 
  Inventory, InventoryTransaction, Prescription, PrescriptionItem, Ambulance, EmergencyAlert, 
  AmbulanceDispatch, EmergencyLocation].forEach(clearAssociations);
 
@@ -46,6 +47,8 @@ const clearAssociations = (model) => {
 User.hasMany(Elder, { foreignKey: 'userId', as: 'elders' });
 User.hasMany(Subscription, { foreignKey: 'userId', as: 'subscriptions' });
 User.hasMany(HealthMonitoring, { foreignKey: 'staffId', as: 'healthMonitorings' });
+User.hasMany(HealthAlert, { foreignKey: 'acknowledgedBy', as: 'acknowledgedAlerts' });
+User.hasMany(HealthAlert, { foreignKey: 'resolvedBy', as: 'resolvedAlerts' });
 User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
 User.hasMany(StaffAssignment, { foreignKey: 'staffId', as: 'staffAssignments' });
 User.hasMany(DoctorAssignment, { foreignKey: 'doctorId', as: 'doctorAssignments' }); // ✅ Add this
@@ -56,6 +59,7 @@ User.hasOne(Doctor, { foreignKey: 'userId', as: 'doctorProfile', onDelete: 'CASC
 Elder.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Elder.belongsTo(Subscription, { foreignKey: 'subscriptionId', as: 'subscription' });
 Elder.hasMany(HealthMonitoring, { foreignKey: 'elderId', as: 'healthRecords' });
+Elder.hasMany(HealthAlert, { foreignKey: 'elderId', as: 'healthAlerts' });
 Elder.hasMany(Notification, { foreignKey: 'elderId', as: 'elderNotifications' });
 Elder.hasMany(StaffAssignment, { foreignKey: 'elderId', as: 'staffAssignments' });
 Elder.hasMany(DoctorAssignment, { foreignKey: 'elderId', as: 'doctorAssignmentRecords' }); // ✅ Changed from 'doctorAssignments' to 'doctorAssignmentRecords'
@@ -67,6 +71,13 @@ Subscription.hasOne(Elder, { foreignKey: 'subscriptionId', as: 'elder' });
 // HealthMonitoring associations
 HealthMonitoring.belongsTo(User, { foreignKey: 'staffId', as: 'staff' });
 HealthMonitoring.belongsTo(Elder, { foreignKey: 'elderId', as: 'elder' });
+HealthMonitoring.hasMany(HealthAlert, { foreignKey: 'healthMonitoringId', as: 'alerts' });
+
+// HealthAlert associations
+HealthAlert.belongsTo(Elder, { foreignKey: 'elderId', as: 'elder' });
+HealthAlert.belongsTo(HealthMonitoring, { foreignKey: 'healthMonitoringId', as: 'healthMonitoring' });
+HealthAlert.belongsTo(User, { foreignKey: 'acknowledgedBy', as: 'acknowledgedByUser' });
+HealthAlert.belongsTo(User, { foreignKey: 'resolvedBy', as: 'resolvedByUser' });
 
 // Notification associations
 Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -241,6 +252,7 @@ module.exports = {
   Elder,
   Subscription,
   HealthMonitoring,
+  HealthAlert,
   Notification,
   StaffAssignment,
   DoctorAssignment,

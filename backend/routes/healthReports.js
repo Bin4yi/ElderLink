@@ -18,7 +18,16 @@ router.get('/custom', auth, checkRole(['admin', 'staff', 'elder']), healthReport
 // Get elder's health summary
 router.get('/summary/:elderId', auth, checkRole(['admin', 'staff', 'elder']), healthReportsController.getElderHealthSummary);
 
-// Export health data as PDF
+// Export daily report as PDF
+router.get('/daily/pdf', auth, checkRole(['admin', 'staff', 'elder']), healthReportsController.exportHealthReportPDF);
+
+// Export weekly report as PDF
+router.get('/weekly/pdf', auth, checkRole(['admin', 'staff', 'elder']), healthReportsController.exportHealthReportPDF);
+
+// Export monthly report as PDF
+router.get('/monthly/pdf', auth, checkRole(['admin', 'staff', 'elder']), healthReportsController.exportHealthReportPDF);
+
+// Export health data as PDF (by elder ID)
 router.get('/pdf/:elderId', auth, checkRole(['admin', 'staff', 'elder']), healthReportsController.exportHealthReportPDF);
 
 // Export health data as CSV

@@ -11,9 +11,20 @@ import {
   AlertTriangle,
   CheckCircle,
   Monitor,
-  Clipboard
+  Clipboard,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  Bell,
+  ArrowRight,
+  Thermometer,
+  Droplet,
+  Wind,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import api from '../../../services/api';
+import toast from 'react-hot-toast';
 
 const StaffDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -23,36 +34,129 @@ const StaffDashboard = () => {
     completedTasks: 0,
     pendingTasks: 0,
     healthAlerts: 0,
-    averageRating: 0
+    criticalAlerts: 0,
+    averageRating: 0,
+    completionRate: 0
   });
-  // Removed todaySchedule state as schedule is now managed in CareManagement
-  // Removed recentAlerts state
+  const [recentAlerts, setRecentAlerts] = useState([]);
+  const [todaysVitals, setTodaysVitals] = useState([]);
+  const [upcomingTasks, setUpcomingTasks] = useState([]);
+  const [animateCards, setAnimateCards] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     loadDashboardData();
+    // Trigger animation after component mounts
+    setTimeout(() => setAnimateCards(true), 100);
+  }, []);
+
+  useEffect(() => {
+    // Update clock every minute
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+    return () => clearInterval(timer);
   }, []);
 
   const loadDashboardData = async () => {
     try {
-      // Simulate API calls - replace with actual API calls
-      setTimeout(() => {
-        setStats({
-          assignedElders: 1,
-          todayTasks: 5,
-          completedTasks: 2,
-          pendingTasks: 2,
-          healthAlerts: 3,
-          averageRating: 4.7
-        });
-        // Removed setTodaySchedule, schedule is now managed in CareManagement
-        // Removed setRecentAlerts
-        setLoading(false);
-      }, 1000);
+      setLoading(true);
+      
+      // Load assigned elders
+      const eldersResponse = await api.get('/elders/staff/assigned');
+      const assignedElders = eldersResponse.data?.elders || eldersResponse.data?.data || eldersResponse.data || [];
+      console.log('📊 Assigned Elders Response:', eldersResponse.data);
+      console.log('📊 Assigned Elders Count:', assignedElders.length);
+      
+      // Load health alerts (deduplicated)
+      const alertsResponse = await api.get('/health-alerts/staff');
+      const allAlerts = alertsResponse.data?.data || alertsResponse.data || [];
+      
+      // Deduplicate alerts by healthMonitoringId (same as AlertsManagement)
+      const uniqueAlerts = Object.values(
+        allAlerts.reduce((acc, alert) => {
+          const key = alert.healthMonitoringId || alert.id;
+          
+          // Keep only the most recent alert per health record
+          if (!acc[key] || new Date(alert.createdAt) > new Date(acc[key].createdAt)) {
+            acc[key] = alert;
+          }
+          // If same time, prioritize higher severity
+          else if (new Date(alert.createdAt).getTime() === new Date(acc[key].createdAt).getTime()) {
+            const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+            if (severityOrder[alert.severity] > severityOrder[acc[key].severity]) {
+              acc[key] = alert;
+            }
+          }
+          
+          return acc;
+        }, {})
+      );
+      
+      // Sort by date and count by severity
+      uniqueAlerts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const criticalCount = uniqueAlerts.filter(a => 
+        a.severity === 'critical' || a.severity === 'high'
+      ).length;
+      
+      console.log('📊 Total Alerts (before dedup):', allAlerts.length);
+      console.log('📊 Unique Alerts (after dedup):', uniqueAlerts.length);
+      console.log('📊 Critical/High Alerts:', criticalCount);
+      
+      // Load today's health monitoring records
+      const today = new Date().toISOString().split('T')[0];
+      const vitalsResponse = await api.get('/health-monitoring', {
+        params: { date: today }
+      });
+      const vitals = vitalsResponse.data?.data || vitalsResponse.data?.records || [];
+      
+      // Calculate real task statistics from vitals (health checks are tasks)
+      const totalTasks = vitals.length;
+      const completedTasks = vitals.filter(v => v.notes && v.notes.length > 0).length;
+      const pendingTasks = Math.max(0, assignedElders.length - totalTasks);
+      const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+      setStats({
+        assignedElders: assignedElders.length,
+        todayTasks: totalTasks,
+        completedTasks: completedTasks,
+        pendingTasks: pendingTasks,
+        healthAlerts: uniqueAlerts.length, // Use deduplicated count
+        criticalAlerts: criticalCount,
+        averageRating: 0,
+        completionRate
+      });
+      
+      setRecentAlerts(uniqueAlerts.slice(0, 4));
+      setTodaysVitals(vitals.slice(0, 6));
+      
+      // Don't show fake upcoming tasks
+      setUpcomingTasks([]);
+      
+      setLoading(false);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
+      toast.error('Failed to load dashboard data');
       setLoading(false);
+    }
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const getAlertColor = (severity) => {
+    switch(severity) {
+      case 'critical': return 'text-red-600 bg-red-50 border-red-200';
+      case 'high': return 'text-orange-600 bg-orange-50 border-orange-200';
+      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'low': return 'text-blue-600 bg-blue-50 border-blue-200';
+      default: return 'text-gray-600 bg-gray-50 border-gray-200';
     }
   };
 
@@ -62,141 +166,279 @@ const StaffDashboard = () => {
 
   return (
     <RoleLayout title="Care Staff Dashboard">
-      <div className="space-y-8">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-teal-600 to-green-600 rounded-lg p-8 text-white">
-          <h1 className="text-3xl font-bold mb-2">
-            Good morning, {user?.firstName}!
-          </h1>
-          <p className="text-white/80">
-            You have {stats.todayTasks} care tasks scheduled today. {stats.completedTasks} completed, {stats.pendingTasks} remaining.
-          </p>
-        </div>
-
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <Users className="w-10 h-10 text-teal-500 mr-4" />
+      <div className="space-y-6">
+        {/* Welcome Section with Gradient */}
+        <div className="relative bg-gradient-to-br from-teal-500 via-cyan-600 to-blue-600 rounded-2xl p-8 text-white overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm text-gray-600">Assigned Elders</p>
-                <p className="text-2xl font-bold">{stats.assignedElders}</p>
-                <p className="text-xs text-blue-500">Under your care</p>
+                <h1 className="text-4xl font-bold mb-2 flex items-center">
+                  {getGreeting()}, {user?.firstName}! 
+                  <span className="ml-3 text-3xl">👋</span>
+                </h1>
+                <p className="text-white/90 text-lg">
+                  {stats.assignedElders > 0 ? (
+                    <>You are caring for <span className="font-bold">{stats.assignedElders}</span> elder{stats.assignedElders !== 1 ? 's' : ''}</>
+                  ) : (
+                    <>No elders assigned yet</>
+                  )}
+                </p>
+              </div>
+              <div className="hidden md:block text-right">
+                <Clock className="w-16 h-16 text-white/90 mx-auto mb-2" />
+                <div className="text-2xl font-bold">
+                  {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+                <div className="text-white/80 text-sm">
+                  {currentTime.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <Clipboard className="w-10 h-10 text-blue-500 mr-4" />
-              <div>
-                <p className="text-sm text-gray-600">Today's Tasks</p>
-                <p className="text-2xl font-bold">{stats.todayTasks}</p>
-                <p className="text-xs text-gray-500">Scheduled for today</p>
+            
+            {stats.criticalAlerts > 0 && (
+              <div className="flex items-center space-x-6 mt-6">
+                <div className="flex items-center space-x-2 bg-red-500/20 px-3 py-1 rounded-full">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span>{stats.criticalAlerts} urgent alerts</span>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <CheckCircle className="w-10 h-10 text-green-500 mr-4" />
-              <div>
-                <p className="text-sm text-gray-600">Completed</p>
-                <p className="text-2xl font-bold">{stats.completedTasks}</p>
-                <p className="text-xs text-green-500">Great progress!</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <Clock className="w-10 h-10 text-orange-500 mr-4" />
-              <div>
-                <p className="text-sm text-gray-600">Pending Tasks</p>
-                <p className="text-2xl font-bold">{stats.pendingTasks}</p>
-                <p className="text-xs text-orange-500">Needs attention</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <AlertTriangle className="w-10 h-10 text-red-500 mr-4" />
-              <div>
-                <p className="text-sm text-gray-600">Health Alerts</p>
-                <p className="text-2xl font-bold">{stats.healthAlerts}</p>
-                <p className="text-xs text-red-500">Urgent</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <Heart className="w-10 h-10 text-pink-500 mr-4" />
-              <div>
-                <p className="text-sm text-gray-600">Care Rating</p>
-                <p className="text-2xl font-bold">{stats.averageRating}</p>
-                <p className="text-xs text-pink-500">⭐⭐⭐⭐⭐</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <button 
-            onClick={() => navigate('/staff/care')}
-            className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group"
-          >
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center group-hover:bg-teal-200 transition-colors">
-                <Heart className="w-6 h-6 text-teal-500" />
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Care Management</h3>
-            <p className="text-gray-600">Manage daily care activities</p>
-          </button>
-
-          <button 
-            onClick={() => navigate('/staff/monitoring')}
-            className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group"
-          >
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                <Monitor className="w-6 h-6 text-blue-500" />
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Health Monitoring</h3>
-            <p className="text-gray-600">Check vital signs and health status</p>
-          </button>
-
-          <button 
-            onClick={() => navigate('/staff/alerts')}
-            className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group"
-          >
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
-                <AlertTriangle className="w-6 h-6 text-red-500" />
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Alert Management</h3>
-            <p className="text-gray-600">Review and respond to alerts</p>
-          </button>
-
-          <button 
-            onClick={() => navigate('/staff/reports')}
-            className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow text-left group"
-          >
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                <Activity className="w-6 h-6 text-green-500" />
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Activity Reports</h3>
-            <p className="text-gray-600">Generate care activity reports</p>
-          </button>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { 
+                icon: Heart, 
+                title: 'Care Management', 
+                desc: 'Manage daily care activities', 
+                color: 'teal',
+                path: '/staff/care'
+              },
+              { 
+                icon: Monitor, 
+                title: 'Health Monitoring', 
+                desc: 'Check vital signs', 
+                color: 'blue',
+                path: '/staff/monitoring'
+              },
+              { 
+                icon: AlertTriangle, 
+                title: 'Alert Management', 
+                desc: 'Review alerts', 
+                color: 'red',
+                path: '/staff/alerts',
+                badge: stats.healthAlerts
+              },
+              { 
+                icon: Activity, 
+                title: 'Activity Reports', 
+                desc: 'Generate reports', 
+                color: 'green',
+                path: '/staff/reports'
+              }
+            ].map((action, index) => {
+              const Icon = action.icon;
+              const colorClasses = {
+                teal: 'from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700',
+                blue: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
+                red: 'from-red-500 to-red-600 hover:from-red-600 hover:to-red-700',
+                green: 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
+              };
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => navigate(action.path)}
+                  className="relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left group overflow-hidden"
+                >
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`w-14 h-14 bg-gradient-to-br ${colorClasses[action.color]} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                        <Icon className="w-7 h-7 text-white" />
+                      </div>
+                      {action.badge > 0 && (
+                        <div className="absolute top-4 right-4 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold animate-pulse">
+                          {action.badge}
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{action.title}</h3>
+                    <p className="text-gray-600 text-sm mb-4">{action.desc}</p>
+                    <div className="flex items-center text-sm font-semibold text-gray-700 group-hover:text-teal-600">
+                      Open <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        {/* Removed Recent Health Alerts section */}
+
+        {/* Two Column Layout for Alerts and Vitals */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Health Alerts */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-2">
+                <Bell className="w-6 h-6 text-red-500" />
+                <h2 className="text-xl font-bold text-gray-900">Recent Alerts</h2>
+              </div>
+              <button 
+                onClick={() => navigate('/staff/alerts')}
+                className="text-sm font-semibold text-teal-600 hover:text-teal-700 flex items-center"
+              >
+                View All <ArrowRight className="w-4 h-4 ml-1" />
+              </button>
+            </div>
+            
+            {recentAlerts.length === 0 ? (
+              <div className="text-center py-8">
+                <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                <p className="text-gray-500">No recent alerts</p>
+                <p className="text-sm text-gray-400 mt-2">All elders are doing well!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentAlerts.map((alert, index) => (
+                  <div 
+                    key={alert.id || index}
+                    className={`p-4 rounded-lg border-l-4 ${getAlertColor(alert.severity)} hover:shadow-md transition-shadow cursor-pointer`}
+                    onClick={() => navigate('/staff/alerts')}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <AlertTriangle className="w-4 h-4" />
+                          <span className="font-semibold text-sm">{alert.severity?.toUpperCase()}</span>
+                        </div>
+                        <p className="text-gray-900 font-medium">{alert.message || alert.alertType || 'Health alert'}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {alert.Elder?.name && <span className="font-medium">{alert.Elder.name} • </span>}
+                          {new Date(alert.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                      {alert.status === 'active' && (
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Today's Vital Signs */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-2">
+                <Activity className="w-6 h-6 text-blue-500" />
+                <h2 className="text-xl font-bold text-gray-900">Today's Vitals</h2>
+              </div>
+              <button 
+                onClick={() => navigate('/staff/monitoring')}
+                className="text-sm font-semibold text-teal-600 hover:text-teal-700 flex items-center"
+              >
+                View All <ArrowRight className="w-4 h-4 ml-1" />
+              </button>
+            </div>
+            
+            {todaysVitals.length === 0 ? (
+              <div className="text-center py-8">
+                <Monitor className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No vitals recorded today</p>
+                <button 
+                  onClick={() => navigate('/staff/monitoring')}
+                  className="mt-4 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+                >
+                  Add Vital Signs
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {todaysVitals.slice(0, 6).map((vital, index) => (
+                  <div 
+                    key={vital.id || index}
+                    className="p-3 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center space-x-2 mb-2">
+                      {vital.heartRate && <Heart className="w-4 h-4 text-red-500" />}
+                      {vital.temperature && <Thermometer className="w-4 h-4 text-orange-500" />}
+                      {vital.bloodPressureSystolic && <Droplet className="w-4 h-4 text-blue-500" />}
+                      {vital.oxygenSaturation && <Wind className="w-4 h-4 text-cyan-500" />}
+                      <span className="text-xs font-semibold text-gray-600">
+                        {vital.elder?.firstName} {vital.elder?.lastName}
+                      </span>
+                    </div>
+                    <div className="text-lg font-bold text-gray-900">
+                      {vital.heartRate && `${vital.heartRate} bpm`}
+                      {vital.temperature && `${vital.temperature}°F`}
+                      {vital.bloodPressureSystolic && `${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}`}
+                      {vital.oxygenSaturation && `${vital.oxygenSaturation}% O₂`}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {new Date(vital.monitoringDate).toLocaleTimeString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Only show Upcoming Tasks section if there are actual tasks */}
+        {upcomingTasks.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-2">
+                <Calendar className="w-6 h-6 text-purple-500" />
+                <h2 className="text-xl font-bold text-gray-900">Upcoming Tasks</h2>
+              </div>
+              <button 
+                onClick={() => navigate('/staff/care')}
+                className="text-sm font-semibold text-teal-600 hover:text-teal-700 flex items-center"
+              >
+                View Schedule <ArrowRight className="w-4 h-4 ml-1" />
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {upcomingTasks.map((task) => (
+                <div 
+                  key={task.id}
+                  className={`p-4 rounded-lg border ${task.urgent ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-gray-50'} hover:shadow-md transition-shadow cursor-pointer`}
+                  onClick={() => navigate('/staff/care')}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-12 h-12 rounded-lg ${task.urgent ? 'bg-red-100' : 'bg-blue-100'} flex items-center justify-center`}>
+                        <Clock className={`w-6 h-6 ${task.urgent ? 'text-red-600' : 'text-blue-600'}`} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900">{task.task}</h3>
+                        <p className="text-sm text-gray-600">{task.elder}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`font-bold ${task.urgent ? 'text-red-600' : 'text-gray-900'}`}>
+                        {task.time}
+                      </div>
+                      {task.urgent && (
+                        <div className="text-xs text-red-600 font-semibold mt-1">URGENT</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </RoleLayout>
   );
