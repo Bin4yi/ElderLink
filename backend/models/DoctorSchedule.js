@@ -27,6 +27,11 @@ const DoctorSchedule = sequelize.define('DoctorSchedule', {
     type: DataTypes.TIME,
     allowNull: false
   },
+  slotDuration: {
+    type: DataTypes.INTEGER,
+    defaultValue: 30,
+    comment: 'Duration of each appointment slot in minutes'
+  },
   isAvailable: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
