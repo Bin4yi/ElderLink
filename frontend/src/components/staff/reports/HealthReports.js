@@ -3,7 +3,6 @@ import {
   Calendar, 
   FileText, 
   Download, 
-  TrendingUp, 
   Users, 
   AlertTriangle,
   Activity,

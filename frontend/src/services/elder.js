@@ -371,30 +371,6 @@ export const elderService = {
     }
   },
 
-  // ✅ Fixed: Use assigned elders for care management
-  getAllEldersForStaff: async () => {
-    try {
-      console.log('🔍 ElderService: Getting assigned elders for staff...');
-      const response = await api.get('/elders/staff/assigned');
-      console.log('✅ ElderService: Assigned elders response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ ElderService: Failed to get assigned elders:', error);
-      
-      // ✅ Better error handling
-      if (error.response?.status === 404) {
-        return {
-          success: true,
-          elders: [],
-          total: 0,
-          message: 'No assigned elders found'
-        };
-      }
-      
-      throw error;
-    }
-  },
-
   // Get elder profile
   getElderProfile: async () => {
     const response = await api.get('/elder/profile');
