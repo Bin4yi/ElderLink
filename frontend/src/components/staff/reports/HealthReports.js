@@ -49,30 +49,31 @@ const HealthReports = () => {
 
   const loadElders = async () => {
     try {
-      console.log('🔍 Loading elders for health reports...');
+      console.log('🔍 Loading assigned elders for health reports...');
       
-      const response = await elderService.getAllEldersForHealthMonitoring();
-      console.log('📊 Elders response:', response);
+      // Get assigned elders for staff members
+      const response = await elderService.getAssignedElders();
+      console.log('📊 Assigned elders response:', response);
       
       if (response && response.success) {
-        // ✅ Handle both elders array and empty results
+        // Handle the response structure from getAssignedElders
         const eldersArray = response.elders || [];
         setElders(eldersArray);
-        console.log('✅ Loaded', eldersArray.length, 'elders for reports');
+        console.log('✅ Loaded', eldersArray.length, 'assigned elders for reports');
         
         if (eldersArray.length === 0) {
-          toast.info('No elders found for health monitoring');
+          toast.info('No assigned elders found. Reports will be empty until elders are assigned to you.');
         }
       } else {
         setElders([]);
-        console.log('ℹ️ No elders found for reports');
-        toast.info('No elders available for health monitoring');
+        console.log('ℹ️ No assigned elders found for reports');
+        toast.info('No assigned elders available');
       }
     } catch (error) {
-      console.error('❌ Failed to load elders:', error);
+      console.error('❌ Failed to load assigned elders:', error);
       setElders([]);
       
-      // ✅ Better error handling
+      // Better error handling
       if (error.code === 'ERR_NETWORK') {
         toast.error('Network error - please check your connection');
       } else if (error.response?.status === 403) {
@@ -80,7 +81,7 @@ const HealthReports = () => {
       } else if (error.response?.status === 401) {
         toast.error('Session expired - please login again');
       } else {
-        toast.error('Failed to load elders list: ' + (error.response?.data?.message || error.message));
+        toast.error('Failed to load assigned elders: ' + (error.response?.data?.message || error.message));
       }
     }
   };
@@ -207,7 +208,8 @@ const HealthReports = () => {
       await healthReportsService.downloadPDFReport(activeTab, params);
       toast.success('PDF report downloaded successfully');
     } catch (error) {
-      toast.error('Failed to download PDF report');
+      // Show the specific error message from the service
+      toast.error(error.message || 'Failed to download PDF report');
       console.error('Error downloading PDF:', error);
     }
   };

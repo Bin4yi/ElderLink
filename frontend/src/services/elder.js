@@ -418,4 +418,9 @@ export const elderService = {
     const response = await api.post(`/elders/${elderId}/create-login`, credentials);
     return response.data;
   },
+
+  // Alias for consistency with health reports
+  getAssignedElders: async () => {
+    return elderService.getAssignedEldersForStaff();
+  },
 };
