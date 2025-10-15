@@ -1,4 +1,4 @@
-// src/components/staff/care/CareManagement.js
+﻿// src/components/staff/care/CareManagement.js
 import React, { useState, useEffect } from 'react';
 import RoleLayout from '../../common/RoleLayout';
 import { FileText, CheckCircle2, ClipboardList, User, Calendar, Clock, AlertCircle, Heart, Activity, Thermometer, Shield } from 'lucide-react';
@@ -50,25 +50,35 @@ const CareManagement = () => {
       const response = await elderService.getAllEldersForStaff();
       
       console.log('📊 Response received:', response);
+      console.log('📊 Response.success:', response?.success);
+      console.log('📊 Response.elders:', response?.elders);
+      console.log('📊 Is elders array?:', Array.isArray(response?.elders));
       
-      if (response && response.success && Array.isArray(response.elders)) {
-        setElders(response.elders);
-        if (response.elders.length > 0) {
-          setSelectedElder(response.elders[0]);
+      if (response && response.success) {
+        const eldersList = response.elders || [];
+        console.log('✅ EldersList:', eldersList);
+        console.log('✅ EldersList length:', eldersList.length);
+        
+        setElders(eldersList);
+        if (eldersList.length > 0) {
+          setSelectedElder(eldersList[0]);
+          console.log('✅ Selected first elder:', eldersList[0]);
         }
         
-        console.log('✅ Loaded', response.elders.length, 'assigned elders');
+        console.log('✅ Loaded', eldersList.length, 'assigned elders');
         
-        if (response.elders.length === 0) {
+        if (eldersList.length === 0) {
           toast.info('No elders are currently assigned to you');
         }
       } else {
+        console.log('⚠️ Response not successful or invalid');
         setElders([]);
         setError('No assigned elders found');
         toast.info('No elders are currently assigned to you');
       }
     } catch (error) {
       console.error('❌ Failed to load assigned elders:', error);
+      console.error('❌ Error response:', error.response);
       setError('Failed to load assigned elders');
       setElders([]);
       
@@ -280,7 +290,7 @@ const CareManagement = () => {
                             <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
                               {elder.photo ? (
                                 <img
-                                  src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/elders/${elder.photo}`}
+                                  src={`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/uploads/elders/${elder.photo}`}
                                   alt={`${elder.firstName} ${elder.lastName}`}
                                   className="w-full h-full object-cover rounded-full"
                                 />
@@ -319,7 +329,7 @@ const CareManagement = () => {
                         <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
                           {selectedElder.photo ? (
                             <img
-                              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/elders/${selectedElder.photo}`}
+                              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/uploads/elders/${selectedElder.photo}`}
                               alt={`${selectedElder.firstName} ${selectedElder.lastName}`}
                               className="w-full h-full object-cover rounded-full"
                             />

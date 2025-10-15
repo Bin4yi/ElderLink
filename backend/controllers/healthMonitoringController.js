@@ -1,6 +1,7 @@
 // backend/controllers/healthMonitoringController.js
 const { HealthMonitoring, Elder, User } = require('../models');
 const { Op } = require('sequelize');
+const { checkHealthVitals } = require('./healthAlertController');
 
 // Get all health monitoring records (for staff) or user's own records (for elder)
 const getAllHealthMonitoring = async (req, res) => {
@@ -196,6 +197,15 @@ const getHealthMonitoringById = async (req, res) => {
   }
 };
 
+// Helper function to convert empty strings to null for numeric fields
+const sanitizeNumericField = (value) => {
+  if (value === '' || value === null || value === undefined) {
+    return null;
+  }
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? null : parsed;
+};
+
 // Create health monitoring record (staff only)
 const createHealthMonitoring = async (req, res) => {
   try {
@@ -231,16 +241,17 @@ const createHealthMonitoring = async (req, res) => {
       });
     }
 
+    // Sanitize numeric fields
     const healthRecord = await HealthMonitoring.create({
       elderId,
-      bloodPressureSystolic,
-      bloodPressureDiastolic,
-      heartRate,
-      temperature,
-      weight,
-      bloodSugar,
-      oxygenSaturation,
-      sleepHours,
+      bloodPressureSystolic: sanitizeNumericField(bloodPressureSystolic),
+      bloodPressureDiastolic: sanitizeNumericField(bloodPressureDiastolic),
+      heartRate: sanitizeNumericField(heartRate),
+      temperature: sanitizeNumericField(temperature),
+      weight: sanitizeNumericField(weight),
+      bloodSugar: sanitizeNumericField(bloodSugar),
+      oxygenSaturation: sanitizeNumericField(oxygenSaturation),
+      sleepHours: sanitizeNumericField(sleepHours),
       notes,
       symptoms,
       medications,
@@ -264,6 +275,12 @@ const createHealthMonitoring = async (req, res) => {
         }
       ]
     });
+
+    // Check for health alerts after creating the record
+    const io = req.app.get('io');
+    if (io) {
+      await checkHealthVitals(createdRecord, io);
+    }
 
     res.status(201).json({
       success: true,
@@ -295,7 +312,36 @@ const updateHealthMonitoring = async (req, res) => {
       });
     }
 
-    await healthRecord.update(updateData);
+    // Sanitize numeric fields in update data
+    const sanitizedData = {
+      ...updateData,
+      bloodPressureSystolic: updateData.bloodPressureSystolic !== undefined 
+        ? sanitizeNumericField(updateData.bloodPressureSystolic) 
+        : updateData.bloodPressureSystolic,
+      bloodPressureDiastolic: updateData.bloodPressureDiastolic !== undefined 
+        ? sanitizeNumericField(updateData.bloodPressureDiastolic) 
+        : updateData.bloodPressureDiastolic,
+      heartRate: updateData.heartRate !== undefined 
+        ? sanitizeNumericField(updateData.heartRate) 
+        : updateData.heartRate,
+      temperature: updateData.temperature !== undefined 
+        ? sanitizeNumericField(updateData.temperature) 
+        : updateData.temperature,
+      weight: updateData.weight !== undefined 
+        ? sanitizeNumericField(updateData.weight) 
+        : updateData.weight,
+      bloodSugar: updateData.bloodSugar !== undefined 
+        ? sanitizeNumericField(updateData.bloodSugar) 
+        : updateData.bloodSugar,
+      oxygenSaturation: updateData.oxygenSaturation !== undefined 
+        ? sanitizeNumericField(updateData.oxygenSaturation) 
+        : updateData.oxygenSaturation,
+      sleepHours: updateData.sleepHours !== undefined 
+        ? sanitizeNumericField(updateData.sleepHours) 
+        : updateData.sleepHours
+    };
+
+    await healthRecord.update(sanitizedData);
 
     const updatedRecord = await HealthMonitoring.findByPk(id, {
       include: [
@@ -313,6 +359,12 @@ const updateHealthMonitoring = async (req, res) => {
         }
       ]
     });
+
+    // Check for health alerts after updating the record
+    const io = req.app.get('io');
+    if (io) {
+      await checkHealthVitals(updatedRecord, io);
+    }
 
     res.json({
       success: true,
