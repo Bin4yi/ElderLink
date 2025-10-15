@@ -4,6 +4,10 @@
 //   Windows: Run 'ipconfig' in Command Prompt, look for IPv4 Address
 //   Mac/Linux: Run 'ifconfig' in Terminal, look for inet address
 // Your phone and computer MUST be on the same WiFi network!
+// 
+// ⚠️ DO NOT USE NGROK URL HERE! 
+// ngrok is ONLY for QStash webhook (see QSTASH_CONFIG below)
+// This should be your LOCAL IP address like: http://192.168.X.X:5000
 export const API_BASE_URL = 'http://192.168.8.168:5000';
 
 // API Config object for backward compatibility
@@ -99,11 +103,14 @@ export const SOS_CONFIG = {
 };
 
 // Upstash QStash Configuration
+// ⚠️ IMPORTANT: The EMERGENCY_WEBHOOK must use ngrok URL for external access
+// Update this URL whenever ngrok restarts (free tier gives new URL each time)
+// To get ngrok URL: Run 'ngrok http 5000' and copy the https://xxx.ngrok.io URL
 export const QSTASH_CONFIG = {
   ENABLED: true,
   TOKEN: 'eyJVc2VySUQiOiI3NDFmZWU2Mi1mZThmLTQ2OGEtOTM3Mi00NjhlM2JlOGY5Y2QiLCJQYXNzd29yZCI6IjIyNTAwNjk1NGI5NDRiYjJiMGVkOGU0ZDA4ZGRmYjRmIn0=',
   URL: 'https://qstash.upstash.io/v2/publish',
-  EMERGENCY_WEBHOOK: 'https://nonalined-opal-cerebellar.ngrok-free.dev/api/webhook/emergency',
+  EMERGENCY_WEBHOOK: 'https://nonalined-opal-cerebellar.ngrok-free.dev/api/webhook/emergency', // ← Update this with YOUR ngrok URL
   RETRY_CONFIG: {
     maxRetries: 3,
     retryDelay: 2000,
