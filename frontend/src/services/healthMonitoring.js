@@ -19,7 +19,7 @@ export const healthMonitoringService = {
   getAllRecords: async () => {
     try {
       console.log('🔍 Getting all health monitoring records...');
-      const response = await api.get('/health-monitoring/all');
+      const response = await api.get('/health-monitoring');
       console.log('✅ All health monitoring records response:', response.data);
       return response.data;
     } catch (error) {
@@ -32,12 +32,14 @@ export const healthMonitoringService = {
   getAllHealthMonitoring: async () => {
     try {
       console.log('🔍 Getting all health monitoring records...');
-      const response = await api.get('/health-monitoring/all');
+      const response = await api.get('/health-monitoring');
       console.log('✅ All health monitoring records response:', response.data);
+      
+      // Backend returns: { success: true, data: [...records], pagination: {...} }
       return {
         success: true,
         data: {
-          healthMonitoring: response.data.data || []
+          healthMonitoring: Array.isArray(response.data.data) ? response.data.data : []
         }
       };
     } catch (error) {
@@ -69,16 +71,28 @@ export const healthMonitoringService = {
     try {
       console.log('🔍 Getting health history for elder:', elderId, 'for', days, 'days');
       
-      const response = await api.get(`/health-monitoring/elder/${elderId}/history`, {
-        params: { days }
+      // Calculate date range
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      
+      // Use the main getAllHealthMonitoring endpoint with query parameters
+      const response = await api.get('/health-monitoring', {
+        params: { 
+          elderId,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          limit: 100 // Get more records for history
+        }
       });
+      
       console.log('✅ Elder health history raw response:', response);
       console.log('✅ Elder health history data:', response.data);
       
       return {
         success: true,
         data: Array.isArray(response.data.data) ? response.data.data : [],
-        total: response.data.total || 0,
+        total: response.data.pagination?.totalRecords || 0,
         message: response.data.message || 'Success'
       };
     } catch (error) {
