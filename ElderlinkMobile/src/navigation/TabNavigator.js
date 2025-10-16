@@ -23,40 +23,46 @@ const TabNavigator = () => {
         // Header configuration
         headerStyle: {
           backgroundColor: COLORS.primary,
-          height: 80, 
-          elevation: 4,
-          shadowOpacity: 0.3,
+          height: 60,
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
         },
         headerTitleStyle: {
-          fontSize: 28, // Large font size for elderly users
+          fontSize: 20,
           fontWeight: 'bold',
           color: COLORS.white,
+          fontFamily: 'OpenSans-Bold',
         },
         headerTintColor: COLORS.white,
         
         // Tab bar configuration
         tabBarStyle: {
           backgroundColor: COLORS.white,
-          borderTopColor: COLORS.border,
+          borderTopColor: COLORS.gray200,
           borderTopWidth: 1,
-          height: 90, // Taller tab bar for easier touch
-          paddingBottom: 10,
-          paddingTop: 10,
+          height: 70,
+          paddingBottom: 8,
+          paddingTop: 8,
           elevation: 8,
-          shadowOpacity: 0.3,
+          shadowColor: COLORS.black,
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 16, // Large label text
+          fontSize: 13,
           fontWeight: '600',
-          marginTop: 5,
+          marginTop: 4,
+          fontFamily: 'OpenSans-SemiBold',
         },
         tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.gray500,
+        tabBarInactiveTintColor: COLORS.gray400,
         
         // Tab bar icon configuration
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          const iconSize = 32; // Large icons for better visibility
+          const iconSize = 26;
 
           switch (route.name) {
             case ROUTES.HOME:
@@ -77,12 +83,11 @@ const TabNavigator = () => {
               name={iconName} 
               size={iconSize} 
               color={color}
-              style={{ marginBottom: -3 }}
             />
           );
         },
 
-        swipeEnabled: false, // Disable swipe navigation
+        swipeEnabled: false,
       })}
     >
       <Tab.Screen 
@@ -90,7 +95,7 @@ const TabNavigator = () => {
         component={HomeScreen}
         options={{
           title: 'Home',
-          headerTitle: 'ElderLink Home',
+          headerTitle: 'ElderLink',
           tabBarLabel: 'Home',
         }}
       />

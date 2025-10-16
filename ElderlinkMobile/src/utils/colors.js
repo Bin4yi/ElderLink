@@ -1,10 +1,10 @@
 export const COLORS = {
-  // Primary Brand - ElderLink
+  // Primary Brand - ElderLink (professional medical tone)
   primary: '#FF6B6B', // Brand primary
-  primaryLight: '#FF9999', // Lighter shade
-  primaryDark: '#E63946', // Darker shade
-  secondary: '#EC4899', // Pink-500
-  secondaryLight: '#F9A8D4', // Pink-300
+  primaryLight: '#FFE5E5', // Subtle tint for backgrounds
+  primaryDark: '#E63946', // Darker shade for depth
+  secondary: '#4A5568', // Professional gray
+  secondaryLight: '#E2E8F0', // Light gray
   
   // Status Colors
   success: '#059669', // Emerald-600

@@ -354,20 +354,21 @@ const styles = StyleSheet.create({
   },
   
   buttonText: {
-    fontSize: 24,
+    fontSize: 26,
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
     color: COLORS.white,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: 0.5,
   },
   
   buttonSubtext: {
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.white,
     textAlign: 'center',
-    opacity: 0.9,
+    opacity: 0.95,
   },
   
   errorContainer: {
@@ -376,23 +377,24 @@ const styles = StyleSheet.create({
   },
   
   errorText: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.error,
     textAlign: 'center',
+    lineHeight: 22,
   },
   
   instructionsContainer: {
-    marginTop: 40,
-    paddingHorizontal: 40,
+    marginTop: 32,
+    paddingHorizontal: 32,
   },
   
   instructionsText: {
-    fontSize: 18,
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 26,
+    lineHeight: 22,
   },
 });
 

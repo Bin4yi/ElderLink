@@ -186,36 +186,38 @@ const styles = StyleSheet.create({
   },
   
   header: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.white,
     paddingTop: 60,
     paddingBottom: 40,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray100,
   },
   
   logoContainer: {
     alignItems: 'center',
   },
+  
   logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 12,
+    width: 80,
+    height: 80,
+    marginBottom: 16,
   },
   
   logoText: {
-    fontSize: 42,
+    fontSize: 28,
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
-    color: COLORS.white,
-    marginBottom: 8,
+    color: COLORS.textPrimary,
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
   
   tagline: {
-    fontSize: 20,
+    fontSize: 14,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.white,
-    opacity: 0.95,
+    color: COLORS.textSecondary,
+    opacity: 0.8,
   },
   
   formContainer: {
@@ -225,21 +227,21 @@ const styles = StyleSheet.create({
   },
   
   welcomeText: {
-    fontSize: 36,
+    fontSize: 24,
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
     color: COLORS.textPrimary,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   
   subtitleText: {
-    fontSize: 20,
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 40,
-    lineHeight: 28,
+    marginBottom: 32,
+    lineHeight: 22,
   },
   
   errorAlert: {
@@ -258,25 +260,25 @@ const styles = StyleSheet.create({
   helpSection: {
     backgroundColor: COLORS.gray50,
     margin: 20,
-    padding: 20,
-    borderRadius: 16,
-    borderLeftWidth: 4,
+    padding: 16,
+    borderRadius: 8,
+    borderLeftWidth: 3,
     borderLeftColor: COLORS.info,
   },
   
   helpTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: 'OpenSans-SemiBold',
     fontWeight: '600',
     color: COLORS.textPrimary,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   
   helpText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.textSecondary,
-    lineHeight: 22,
+    lineHeight: 20,
   },
 });
 
