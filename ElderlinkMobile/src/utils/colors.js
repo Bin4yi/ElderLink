@@ -1,8 +1,8 @@
 export const COLORS = {
-  // Primary Red + Pink Theme
-  primary: '#DC2626', // Red-600
-  primaryLight: '#FCA5A5', // Red-300
-  primaryDark: '#991B1B', // Red-800
+  // Primary Brand - ElderLink
+  primary: '#FF6B6B', // Brand primary
+  primaryLight: '#FF9999', // Lighter shade
+  primaryDark: '#E63946', // Darker shade
   secondary: '#EC4899', // Pink-500
   secondaryLight: '#F9A8D4', // Pink-300
   

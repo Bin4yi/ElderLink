@@ -6,7 +6,8 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
-  Dimensions
+  Dimensions,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -95,6 +96,13 @@ const HomeScreen = ({ navigation }) => {
     >
       {/* Header Greeting */}
       <View style={styles.header}>
+        <View style={styles.headerLogoContainer}>
+          <Image
+            source={require('../../../assets/images/logo.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+        </View>
         <Text style={styles.greeting}>{getTimeOfDayGreeting()},</Text>
         <Text style={styles.userName}>{getUserName()}</Text>
         <Text style={styles.dateText}>
@@ -184,30 +192,38 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 30,
     paddingTop: 20,
-    paddingBottom: 30,
+    paddingBottom: 35,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
+  headerLogoContainer: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  headerLogo: {
+    width: 60,
+    height: 60,
+  },
   
   greeting: {
-    fontSize: 24,
+    fontSize: 26,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.white,
   },
   
   userName: {
-    fontSize: 32,
+    fontSize: 36,
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
     color: COLORS.white,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   
   dateText: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.white,
-    opacity: 0.9,
+    opacity: 0.95,
   },
   
   systemAlert: {
@@ -229,7 +245,7 @@ const styles = StyleSheet.create({
   },
   
   emergencyTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
     color: COLORS.emergency?.text || COLORS.textPrimary,
@@ -237,12 +253,12 @@ const styles = StyleSheet.create({
   },
   
   emergencyDescription: {
-    fontSize: 16,
+    fontSize: 20,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.emergency?.text || COLORS.textPrimary,
     textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 22,
+    marginBottom: 24,
+    lineHeight: 28,
   },
   
   sectionCard: {
@@ -264,7 +280,7 @@ const styles = StyleSheet.create({
   },
   
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 26,
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
     color: COLORS.textPrimary,
@@ -389,21 +405,22 @@ const styles = StyleSheet.create({
   
   quickActionItem: {
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
     backgroundColor: COLORS.gray50,
     borderRadius: 16,
     flex: 1,
-    marginHorizontal: 4,
-    minHeight: 100,
+    marginHorizontal: 6,
+    minHeight: 120,
+    minWidth: 120,
     justifyContent: 'center',
   },
   
   quickActionText: {
-    fontSize: 14,
+    fontSize: 18,
     fontFamily: 'OpenSans-SemiBold',
     fontWeight: '600',
     color: COLORS.textPrimary,
-    marginTop: 8,
+    marginTop: 12,
     textAlign: 'center',
   },
 });

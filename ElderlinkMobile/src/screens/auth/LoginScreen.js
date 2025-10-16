@@ -87,7 +87,12 @@ const LoginScreen = ({ navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>ElderCare</Text>
+            <Image
+              source={require('../../../assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.logoText}>ElderLink</Text>
             <Text style={styles.tagline}>Your health, our priority</Text>
           </View>
         </View>
@@ -192,9 +197,14 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
   },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 12,
+  },
   
   logoText: {
-    fontSize: 48,
+    fontSize: 42,
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
     color: COLORS.white,
@@ -202,10 +212,10 @@ const styles = StyleSheet.create({
   },
   
   tagline: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.white,
-    opacity: 0.9,
+    opacity: 0.95,
   },
   
   formContainer: {
@@ -215,21 +225,21 @@ const styles = StyleSheet.create({
   },
   
   welcomeText: {
-    fontSize: 32,
+    fontSize: 36,
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
     color: COLORS.textPrimary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   
   subtitleText: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: 40,
-    lineHeight: 24,
+    lineHeight: 28,
   },
   
   errorAlert: {
