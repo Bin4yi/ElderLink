@@ -1,27 +1,40 @@
 // frontend/src/components/family/mentalhealth/AssignSpecialistModal.js
-import React, { useState } from 'react';
-import { X, User, Star, Award, Clock, DollarSign, AlertCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
-import mentalHealthService from '../../../services/mentalHealthService';
+import React, { useState } from "react";
+import {
+  X,
+  User,
+  Star,
+  Award,
+  Clock,
+  DollarSign,
+  AlertCircle,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import mentalHealthService from "../../../services/mentalHealthService";
 
-const AssignSpecialistModal = ({ elder, availableSpecialists, onSuccess, onClose }) => {
+const AssignSpecialistModal = ({
+  elder,
+  availableSpecialists,
+  onSuccess,
+  onClose,
+}) => {
   const [selectedSpecialist, setSelectedSpecialist] = useState(null);
-  const [sessionFee, setSessionFee] = useState('');
-  const [priority, setPriority] = useState('medium');
-  const [notes, setNotes] = useState('');
+  const [sessionFee, setSessionFee] = useState("");
+  const [priority, setPriority] = useState("medium");
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!selectedSpecialist) {
-      toast.error('Please select a mental health specialist');
+      toast.error("Please select a mental health specialist");
       return;
     }
 
     try {
       setLoading(true);
-      
+
       await mentalHealthService.createAssignment({
         elderId: elder.id,
         specialistId: selectedSpecialist.id,
@@ -30,11 +43,13 @@ const AssignSpecialistModal = ({ elder, availableSpecialists, onSuccess, onClose
         notes,
       });
 
-      toast.success('Mental health specialist assigned successfully!');
+      toast.success("Mental health specialist assigned successfully!");
       onSuccess();
     } catch (error) {
-      console.error('Failed to assign specialist:', error);
-      toast.error(error.response?.data?.message || 'Failed to assign specialist');
+      console.error("Failed to assign specialist:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to assign specialist"
+      );
     } finally {
       setLoading(false);
     }
@@ -46,7 +61,9 @@ const AssignSpecialistModal = ({ elder, availableSpecialists, onSuccess, onClose
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-4 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold">Assign Mental Health Specialist</h2>
+            <h2 className="text-2xl font-bold">
+              Assign Mental Health Specialist
+            </h2>
             <p className="text-purple-100">
               For: {elder.firstName} {elder.lastName}
             </p>
@@ -66,11 +83,13 @@ const AssignSpecialistModal = ({ elder, availableSpecialists, onSuccess, onClose
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
               Available Mental Health Specialists
             </h3>
-            
+
             {availableSpecialists.length === 0 ? (
               <div className="text-center py-8 bg-gray-50 rounded-lg">
                 <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600">No specialists available at the moment</p>
+                <p className="text-gray-600">
+                  No specialists available at the moment
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -80,8 +99,8 @@ const AssignSpecialistModal = ({ elder, availableSpecialists, onSuccess, onClose
                     onClick={() => setSelectedSpecialist(specialist)}
                     className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
                       selectedSpecialist?.id === specialist.id
-                        ? 'border-purple-500 bg-purple-50'
-                        : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50'
+                        ? "border-purple-500 bg-purple-50"
+                        : "border-gray-200 hover:border-purple-300 hover:bg-gray-50"
                     }`}
                   >
                     <div className="flex items-start space-x-3">
@@ -119,8 +138,16 @@ const AssignSpecialistModal = ({ elder, availableSpecialists, onSuccess, onClose
                       {selectedSpecialist?.id === specialist.id && (
                         <div className="flex-shrink-0">
                           <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
                             </svg>
                           </div>
                         </div>
@@ -134,9 +161,14 @@ const AssignSpecialistModal = ({ elder, availableSpecialists, onSuccess, onClose
 
           {/* Assignment Details Form */}
           {selectedSpecialist && (
-            <form onSubmit={handleSubmit} className="space-y-4 bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">Assignment Details</h3>
-              
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4 bg-gray-50 p-4 rounded-lg"
+            >
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                Assignment Details
+              </h3>
+
               {/* Session Fee */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -203,7 +235,7 @@ const AssignSpecialistModal = ({ elder, availableSpecialists, onSuccess, onClose
             disabled={!selectedSpecialist || loading}
             className="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Assigning...' : 'Assign Specialist'}
+            {loading ? "Assigning..." : "Assign Specialist"}
           </button>
         </div>
       </div>

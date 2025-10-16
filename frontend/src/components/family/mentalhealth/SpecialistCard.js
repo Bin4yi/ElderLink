@@ -1,18 +1,31 @@
 // frontend/src/components/family/mentalhealth/SpecialistCard.js
-import React from 'react';
-import { Brain, Phone, Mail, Calendar, DollarSign, X, AlertCircle, User } from 'lucide-react';
+import React from "react";
+import {
+  Brain,
+  Phone,
+  Mail,
+  Calendar,
+  DollarSign,
+  X,
+  AlertCircle,
+  User,
+} from "lucide-react";
 
 const SpecialistCard = ({ assignment, onTerminate }) => {
   const getStatusBadge = (status) => {
     const styles = {
-      active: 'bg-green-100 text-green-800',
-      pending: 'bg-yellow-100 text-yellow-800',
-      terminated: 'bg-red-100 text-red-800',
-      completed: 'bg-blue-100 text-blue-800',
+      active: "bg-green-100 text-green-800",
+      pending: "bg-yellow-100 text-yellow-800",
+      terminated: "bg-red-100 text-red-800",
+      completed: "bg-blue-100 text-blue-800",
     };
-    
+
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium ${
+          styles[status] || "bg-gray-100 text-gray-800"
+        }`}
+      >
         {status?.charAt(0).toUpperCase() + status?.slice(1)}
       </span>
     );
@@ -20,13 +33,17 @@ const SpecialistCard = ({ assignment, onTerminate }) => {
 
   const getAssignmentTypeBadge = (type) => {
     const styles = {
-      primary: 'bg-purple-100 text-purple-800',
-      secondary: 'bg-blue-100 text-blue-800',
-      specialist: 'bg-indigo-100 text-indigo-800',
+      primary: "bg-purple-100 text-purple-800",
+      secondary: "bg-blue-100 text-blue-800",
+      specialist: "bg-indigo-100 text-indigo-800",
     };
-    
+
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${styles[type] || 'bg-gray-100 text-gray-800'}`}>
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-medium ${
+          styles[type] || "bg-gray-100 text-gray-800"
+        }`}
+      >
         {type?.charAt(0).toUpperCase() + type?.slice(1)}
       </span>
     );
@@ -34,14 +51,18 @@ const SpecialistCard = ({ assignment, onTerminate }) => {
 
   const getPriorityBadge = (priority) => {
     const styles = {
-      low: 'bg-gray-100 text-gray-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      high: 'bg-orange-100 text-orange-800',
-      urgent: 'bg-red-100 text-red-800',
+      low: "bg-gray-100 text-gray-800",
+      medium: "bg-yellow-100 text-yellow-800",
+      high: "bg-orange-100 text-orange-800",
+      urgent: "bg-red-100 text-red-800",
     };
-    
+
     return (
-      <span className={`px-2 py-1 rounded text-xs font-medium ${styles[priority] || 'bg-gray-100 text-gray-800'}`}>
+      <span
+        className={`px-2 py-1 rounded text-xs font-medium ${
+          styles[priority] || "bg-gray-100 text-gray-800"
+        }`}
+      >
         {priority?.charAt(0).toUpperCase() + priority?.slice(1)} Priority
       </span>
     );
@@ -61,7 +82,7 @@ const SpecialistCard = ({ assignment, onTerminate }) => {
               {specialist?.firstName} {specialist?.lastName}
             </h4>
             <p className="text-purple-600 font-semibold">
-              {specialist?.specialization || 'Mental Health Specialist'}
+              {specialist?.specialization || "Mental Health Specialist"}
             </p>
             {specialist?.experience && (
               <p className="text-sm text-gray-600 mt-1">
@@ -73,7 +94,7 @@ const SpecialistCard = ({ assignment, onTerminate }) => {
         <div className="flex items-center space-x-2">
           {getAssignmentTypeBadge(assignment.assignmentType)}
           {getStatusBadge(assignment.status)}
-          {assignment.status === 'active' && (
+          {assignment.status === "active" && (
             <button
               onClick={() => onTerminate(assignment.id)}
               className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
@@ -88,10 +109,12 @@ const SpecialistCard = ({ assignment, onTerminate }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
         {/* Contact Information */}
         <div className="space-y-3">
-          <h5 className="font-semibold text-gray-700 mb-2">Contact Information</h5>
+          <h5 className="font-semibold text-gray-700 mb-2">
+            Contact Information
+          </h5>
           <div className="flex items-center text-gray-600">
             <Mail className="w-4 h-4 mr-2 text-purple-500" />
-            <span>{specialist?.email || 'Not provided'}</span>
+            <span>{specialist?.email || "Not provided"}</span>
           </div>
           {specialist?.phone && (
             <div className="flex items-center text-gray-600">
@@ -109,15 +132,21 @@ const SpecialistCard = ({ assignment, onTerminate }) => {
 
         {/* Assignment Details */}
         <div className="space-y-3">
-          <h5 className="font-semibold text-gray-700 mb-2">Assignment Details</h5>
+          <h5 className="font-semibold text-gray-700 mb-2">
+            Assignment Details
+          </h5>
           <div className="flex items-center text-gray-600">
             <Calendar className="w-4 h-4 mr-2 text-purple-500" />
-            <span>Assigned: {new Date(assignment.assignedDate).toLocaleDateString()}</span>
+            <span>
+              Assigned: {new Date(assignment.assignedDate).toLocaleDateString()}
+            </span>
           </div>
           {assignment.sessionFee && (
             <div className="flex items-center text-gray-600">
               <DollarSign className="w-4 h-4 mr-2 text-green-500" />
-              <span className="text-green-600 font-bold">${assignment.sessionFee}/session</span>
+              <span className="text-green-600 font-bold">
+                ${assignment.sessionFee}/session
+              </span>
             </div>
           )}
           {assignment.priority && (
@@ -132,8 +161,12 @@ const SpecialistCard = ({ assignment, onTerminate }) => {
       {/* Notes */}
       {assignment.notes && (
         <div className="mt-4 pt-4 border-t border-purple-100">
-          <p className="text-sm font-semibold text-gray-700 mb-1">Assignment Notes:</p>
-          <p className="text-sm text-gray-700 bg-white p-3 rounded">{assignment.notes}</p>
+          <p className="text-sm font-semibold text-gray-700 mb-1">
+            Assignment Notes:
+          </p>
+          <p className="text-sm text-gray-700 bg-white p-3 rounded">
+            {assignment.notes}
+          </p>
         </div>
       )}
 
@@ -141,14 +174,14 @@ const SpecialistCard = ({ assignment, onTerminate }) => {
       {assignment.terminatedDate && (
         <div className="mt-4 pt-4 border-t border-purple-100">
           <p className="text-sm text-gray-600">
-            <span className="font-semibold">Terminated on:</span>{' '}
+            <span className="font-semibold">Terminated on:</span>{" "}
             {new Date(assignment.terminatedDate).toLocaleDateString()}
           </p>
         </div>
       )}
 
       {/* Action Buttons */}
-      {assignment.status === 'active' && (
+      {assignment.status === "active" && (
         <div className="mt-4 pt-4 border-t border-purple-100 flex justify-end space-x-2">
           <button className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium">
             Schedule Session

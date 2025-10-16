@@ -1,5 +1,10 @@
 // backend/controllers/mentalHealthAssignmentController.js
-const { MentalHealthAssignment, User, Elder, Subscription } = require("../models");
+const {
+  MentalHealthAssignment,
+  User,
+  Elder,
+  Subscription,
+} = require("../models");
 const { Op } = require("sequelize");
 
 // Family member assigns a specialist to an elder
@@ -10,15 +15,17 @@ const createAssignment = async (req, res) => {
 
     // Validate elder belongs to family member through subscription
     const elder = await Elder.findOne({
-      include: [{
-        model: Subscription,
-        as: 'subscription',
-        where: {
-          userId: familyMemberId,
-          status: 'active'
-        }
-      }],
-      where: { id: elderId }
+      include: [
+        {
+          model: Subscription,
+          as: "subscription",
+          where: {
+            userId: familyMemberId,
+            status: "active",
+          },
+        },
+      ],
+      where: { id: elderId },
     });
 
     if (!elder) {
