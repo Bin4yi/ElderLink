@@ -152,6 +152,17 @@ const driverRoutes = require("./routes/drivers");
 // 🚨 ADD: Import health alerts routes
 const healthAlertsRoutes = require("./routes/healthAlerts");
 
+// Mental Health System Routes
+const mentalHealthAssignmentRoutes = require("./routes/mentalHealthAssignmentRoutes");
+const therapySessionRoutes = require("./routes/therapySessionRoutes");
+const assessmentRoutes = require("./routes/assessmentRoutes");
+const treatmentPlanRoutes = require("./routes/treatmentPlanRoutes");
+const progressReportRoutes = require("./routes/progressReportRoutes");
+const groupSessionRoutes = require("./routes/groupSessionRoutes");
+const resourceRoutes = require("./routes/resourceRoutes");
+const mentalHealthProfileRoutes = require("./routes/mentalHealthProfileRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
+
 // 🚨 ADD: Webhook routes FIRST (no auth required)
 app.use("/api/webhook", webhookRoutes);
 
@@ -203,6 +214,17 @@ try {
 
   // 🚨 ADD: Use health alerts routes
   app.use("/api/health-alerts", healthAlertsRoutes);
+
+  // Register Mental Health Routes
+  app.use("/api/mental-health/assignments", mentalHealthAssignmentRoutes);
+  app.use("/api/mental-health/sessions", therapySessionRoutes);
+  app.use("/api/mental-health/assessments", assessmentRoutes);
+  app.use("/api/mental-health/treatment-plans", treatmentPlanRoutes);
+  app.use("/api/mental-health/progress-reports", progressReportRoutes);
+  app.use("/api/mental-health/group-sessions", groupSessionRoutes);
+  app.use("/api/mental-health/resources", resourceRoutes);
+  app.use("/api/mental-health/profile", mentalHealthProfileRoutes);
+  app.use("/api/mental-health/dashboard", dashboardRoutes);
 } catch (error) {
   console.error("Error loading routes:", error);
   process.exit(1);

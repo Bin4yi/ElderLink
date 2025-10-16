@@ -1,109 +1,81 @@
 // frontend/src/components/family/mentalHealth/MentalHealthAssignment.js
 import React, { useState, useEffect } from 'react';
-import { Plus, User, Calendar, Phone, Mail, Star, AlertCircle, Brain } from 'lucide-react';
+import { Plus, Brain, User, Calendar, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import MentalHealthCard from './MentalHealthCard';
+import mentalHealthService from '../../../services/mentalHealthService';
+import { elderService } from '../../../services/elder';
+import AssignSpecialistModal from './AssignSpecialistModal';
+import SpecialistCard from './SpecialistCard';
 import Loading from '../../common/Loading';
 
-// --- Mock Data ---
-const MOCK_COORDINATORS = [
-  { id: 'mhc1', firstName: 'Priya', lastName: 'Fernando', phone: '0712345678', email: 'priya@mentalhealth.com', rating: 4.8 },
-  { id: 'mhc2', firstName: 'Ruwan', lastName: 'Perera', phone: '0771234567', email: 'ruwan@mentalhealth.com', rating: 4.6 }
-];
-
-const MOCK_ELDERS = [
-  { id: 'elder1', firstName: 'Sunil', lastName: 'De Silva', dateOfBirth: '1950-05-12', photo: null },
-  { id: 'elder2', firstName: 'Kamala', lastName: 'Wijesinghe', dateOfBirth: '1945-09-23', photo: null }
-];
-
-const MOCK_ASSIGNMENTS = [
-  {
-    id: 'assign1',
-    elder: MOCK_ELDERS[0],
-    consultant: {
-      user: MOCK_COORDINATORS[0],
-      specialization: 'Geriatric Mental Health',
-      rating: 4.8,
-      experience: 12,
-      languages: ['English', 'Sinhala'],
-      specializations: ['Depression', 'Anxiety'],
-      about: 'Experienced in elder mental health support.',
-      location: 'Colombo'
-    },
-    assignmentType: 'primary',
-    status: 'active',
-    assignedDate: '2025-07-01',
-    sessionFee: 1500,
-    notes: 'Monthly check-ins required.',
-    priority: 'high'
-  }
-];
-
 const MentalHealthAssignment = () => {
-  const [assignments, setAssignments] = useState(MOCK_ASSIGNMENTS);
-  const [elders, setElders] = useState(MOCK_ELDERS);
-  const [availableCoordinators, setAvailableCoordinators] = useState(MOCK_COORDINATORS);
-  const [loading, setLoading] = useState(false);
+  const [assignments, setAssignments] = useState([]);
+  const [elders, setElders] = useState([]);
+  const [availableSpecialists, setAvailableSpecialists] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedElder, setSelectedElder] = useState(null);
   const [filter, setFilter] = useState('active');
 
-  // Remove async loadData and service calls
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const handleAssignCoordinator = (elder) => {
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [assignmentsData, eldersData, specialistsData] = await Promise.all([
+        mentalHealthService.getFamilyAssignments(),
+        elderService.getElders(),
+        mentalHealthService.getAvailableSpecialists()
+      ]);
+
+      setAssignments(assignmentsData.assignments || []);
+      setElders(eldersData.elders || []);
+      setAvailableSpecialists(specialistsData.specialists || []);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      toast.error('Failed to load mental health assignments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAssignSpecialist = (elder) => {
     setSelectedElder(elder);
     setShowAssignModal(true);
   };
 
-  const handleAssignmentSuccess = (coordinator) => {
-    setAssignments(prev => [
-      ...prev,
-      {
-        id: `assign${prev.length + 1}`,
-        elder: selectedElder, // <-- FIX: add this line
-        consultant: {
-          user: coordinator,
-          specialization: 'General Mental Health',
-          rating: coordinator.rating,
-          experience: 5,
-          languages: ['English'],
-          specializations: ['General Support'],
-          about: 'Coordinator for elder support.',
-          location: 'Sri Lanka'
-        },
-        assignmentType: 'primary',
-        status: 'active',
-        assignedDate: new Date().toISOString(),
-        sessionFee: 1200,
-        notes: '',
-        priority: 'medium'
-      }
-    ]);
+  const handleAssignmentSuccess = () => {
     setShowAssignModal(false);
     setSelectedElder(null);
-    toast.success('Mental Health Coordinator assigned successfully!');
+    loadData();
+    toast.success('Mental health specialist assigned successfully!');
   };
 
-  const handleTerminateAssignment = (assignmentId) => {
+  const handleTerminateAssignment = async (assignmentId) => {
     if (!window.confirm('Are you sure you want to terminate this mental health assignment?')) {
       return;
     }
-    setAssignments(prev =>
-      prev.map(a =>
-        a.id === assignmentId ? { ...a, status: 'terminated' } : a
-      )
-    );
-    toast.success('Mental health assignment terminated successfully');
+
+    try {
+      await mentalHealthService.terminateAssignment(assignmentId);
+      toast.success('Mental health assignment terminated successfully');
+      loadData();
+    } catch (error) {
+      console.error('Failed to terminate assignment:', error);
+      toast.error('Failed to terminate assignment');
+    }
   };
 
   const getElderAssignments = (elderId) => {
     return assignments.filter(assignment => assignment.elder.id === elderId);
   };
 
-  const getEldersWithoutPrimaryCoordinator = () => {
+  const getEldersWithoutPrimarySpecialist = () => {
     return elders.filter(elder => {
       const elderAssignments = getElderAssignments(elder.id);
-      return !elderAssignments.some(assignment =>
+      return !elderAssignments.some(assignment => 
         assignment.assignmentType === 'primary' && assignment.status === 'active'
       );
     });
@@ -113,13 +85,20 @@ const MentalHealthAssignment = () => {
     return <Loading text="Loading mental health assignments..." />;
   }
 
+  // Helper function to get correct photo URL
+  const getPhotoUrl = (photo) => {
+    if (!photo) return null;
+    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    return `${baseUrl}/uploads/elders/${photo}`;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-3">
           <Brain className="w-8 h-8 text-purple-500" />
-          <h1 className="text-2xl font-bold text-gray-800">Mental Health Coordinator Assignments</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Mental Health Specialist Assignments</h1>
         </div>
         <div className="flex items-center space-x-4">
           <select
@@ -162,33 +141,33 @@ const MentalHealthAssignment = () => {
           <div className="flex items-center">
             <AlertCircle className="w-10 h-10 text-yellow-500 mr-4" />
             <div>
-              <p className="text-sm text-gray-600">Elders Without Coordinator</p>
-              <p className="text-2xl font-bold">{getEldersWithoutPrimaryCoordinator().length}</p>
+              <p className="text-sm text-gray-600">Elders Without Specialist</p>
+              <p className="text-2xl font-bold">{getEldersWithoutPrimarySpecialist().length}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Elders Without Primary Coordinator Alert */}
-      {getEldersWithoutPrimaryCoordinator().length > 0 && (
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+      {/* Elders Without Primary Specialist Alert */}
+      {getEldersWithoutPrimarySpecialist().length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-center">
-            <AlertCircle className="w-5 h-5 text-purple-500 mr-2" />
+            <AlertCircle className="w-5 h-5 text-yellow-500 mr-2" />
             <div>
-              <h3 className="font-semibold text-purple-800">Mental Health Support Needed</h3>
-              <p className="text-purple-700">
-                {getEldersWithoutPrimaryCoordinator().length} elder(s) need a mental health coordinator assigned.
+              <h3 className="font-semibold text-yellow-800">Action Required</h3>
+              <p className="text-yellow-700">
+                {getEldersWithoutPrimarySpecialist().length} elder(s) need a mental health specialist assigned.
               </p>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            {getEldersWithoutPrimaryCoordinator().map(elder => (
+            {getEldersWithoutPrimarySpecialist().map(elder => (
               <button
                 key={elder.id}
-                onClick={() => handleAssignCoordinator(elder)}
-                className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm hover:bg-purple-200 transition-colors"
+                onClick={() => handleAssignSpecialist(elder)}
+                className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm hover:bg-yellow-200 transition-colors"
               >
-                Assign Coordinator to {elder.firstName} {elder.lastName}
+                Assign Specialist to {elder.firstName} {elder.lastName}
               </button>
             ))}
           </div>
@@ -204,12 +183,16 @@ const MentalHealthAssignment = () => {
             <div key={elder.id} className="bg-white rounded-lg shadow-lg p-6">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
                     {elder.photo ? (
                       <img
-                        src={elder.photo}
+                        src={getPhotoUrl(elder.photo)}
                         alt={`${elder.firstName} ${elder.lastName}`}
                         className="w-16 h-16 rounded-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = '<svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+                        }}
                       />
                     ) : (
                       <User className="w-8 h-8 text-gray-400" />
@@ -225,18 +208,18 @@ const MentalHealthAssignment = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleAssignCoordinator(elder)}
+                  onClick={() => handleAssignSpecialist(elder)}
                   className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors flex items-center space-x-2"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Assign Coordinator</span>
+                  <span>Assign Specialist</span>
                 </button>
               </div>
 
               {elderAssignments.length > 0 ? (
                 <div className="space-y-4">
                   {elderAssignments.map(assignment => (
-                    <MentalHealthCard
+                    <SpecialistCard
                       key={assignment.id}
                       assignment={assignment}
                       onTerminate={handleTerminateAssignment}
@@ -246,12 +229,12 @@ const MentalHealthAssignment = () => {
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Brain className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                  <p>No mental health coordinator assigned to this elder</p>
+                  <p>No mental health specialists assigned to this elder</p>
                   <button
-                    onClick={() => handleAssignCoordinator(elder)}
+                    onClick={() => handleAssignSpecialist(elder)}
                     className="mt-2 text-purple-500 hover:text-purple-600 font-medium"
                   >
-                    Assign a coordinator now
+                    Assign a specialist now
                   </button>
                 </div>
               )}
@@ -266,40 +249,22 @@ const MentalHealthAssignment = () => {
           <User className="w-24 h-24 text-gray-300 mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-gray-600 mb-4">No Elders Found</h2>
           <p className="text-gray-500 mb-8">
-            You need to add elders first before assigning mental health coordinators.
+            You need to add elders first before assigning mental health specialists.
           </p>
         </div>
       )}
 
-      {/* Assign Mental Health Coordinator Modal */}
+      {/* Assign Specialist Modal */}
       {showAssignModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Assign Mental Health Coordinator</h3>
-            <div className="space-y-4">
-              {availableCoordinators.map(coordinator => (
-                <button
-                  key={coordinator.id}
-                  className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  onClick={() => handleAssignmentSuccess(coordinator)}
-                >
-                  <div className="font-medium">{coordinator.firstName} {coordinator.lastName}</div>
-                  <div className="text-sm text-gray-600">{coordinator.email} | {coordinator.phone}</div>
-                  <div className="text-yellow-600 text-sm">Rating: {coordinator.rating} <Star className="inline w-4 h-4" /></div>
-                </button>
-              ))}
-            </div>
-            <button
-              className="mt-6 w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
-              onClick={() => {
-                setShowAssignModal(false);
-                setSelectedElder(null);
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <AssignSpecialistModal
+          elder={selectedElder}
+          availableSpecialists={availableSpecialists}
+          onSuccess={handleAssignmentSuccess}
+          onClose={() => {
+            setShowAssignModal(false);
+            setSelectedElder(null);
+          }}
+        />
       )}
     </div>
   );

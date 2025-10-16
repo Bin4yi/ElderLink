@@ -530,7 +530,7 @@ module.exports = {
   Appointment,
   ConsultationRecord,
   Doctor,
-  DoctorSchedule, // ✅ Add this
+  DoctorSchedule,
   Inventory,
   InventoryTransaction,
   Prescription,
@@ -539,4 +539,13 @@ module.exports = {
   EmergencyAlert,
   AmbulanceDispatch,
   EmergencyLocation,
+  // Mental Health Models
+  MentalHealthAssignment,
+  TherapySession,
+  MentalHealthAssessment,
+  TreatmentPlan,
+  TreatmentPlanProgress,
+  ProgressReport,
+  GroupTherapySession,
+  MentalHealthResource,
 };
