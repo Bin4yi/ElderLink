@@ -107,16 +107,31 @@ const StaffDashboard = () => {
       console.log('📊 Unique Alerts (after dedup):', uniqueAlerts.length);
       console.log('📊 Critical/High Alerts:', criticalCount);
       
-      // Load today's health monitoring records
-      const today = new Date().toISOString().split('T')[0];
-      const vitalsResponse = await api.get('/health-monitoring', {
-        params: { date: today }
-      });
-      const vitals = vitalsResponse.data?.data || vitalsResponse.data?.records || [];
+      // Load health monitoring records - SAME AS HEALTH MONITORING PAGE
+      const vitalsResponse = await api.get('/health-monitoring');
+      const allRecords = vitalsResponse.data?.data || vitalsResponse.data?.healthMonitoring || [];
       
-      // Calculate real task statistics from vitals (health checks are tasks)
-      const totalTasks = vitals.length;
-      const completedTasks = vitals.filter(v => v.notes && v.notes.length > 0).length;
+      // Filter today's records by monitoringDate (same logic as Health Monitoring page)
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      
+      const todaysVitalsRecords = allRecords.filter(record => {
+        const recordDate = new Date(record.monitoringDate);
+        return recordDate >= todayStart && recordDate < todayEnd;
+      });
+      
+      // Sort by monitoring date (newest first) and show first 4
+      const displayVitals = todaysVitalsRecords
+        .sort((a, b) => new Date(b.monitoringDate) - new Date(a.monitoringDate))
+        .slice(0, 4);
+      
+      console.log('📊 Total Today Vitals:', todaysVitalsRecords.length);
+      console.log('📊 Displaying:', displayVitals.length);
+      
+      // Calculate real task statistics from today's vitals
+      const totalTasks = todaysVitalsRecords.length;
+      const completedTasks = todaysVitalsRecords.filter(v => v.notes && v.notes.length > 0).length;
       const pendingTasks = Math.max(0, assignedElders.length - totalTasks);
       const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
@@ -132,7 +147,7 @@ const StaffDashboard = () => {
       });
       
       setRecentAlerts(uniqueAlerts.slice(0, 4));
-      setTodaysVitals(vitals.slice(0, 6));
+      setTodaysVitals(displayVitals); // Show only today's records from Health Monitoring
       
       // Don't show fake upcoming tasks
       setUpcomingTasks([]);
