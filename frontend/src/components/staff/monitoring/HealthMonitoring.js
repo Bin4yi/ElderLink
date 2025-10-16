@@ -429,12 +429,16 @@ const HealthMonitoring = () => {
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
                             {record.elder?.photo ? (
                               <img
-                                src={`${process.env.REACT_APP_API_URL}/uploads/elders/${record.elder.photo}`}
+                                src={`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/uploads/elders/${record.elder.photo}`}
                                 alt={`${record.elder.firstName} ${record.elder.lastName}`}
                                 className="w-full h-full object-cover rounded-full"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.parentElement.innerHTML = '<svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>';
+                                }}
                               />
                             ) : (
                               <User className="w-6 h-6 text-gray-500" />

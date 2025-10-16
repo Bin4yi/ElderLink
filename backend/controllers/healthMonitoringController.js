@@ -40,7 +40,7 @@ const getAllHealthMonitoring = async (req, res) => {
         {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName', 'userId'],
+          attributes: ['id', 'firstName', 'lastName', 'userId', 'photo'],
           include: [
             {
               model: User,
@@ -110,7 +110,7 @@ const getTodayHealthMonitoring = async (req, res) => {
         {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName', 'userId'],
+          attributes: ['id', 'firstName', 'lastName', 'userId', 'photo'],
           include: [
             {
               model: User,
@@ -163,7 +163,7 @@ const getHealthMonitoringById = async (req, res) => {
         {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName', 'userId'],
+          attributes: ['id', 'firstName', 'lastName', 'userId', 'photo'],
           include: [
             {
               model: User,
@@ -264,7 +264,7 @@ const createHealthMonitoring = async (req, res) => {
         {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName', 'userId'],
+          attributes: ['id', 'firstName', 'lastName', 'userId', 'photo'],
           include: [
             {
               model: User,
@@ -348,7 +348,7 @@ const updateHealthMonitoring = async (req, res) => {
         {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName', 'userId'],
+          attributes: ['id', 'firstName', 'lastName', 'userId', 'photo'],
           include: [
             {
               model: User,

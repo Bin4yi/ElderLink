@@ -211,8 +211,7 @@ const AlertsManagement = () => {
               <div className="hidden lg:flex gap-6">
                 {[
                   { label: 'Active', count: alerts.filter(a => a.status === 'active').length, color: 'red' },
-                  { label: 'Critical', count: alerts.filter(a => a.severity === 'critical').length, color: 'orange' },
-                  { label: 'Resolved', count: alerts.filter(a => a.status === 'resolved').length, color: 'green' }
+                  { label: 'Critical', count: alerts.filter(a => a.severity === 'critical').length, color: 'orange' }
                 ].map((stat) => (
                   <div key={stat.label} className="text-center bg-white/20 backdrop-blur-sm rounded-xl px-6 py-3">
                     <div className="text-3xl font-bold text-white">{stat.count}</div>
@@ -240,7 +239,6 @@ const AlertsManagement = () => {
                   <option value="all">All Status</option>
                   <option value="active">🔴 Active</option>
                   <option value="acknowledged">🟡 Acknowledged</option>
-                  <option value="resolved">🟢 Resolved</option>
                 </select>
               </div>
               <div className="flex-1 min-w-[200px]">

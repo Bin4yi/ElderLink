@@ -13,7 +13,7 @@ async function cleanupExpiredReservations() {
     const result = await Appointment.destroy({
       where: {
         status: 'reserved',
-        reservedAt: {
+        createdAt: {
           [Op.lt]: tenMinutesAgo
         }
       }

@@ -20,7 +20,9 @@ import {
   Thermometer,
   Droplet,
   Wind,
-  MessageSquare
+  MessageSquare,
+  Scale,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import api from '../../../services/api';
@@ -197,15 +199,6 @@ const StaffDashboard = () => {
                 </div>
               </div>
             </div>
-            
-            {stats.criticalAlerts > 0 && (
-              <div className="flex items-center space-x-6 mt-6">
-                <div className="flex items-center space-x-2 bg-red-500/20 px-3 py-1 rounded-full">
-                  <AlertTriangle className="w-5 h-5" />
-                  <span>{stats.criticalAlerts} urgent alerts</span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -361,30 +354,101 @@ const StaffDashboard = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {todaysVitals.slice(0, 6).map((vital, index) => (
+              <div className="space-y-4">
+                {todaysVitals.slice(0, 4).map((vital, index) => (
                   <div 
                     key={vital.id || index}
-                    className="p-3 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg hover:shadow-md transition-shadow"
+                    className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => navigate('/staff/monitoring')}
                   >
-                    <div className="flex items-center space-x-2 mb-2">
-                      {vital.heartRate && <Heart className="w-4 h-4 text-red-500" />}
-                      {vital.temperature && <Thermometer className="w-4 h-4 text-orange-500" />}
-                      {vital.bloodPressureSystolic && <Droplet className="w-4 h-4 text-blue-500" />}
-                      {vital.oxygenSaturation && <Wind className="w-4 h-4 text-cyan-500" />}
-                      <span className="text-xs font-semibold text-gray-600">
-                        {vital.elder?.firstName} {vital.elder?.lastName}
-                      </span>
+                    {/* Elder Info */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-blue-600 rounded-full flex items-center justify-center">
+                        <Users className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-gray-900">
+                          {vital.elder?.firstName} {vital.elder?.lastName}
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          {new Date(vital.monitoringDate).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-lg font-bold text-gray-900">
-                      {vital.heartRate && `${vital.heartRate} bpm`}
-                      {vital.temperature && `${vital.temperature}°F`}
-                      {vital.bloodPressureSystolic && `${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}`}
-                      {vital.oxygenSaturation && `${vital.oxygenSaturation}% O₂`}
+
+                    {/* Health Metrics Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {vital.heartRate && (
+                        <div className="flex items-center gap-2 bg-white p-2 rounded-lg">
+                          <Heart className="w-4 h-4 text-red-500 flex-shrink-0" />
+                          <div className="text-xs">
+                            <div className="font-bold text-gray-900">{vital.heartRate}</div>
+                            <div className="text-gray-500">bpm</div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {vital.bloodPressureSystolic && (
+                        <div className="flex items-center gap-2 bg-white p-2 rounded-lg">
+                          <Activity className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                          <div className="text-xs">
+                            <div className="font-bold text-gray-900">
+                              {vital.bloodPressureSystolic}/{vital.bloodPressureDiastolic || 0}
+                            </div>
+                            <div className="text-gray-500">mmHg</div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {vital.temperature && (
+                        <div className="flex items-center gap-2 bg-white p-2 rounded-lg">
+                          <Thermometer className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                          <div className="text-xs">
+                            <div className="font-bold text-gray-900">{vital.temperature}</div>
+                            <div className="text-gray-500">°F</div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {vital.weight && (
+                        <div className="flex items-center gap-2 bg-white p-2 rounded-lg">
+                          <Scale className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                          <div className="text-xs">
+                            <div className="font-bold text-gray-900">{vital.weight}</div>
+                            <div className="text-gray-500">lbs</div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {vital.sleepHours && (
+                        <div className="flex items-center gap-2 bg-white p-2 rounded-lg">
+                          <Moon className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                          <div className="text-xs">
+                            <div className="font-bold text-gray-900">{vital.sleepHours}</div>
+                            <div className="text-gray-500">hours</div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {vital.oxygenSaturation && (
+                        <div className="flex items-center gap-2 bg-white p-2 rounded-lg">
+                          <Wind className="w-4 h-4 text-green-500 flex-shrink-0" />
+                          <div className="text-xs">
+                            <div className="font-bold text-gray-900">{vital.oxygenSaturation}</div>
+                            <div className="text-gray-500">%</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {new Date(vital.monitoringDate).toLocaleTimeString()}
-                    </div>
+
+                    {/* Notes if available */}
+                    {vital.notes && (
+                      <div className="mt-3 p-2 bg-blue-100 rounded-lg">
+                        <p className="text-xs text-gray-700">
+                          <span className="font-semibold">Notes:</span> {vital.notes}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
