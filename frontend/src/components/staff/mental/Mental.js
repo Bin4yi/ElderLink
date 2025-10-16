@@ -7,85 +7,106 @@ import { CheckCircle2, BarChart3, ClipboardList, FileText } from 'lucide-react';
 
 const MentalHealthManagement = () => {
   const [activeTab, setActiveTab] = useState('plans'); // 'plans' or 'assessments'
+  const [editingProgress, setEditingProgress] = useState({}); // Track which plan is being edited
 
-  // Mental Specialist Plans state
+  // Mental Health Assessments state
   const [mentalPlans, setMentalPlans] = useState([
     {
       id: 1,
       activity: 'Cognitive Stimulation Program',
+      elderName: 'Margaret Thompson',
+      assessmentType: 'Cognitive Therapy',
       date: '2024-06-10',
+      duration: '45 minutes',
       status: 'pending',
     },
     {
       id: 2,
       activity: 'Emotional Support Session',
+      elderName: 'Robert Johnson',
+      assessmentType: 'Emotional Counseling',
       date: '2024-06-10',
+      duration: '60 minutes',
       status: 'pending',
     },
     {
       id: 3,
       activity: 'Mindfulness & Relaxation',
+      elderName: 'Sarah Williams',
+      assessmentType: 'Stress Management',
       date: '2024-06-10',
+      duration: '30 minutes',
       status: 'pending',
     },
     {
       id: 4,
       activity: 'Family Engagement Activity',
+      elderName: 'James Brown',
+      assessmentType: 'Social Therapy',
       date: '2024-06-10',
+      duration: '90 minutes',
       status: 'pending',
     },
     {
       id: 5,
       activity: 'Behavioral Monitoring',
+      elderName: 'Mary Davis',
+      assessmentType: 'Behavioral Assessment',
       date: '2024-06-10',
+      duration: '40 minutes',
       status: 'pending',
     },
   ]);
 
-  // Assessment Plans state
+  // Treatment Plans state
   const [assessmentPlans, setAssessmentPlans] = useState([
     {
       id: 1,
-      assessment: 'Cognitive Function Assessment',
+      planTitle: 'Cognitive Function Enhancement Program',
       elderName: 'Margaret Thompson',
-      date: '2024-06-12',
-      type: 'cognitive',
+      startDate: '2024-06-12',
+      targetedDate: '2024-09-12',
+      progress: 75,
       status: 'pending',
       priority: 'high',
     },
     {
       id: 2,
-      assessment: 'Depression Screening (PHQ-9)',
-      elderName: 'Margaret Thompson',
-      date: '2024-06-13',
-      type: 'mood',
+      planTitle: 'Depression Management & Support Plan',
+      elderName: 'Robert Johnson',
+      startDate: '2024-06-13',
+      targetedDate: '2024-08-13',
+      progress: 45,
       status: 'pending',
       priority: 'medium',
     },
     {
       id: 3,
-      assessment: 'Anxiety Assessment (GAD-7)',
-      elderName: 'Margaret Thompson',
-      date: '2024-06-14',
-      type: 'anxiety',
+      planTitle: 'Anxiety Reduction Therapy',
+      elderName: 'Sarah Williams',
+      startDate: '2024-06-14',
+      targetedDate: '2024-07-14',
+      progress: 90,
       status: 'pending',
       priority: 'medium',
     },
     {
       id: 4,
-      assessment: 'Memory and Recall Evaluation',
-      elderName: 'Margaret Thompson',
-      date: '2024-06-15',
-      type: 'memory',
+      planTitle: 'Memory Enhancement & Cognitive Training',
+      elderName: 'James Brown',
+      startDate: '2024-06-15',
+      targetedDate: '2024-10-15',
+      progress: 60,
       status: 'in-progress',
       priority: 'high',
     },
     {
       id: 5,
-      assessment: 'Social Interaction Assessment',
-      elderName: 'Margaret Thompson',
-      date: '2024-06-16',
-      type: 'social',
+      planTitle: 'Social Engagement & Communication Skills',
+      elderName: 'Mary Davis',
+      startDate: '2024-06-16',
+      targetedDate: '2024-08-16',
+      progress: 30,
       status: 'pending',
       priority: 'low',
     },
@@ -105,6 +126,30 @@ const MentalHealthManagement = () => {
         assessment.id === assessmentId ? { ...assessment, status: 'completed' } : assessment
       )
     );
+  };
+
+  const handleProgressChange = (planId, newProgress) => {
+    setEditingProgress(prev => ({
+      ...prev,
+      [planId]: newProgress
+    }));
+  };
+
+  const handleUpdateProgress = (planId) => {
+    const newProgress = editingProgress[planId];
+    if (newProgress !== undefined && newProgress >= 0 && newProgress <= 100) {
+      setAssessmentPlans(prev =>
+        prev.map(plan =>
+          plan.id === planId ? { ...plan, progress: parseInt(newProgress) } : plan
+        )
+      );
+      // Clear the editing state for this plan
+      setEditingProgress(prev => {
+        const updated = { ...prev };
+        delete updated[planId];
+        return updated;
+      });
+    }
   };
 
   const getPriorityColor = (priority) => {
@@ -152,7 +197,7 @@ const MentalHealthManagement = () => {
               }`}
             >
               <BarChart3 className="inline mr-2" size={16} />
-              Mental Specialist Plans
+              Mental Health Assessments
             </button>
             <button
               onClick={() => setActiveTab('assessments')}
@@ -163,117 +208,171 @@ const MentalHealthManagement = () => {
               }`}
             >
               <ClipboardList className="inline mr-2" size={16} />
-              Assessment Plans
+              Treatment Plans
             </button>
           </div>
 
-          {/* Mental Specialist Plans Tab */}
+          {/* Mental Health Assessments Tab */}
           {activeTab === 'plans' && (
             <div className="space-y-8">
               <div className="mt-4">
                 <h3 className="text-xl font-semibold text-blue-800 mb-3 flex items-center gap-2">
                   <BarChart3 size={20} className="text-blue-600" />
-                  Mental Specialist Plans
+                  Mental Health Assessments
                 </h3>
-                <div className="space-y-3">
-                  {mentalPlans.map(plan => (
+                <div className="space-y-4">
+                  {mentalPlans.filter(plan => plan.status !== 'completed').map(plan => (
                     <div
                       key={plan.id}
-                      className={`flex flex-col md:flex-row md:items-center md:justify-between p-3 border rounded-md ${
-                        plan.status === 'completed'
-                          ? 'bg-green-50 border-green-200'
-                          : plan.status === 'in-progress'
-                          ? 'bg-yellow-50 border-yellow-200'
-                          : 'bg-gray-50 border-gray-200'
-                      }`}
+                      className="flex flex-col md:flex-row md:items-center md:justify-between p-5 border rounded-lg shadow-sm bg-white border-gray-200"
                     >
-                      <div>
-                        <div className="font-medium text-blue-700">{plan.activity}</div>
-                        <div className="text-gray-600 text-sm">
-                          {plan.id === 1 && 'Daily memory games, puzzles, and group discussions to enhance cognitive function.'}
-                          {plan.id === 2 && 'Weekly one-on-one counseling with a mental health specialist to address anxiety, depression, or loneliness.'}
-                          {plan.id === 3 && 'Guided meditation and breathing exercises every morning to reduce stress and promote calmness.'}
-                          {plan.id === 4 && 'Monthly family video calls and shared activities to strengthen social bonds and reduce isolation.'}
-                          {plan.id === 5 && 'Regular check-ins and behavioral assessments to identify early signs of mental health concerns.'}
+                      <div className="flex-1">
+                        <div className="font-semibold text-lg text-blue-700 mb-2">{plan.activity}</div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <FileText size={16} className="text-gray-500" />
+                            <span className="text-gray-600">
+                              <span className="font-medium">Elder:</span> {plan.elderName}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <ClipboardList size={16} className="text-gray-500" />
+                            <span className="text-gray-600">
+                              <span className="font-medium">Type:</span> {plan.assessmentType}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <BarChart3 size={16} className="text-gray-500" />
+                            <span className="text-gray-600">
+                              <span className="font-medium">Date:</span> {plan.date}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <BarChart3 size={16} className="text-gray-500" />
+                            <span className="text-gray-600">
+                              <span className="font-medium">Duration:</span> {plan.duration}
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">{plan.date}</div>
-                        <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-opacity-30 font-medium capitalize">
-                          {plan.status}
-                        </span>
                       </div>
-                      {plan.status !== 'completed' && (
-                        <button
-                          onClick={() => handleMentalPlanAction(plan.id)}
-                          className="mt-2 md:mt-0 bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-1"
-                        >
-                          <CheckCircle2 size={25} />
-                          Mark as Done
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleMentalPlanAction(plan.id)}
+                        className="mt-4 md:mt-0 md:ml-6 bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md flex items-center gap-2 transition-all"
+                      >
+                        <CheckCircle2 size={18} />
+                        Mark as Done
+                      </button>
                     </div>
                   ))}
-                  {mentalPlans.length === 0 && (
-                    <p className="text-gray-500">No mental specialist plans assigned for today.</p>
+                  {mentalPlans.filter(plan => plan.status !== 'completed').length === 0 && (
+                    <p className="text-gray-500">No mental health assessments assigned for today.</p>
                   )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Assessment Plans Tab */}
+          {/* Treatment Plans Tab */}
           {activeTab === 'assessments' && (
             <div className="space-y-8">
               <div className="mt-4">
                 <h3 className="text-xl font-semibold text-blue-800 mb-3 flex items-center gap-2">
                   <ClipboardList size={20} className="text-blue-600" />
-                  Mental Health Assessment Plans
+                  Treatment Plans
                 </h3>
-                <div className="space-y-3">
-                  {assessmentPlans.map(assessment => (
+                <div className="space-y-4">
+                  {assessmentPlans.map(plan => (
                     <div
-                      key={assessment.id}
-                      className={`flex flex-col md:flex-row md:items-center md:justify-between p-4 border rounded-md ${
-                        assessment.status === 'completed'
-                          ? 'bg-green-50 border-green-200'
-                          : assessment.status === 'in-progress'
-                          ? 'bg-yellow-50 border-yellow-200'
-                          : 'bg-gray-50 border-gray-200'
-                      }`}
+                      key={plan.id}
+                      className="flex flex-col p-5 border rounded-lg shadow-sm bg-white border-gray-200"
                     >
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="font-medium text-blue-700">{assessment.assessment}</div>
-                          <span className={`px-2 py-1 text-xs rounded-full font-medium ${getPriorityColor(assessment.priority)}`}>
-                            {assessment.priority} priority
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="font-semibold text-lg text-blue-700">{plan.planTitle}</div>
+                          <span className={`px-3 py-1 text-xs rounded-full font-medium ${getPriorityColor(plan.priority)}`}>
+                            {plan.priority} priority
                           </span>
                         </div>
-                        <div className="text-gray-600 text-sm mb-2">
-                          {getAssessmentDescription(assessment.type)}
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <FileText size={14} />
-                            Elder: {assessment.elderName}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm mb-4">
+                          <div className="flex items-center gap-2">
+                            <FileText size={16} className="text-gray-500" />
+                            <span className="text-gray-600">
+                              <span className="font-medium">Elder:</span> {plan.elderName}
+                            </span>
                           </div>
-                          <div>Scheduled: {assessment.date}</div>
-                          <span className="inline-block px-2 py-0.5 rounded bg-opacity-30 font-medium capitalize">
-                            {assessment.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <BarChart3 size={16} className="text-gray-500" />
+                            <span className="text-gray-600">
+                              <span className="font-medium">Start Date:</span> {plan.startDate}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <BarChart3 size={16} className="text-gray-500" />
+                            <span className="text-gray-600">
+                              <span className="font-medium">Target Date:</span> {plan.targetedDate}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">Treatment Progress</span>
+                            <span className={`text-sm font-bold ${
+                              plan.progress === 100 ? 'text-green-600' :
+                              plan.progress >= 75 ? 'text-blue-600' :
+                              plan.progress >= 50 ? 'text-yellow-600' :
+                              'text-orange-600'
+                            }`}>
+                              {plan.progress}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden mb-3">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                plan.progress === 100 ? 'bg-green-500' :
+                                plan.progress >= 75 ? 'bg-blue-500' :
+                                plan.progress >= 50 ? 'bg-yellow-500' :
+                                'bg-orange-500'
+                              }`}
+                              style={{ width: `${plan.progress}%` }}
+                            ></div>
+                          </div>
+                          
+                          {/* Update Progress Input */}
+                          <div className="flex items-center gap-2 mt-3">
+                            <label htmlFor={`progress-${plan.id}`} className="text-sm font-medium text-gray-700">
+                              Update Progress:
+                            </label>
+                            <input
+                              id={`progress-${plan.id}`}
+                              type="number"
+                              min="0"
+                              max="100"
+                              placeholder={plan.progress.toString()}
+                              value={editingProgress[plan.id] ?? ''}
+                              onChange={(e) => handleProgressChange(plan.id, e.target.value)}
+                              className="w-20 px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-500">%</span>
+                            <button
+                              onClick={() => handleUpdateProgress(plan.id)}
+                              disabled={!editingProgress[plan.id]}
+                              className={`px-4 py-1 rounded-md text-sm font-semibold transition-all ${
+                                editingProgress[plan.id]
+                                  ? 'bg-blue-500 hover:bg-blue-700 text-white shadow-md'
+                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              }`}
+                            >
+                              Update
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      {assessment.status !== 'completed' && (
-                        <button
-                          onClick={() => handleAssessmentAction(assessment.id)}
-                          className="mt-3 md:mt-0 md:ml-4 bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded text-xs font-semibold shadow flex items-center gap-2"
-                        >
-                          <CheckCircle2 size={16} />
-                          {assessment.status === 'in-progress' ? 'Complete Assessment' : 'Start Assessment'}
-                        </button>
-                      )}
                     </div>
                   ))}
                   {assessmentPlans.length === 0 && (
-                    <p className="text-gray-500">No mental health assessments scheduled.</p>
+                    <p className="text-gray-500">No treatment plans scheduled.</p>
                   )}
                 </div>
               </div>
