@@ -82,7 +82,7 @@ const LoginScreen = ({ navigation }) => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
@@ -93,17 +93,11 @@ const LoginScreen = ({ navigation }) => {
               resizeMode="contain"
             />
             <Text style={styles.logoText}>ElderLink</Text>
-            <Text style={styles.tagline}>Your health, our priority</Text>
           </View>
         </View>
 
         {/* Form Container */}
         <View style={styles.formContainer}>
-          <Text style={styles.welcomeText}>Welcome Back</Text>
-          <Text style={styles.subtitleText}>
-            Sign in to access your health dashboard and stay connected with your care team.
-          </Text>
-
           {errorMessage && (
             <Alert
               type="error"
@@ -141,6 +135,15 @@ const LoginScreen = ({ navigation }) => {
             required
           />
 
+          {/* Forgot Password Link */}
+          <Button
+            title="Forgot password?"
+            onPress={navigateToForgotPassword}
+            variant="ghost"
+            size="medium"
+            style={styles.forgotButton}
+          />
+
           {/* Login Button */}
           <Button
             title="Sign In"
@@ -151,23 +154,6 @@ const LoginScreen = ({ navigation }) => {
             disabled={isLoading}
             style={styles.loginButton}
           />
-
-          {/* Forgot Password Link */}
-          <Button
-            title="Forgot your password?"
-            onPress={navigateToForgotPassword}
-            variant="ghost"
-            size="medium"
-            style={styles.forgotButton}
-          />
-        </View>
-
-        {/* Help Section */}
-        <View style={styles.helpSection}>
-          <Text style={styles.helpTitle}>Need Help?</Text>
-          <Text style={styles.helpText}>
-            If you're having trouble signing in, please contact your family member or care coordinator for assistance.
-          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -182,16 +168,14 @@ const styles = StyleSheet.create({
   
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 40,
   },
   
   header: {
     backgroundColor: COLORS.white,
-    paddingTop: 60,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray100,
+    alignItems: 'center',
+    paddingTop: 80,
+    paddingBottom: 64,
+    paddingHorizontal: 24,
   },
   
   logoContainer: {
@@ -199,86 +183,36 @@ const styles = StyleSheet.create({
   },
   
   logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 16,
+    width: 100,
+    height: 100,
+    marginBottom: 20,
   },
   
   logoText: {
-    fontSize: 28,
+    fontSize: 32,
     fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
     color: COLORS.textPrimary,
-    marginBottom: 4,
-    letterSpacing: 0.5,
-  },
-  
-  tagline: {
-    fontSize: 14,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-    opacity: 0.8,
+    letterSpacing: -0.5,
   },
   
   formContainer: {
     flex: 1,
-    paddingHorizontal: 30,
-    paddingTop: 40,
-  },
-  
-  welcomeText: {
-    fontSize: 24,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  
-  subtitleText: {
-    fontSize: 15,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 22,
+    paddingHorizontal: 24,
+    paddingTop: 48,
   },
   
   errorAlert: {
-    marginBottom: 20,
-  },
-  
-  loginButton: {
-    marginTop: 20,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   
   forgotButton: {
+    alignSelf: 'flex-end',
     marginTop: 8,
+    marginBottom: 32,
   },
   
-  helpSection: {
-    backgroundColor: COLORS.gray50,
-    margin: 20,
-    padding: 16,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.info,
-  },
-  
-  helpTitle: {
-    fontSize: 16,
-    fontFamily: 'OpenSans-SemiBold',
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: 6,
-  },
-  
-  helpText: {
-    fontSize: 14,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-    lineHeight: 20,
+  loginButton: {
+    marginBottom: 24,
   },
 });
 
