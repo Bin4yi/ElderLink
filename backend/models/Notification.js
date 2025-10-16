@@ -14,8 +14,20 @@ const Notification = sequelize.define('Notification', {
     references: {
       model: 'Users',
       key: 'id'
-    },
-    onDelete: 'CASCADE'
+    }
+  },
+  elderId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Elders',
+      key: 'id'
+    }
+  },
+  type: {
+    type: DataTypes.ENUM('appointment', 'health_alert', 'medication', 'system', 'emergency'),
+    allowNull: false,
+    defaultValue: 'system'
   },
   title: {
     type: DataTypes.STRING,
@@ -25,42 +37,25 @@ const Notification = sequelize.define('Notification', {
     type: DataTypes.TEXT,
     allowNull: false
   },
-  type: {
-    type: DataTypes.ENUM('info', 'warning', 'success', 'error'),
-    defaultValue: 'info'
+  priority: {
+    type: DataTypes.ENUM('low', 'medium', 'high', 'urgent'),
+    defaultValue: 'medium'
   },
   isRead: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   },
-  metadata: {
-    type: DataTypes.JSON,
-    allowNull: true
-  },
-  actionUrl: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  expiresAt: {
+  readAt: {
     type: DataTypes.DATE,
+    allowNull: true
+  },
+  metadata: {
+    type: DataTypes.JSONB,
     allowNull: true
   }
 }, {
-  timestamps: true,
-  indexes: [
-    {
-      fields: ['userId']
-    },
-    {
-      fields: ['isRead']
-    },
-    {
-      fields: ['type']
-    },
-    {
-      fields: ['createdAt']
-    }
-  ]
+  tableName: 'Notifications',
+  timestamps: true
 });
 
 module.exports = Notification;

@@ -1,3 +1,5 @@
+//server.js backend
+
 // backend/server.js - Updated with familyDoctors route
 
 const express = require("express");
@@ -135,16 +137,23 @@ const doctorAppointmentsRoutes = require("./routes/doctorAppointments");
 const inventoryRoutes = require("./routes/inventory");
 const prescriptionRoutes = require("./routes/prescriptions");
 
-// Mental Health System Routes
-const mentalHealthAssignmentRoutes = require("./routes/mentalHealthAssignmentRoutes");
-const therapySessionRoutes = require("./routes/therapySessionRoutes");
-const assessmentRoutes = require("./routes/assessmentRoutes");
-const treatmentPlanRoutes = require("./routes/treatmentPlanRoutes");
-const progressReportRoutes = require("./routes/progressReportRoutes");
-const groupSessionRoutes = require("./routes/groupSessionRoutes");
-const resourceRoutes = require("./routes/resourceRoutes");
-const mentalHealthProfileRoutes = require("./routes/mentalHealthProfileRoutes");
-const dashboardRoutes = require("./routes/dashboardRoutes");
+// 🚨 ADD: Import emergency routes
+const emergencyRoutes = require("./routes/emergency");
+
+// 🚨 ADD: Import webhook routes
+const webhookRoutes = require("./routes/webhook");
+
+// 🚨 ADD: Import ambulance dispatch routes
+const ambulanceRoutes = require("./routes/ambulance");
+const coordinatorRoutes = require("./routes/coordinator");
+const sosResponseRoutes = require("./routes/sosResponse");
+const driverRoutes = require("./routes/drivers");
+
+// 🚨 ADD: Import health alerts routes
+const healthAlertsRoutes = require("./routes/healthAlerts");
+
+// 🚨 ADD: Webhook routes FIRST (no auth required)
+app.use("/api/webhook", webhookRoutes);
 
 // Import and use routes with error checking
 try {
@@ -175,33 +184,64 @@ try {
 
   app.use("/api/doctor", doctorAppointmentsRoutes);
 
-  // Use new inventory routes
+  // Use doctor schedule routes
+  const doctorScheduleRoutes = require("./routes/doctorSchedule");
+  app.use("/api/doctor/schedules", doctorScheduleRoutes);
 
+  // Use new inventory routes
   app.use("/api/inventory", inventoryRoutes);
   app.use("/api/prescriptions", prescriptionRoutes);
 
-  // Register Mental Health Routes
-  app.use("/api/mental-health/assignments", mentalHealthAssignmentRoutes);
-  app.use("/api/mental-health/sessions", therapySessionRoutes);
-  app.use("/api/mental-health/assessments", assessmentRoutes);
-  app.use("/api/mental-health/treatment-plans", treatmentPlanRoutes);
-  app.use("/api/mental-health/progress-reports", progressReportRoutes);
-  app.use("/api/mental-health/group-sessions", groupSessionRoutes);
-  app.use("/api/mental-health/resources", resourceRoutes);
-  app.use("/api/mental-health/profile", mentalHealthProfileRoutes);
-  app.use("/api/mental-health/dashboard", dashboardRoutes);
+  // 🚨 ADD: Use emergency routes
+  app.use("/api/emergency", emergencyRoutes);
+
+  // 🚨 ADD: Use ambulance dispatch routes
+  app.use("/api/ambulance", ambulanceRoutes);
+  app.use("/api/coordinator", coordinatorRoutes);
+  app.use("/api/sos", sosResponseRoutes);
+  app.use("/api/drivers", driverRoutes);
+
+  // 🚨 ADD: Use health alerts routes
+  app.use("/api/health-alerts", healthAlertsRoutes);
 } catch (error) {
   console.error("Error loading routes:", error);
   process.exit(1);
 }
 
 // Socket.io for real-time notifications
+const emergencyWebSocketService = require("./services/emergencyWebSocketService");
+
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
+  // Existing user room functionality
   socket.on("join_user_room", (userId) => {
     socket.join(`user_${userId}`);
     console.log(`User ${userId} joined their room`);
+  });
+
+  // 🚨 NEW: Coordinator room for emergency dashboard
+  socket.on("join_coordinator_room", () => {
+    socket.join("coordinator");
+    console.log(`Socket ${socket.id} joined coordinator room`);
+  });
+
+  // 🚨 NEW: Driver joins their specific room
+  socket.on("join_driver_room", (driverId) => {
+    socket.join(`driver_${driverId}`);
+    console.log(`Driver ${driverId} joined their room`);
+  });
+
+  // 🚨 NEW: Family member joins elder's room for updates
+  socket.on("join_family_room", (elderId) => {
+    socket.join(`family_${elderId}`);
+    console.log(`Family member joined room for elder ${elderId}`);
+  });
+
+  // 🚨 NEW: Ambulance tracking room
+  socket.on("track_ambulance", (ambulanceId) => {
+    socket.join(`ambulance_${ambulanceId}`);
+    console.log(`Socket ${socket.id} tracking ambulance ${ambulanceId}`);
   });
 
   socket.on("disconnect", () => {
@@ -264,6 +304,10 @@ const startServer = async () => {
     await sequelize.sync({ alter: true });
     console.log("✅ Database models synchronized");
 
+    // Start reservation cleanup task
+    const { startReservationCleanup } = require("./utils/reservationCleanup");
+    startReservationCleanup();
+
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
@@ -279,4 +323,5 @@ startServer();
 
 // Doctor routes
 // const doctorAppointmentsRoutes = require('./routes/doctorAppointments');
+
 app.use("/api/doctor", doctorAppointmentsRoutes);

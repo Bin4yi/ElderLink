@@ -58,6 +58,8 @@ class AppointmentController {
       const { doctorId } = req.params;
       const { date } = req.query;
 
+      console.log(`🔍 Checking availability for doctor ${doctorId} on ${date}`);
+
       if (!date) {
         return res.status(400).json({ 
           success: false,
@@ -65,16 +67,18 @@ class AppointmentController {
         });
       }
 
-      // Query by date, not dayOfWeek
-      const schedule = await DoctorSchedule.findOne({
+      // Get all schedules for this doctor on this date
+      const schedules = await DoctorSchedule.findAll({
         where: {
           doctorId,
-          date: date, // <-- use the date string directly
+          date: date,
           isAvailable: true
         }
       });
 
-      if (!schedule) {
+      console.log(`📅 Found ${schedules.length} schedule(s) for this date`);
+
+      if (schedules.length === 0) {
         return res.json({
           success: true,
           availableSlots: [],
@@ -93,21 +97,32 @@ class AppointmentController {
             [Op.between]: [startOfDay, endOfDay]
           },
           status: {
-            [Op.in]: ['pending', 'approved']
+            [Op.in]: ['pending', 'approved', 'reserved']
           }
         }
       });
 
-      // Generate available slots (implement this as needed)
-      const availableSlots = AppointmentController.generateAvailableSlots(
-        schedule, 
-        existingAppointments, 
-        new Date(date) // <-- fix here
-      );
+      console.log(`📋 Found ${existingAppointments.length} existing appointment(s)`);
+
+      // Generate available slots for all schedules
+      let allSlots = [];
+      for (const schedule of schedules) {
+        const slots = AppointmentController.generateAvailableSlots(
+          schedule, 
+          existingAppointments, 
+          new Date(date)
+        );
+        allSlots = allSlots.concat(slots);
+      }
+
+      // Sort slots by time
+      allSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+      console.log(`✅ Generated ${allSlots.length} available slot(s)`);
 
       res.json({
         success: true,
-        availableSlots
+        availableSlots: allSlots
       });
     } catch (error) {
       console.error('❌ Error fetching doctor availability:', error);
@@ -124,28 +139,33 @@ class AppointmentController {
     try {
       const { doctorId } = req.params;
       
+      console.log(`🔍 Fetching available dates for doctor ${doctorId}`);
+      
       const availableDates = [];
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
       
       // Check next 30 days
       for (let i = 0; i < 30; i++) {
         const checkDate = new Date(today);
         checkDate.setDate(today.getDate() + i);
-        const dayOfWeek = checkDate.getDay();
+        const dateStr = checkDate.toISOString().split('T')[0];
         
         // Check if doctor has schedule for this day
-        const schedule = await DoctorSchedule.findOne({
+        const scheduleCount = await DoctorSchedule.count({
           where: {
             doctorId,
-            date: checkDate.toISOString().split('T')[0],
+            date: dateStr,
             isAvailable: true
           }
         });
         
-        if (schedule) {
-          availableDates.push(checkDate.toISOString().split('T')[0]);
+        if (scheduleCount > 0) {
+          availableDates.push(dateStr);
         }
       }
+      
+      console.log(`✅ Found ${availableDates.length} available date(s)`);
       
       res.json({
         success: true,
@@ -163,42 +183,355 @@ class AppointmentController {
 
   // Helper method to generate available slots
   static generateAvailableSlots(schedule, existingAppointments, date) {
+    console.log(`🔧 Generating slots for schedule:`, {
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      slotDuration: schedule.slotDuration,
+      date: date
+    });
+
     // Ensure date is a Date object
     if (typeof date === 'string') {
       date = new Date(date);
     }
+    
     const slots = [];
-    const startTime = new Date(`${date.toDateString()} ${schedule.startTime}`);
-    const endTime = new Date(`${date.toDateString()} ${schedule.endTime}`);
+    
+    // Parse time strings properly
+    const dateStr = date.toISOString().split('T')[0];
+    const startTime = new Date(`${dateStr}T${schedule.startTime}`);
+    const endTime = new Date(`${dateStr}T${schedule.endTime}`);
     const slotDuration = schedule.slotDuration || 30; // Default 30 minutes
 
+    console.log(`⏰ Time range: ${startTime} to ${endTime}`);
+
     let currentSlot = new Date(startTime);
+    const now = new Date();
 
     while (currentSlot < endTime) {
       const slotEnd = new Date(currentSlot.getTime() + (slotDuration * 60000));
       
-      // Check if slot conflicts with existing appointments
-      const isConflict = existingAppointments.some(appointment => {
-        const appointmentStart = new Date(appointment.appointmentDate);
-        const appointmentEnd = new Date(appointmentStart.getTime() + ((appointment.duration || 30) * 60000));
-        
-        return (currentSlot < appointmentEnd && slotEnd > appointmentStart);
-      });
-
       // Only add slots that are in the future
-      const now = new Date();
-      if (!isConflict && currentSlot > now) {
+      if (currentSlot > now) {
+        // Check if slot conflicts with existing appointments
+        const conflictingAppointment = existingAppointments.find(appointment => {
+          const appointmentStart = new Date(appointment.appointmentDate);
+          const appointmentEnd = new Date(appointmentStart.getTime() + ((appointment.duration || 30) * 60000));
+          
+          return (currentSlot < appointmentEnd && slotEnd > appointmentStart);
+        });
+
+        let status = 'available';
+        
+        if (conflictingAppointment) {
+          if (conflictingAppointment.status === 'reserved') {
+            // Check if reservation has expired
+            const reservedAt = new Date(conflictingAppointment.reservedAt);
+            const expiresAt = new Date(reservedAt.getTime() + (10 * 60000)); // 10 minutes
+            if (new Date() < expiresAt) {
+              status = 'reserved';
+            }
+          } else {
+            status = 'booked';
+          }
+        }
+        
         slots.push({
           startTime: currentSlot.toTimeString().slice(0, 5),
           endTime: slotEnd.toTimeString().slice(0, 5),
-          status: 'available'
+          status
         });
       }
 
       currentSlot = new Date(currentSlot.getTime() + (slotDuration * 60000));
     }
 
+    console.log(`✅ Generated ${slots.length} slots`);
     return slots;
+  }
+
+  // Reserve time slot (locks for 10 minutes)
+  static async reserveTimeSlot(req, res) {
+    try {
+      const { doctorId, appointmentDate } = req.body;
+
+      console.log('🔒 Reserving time slot:', { 
+        doctorId, 
+        appointmentDate, 
+        userId: req.user.id,
+        userRole: req.user.role 
+      });
+
+      if (!doctorId || !appointmentDate) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Doctor ID and appointment date are required' 
+        });
+      }
+
+      // Check if slot is already reserved or booked
+      const existingAppointment = await Appointment.findOne({
+        where: {
+          doctorId,
+          appointmentDate: new Date(appointmentDate),
+          status: {
+            [Op.in]: ['pending', 'approved', 'reserved']
+          }
+        }
+      });
+
+      if (existingAppointment) {
+        if (existingAppointment.status === 'reserved') {
+          // Check if reservation has expired
+          const reservedAt = new Date(existingAppointment.reservedAt);
+          const expiresAt = new Date(reservedAt.getTime() + (10 * 60000)); // 10 minutes
+          
+          if (new Date() < expiresAt) {
+            console.log('⚠️  Slot already reserved, expires at:', expiresAt);
+            return res.status(400).json({
+              success: false,
+              message: 'This time slot is currently reserved by another user'
+            });
+          }
+          // If expired, delete the old reservation
+          console.log('🗑️  Deleting expired reservation');
+          await existingAppointment.destroy();
+        } else {
+          console.log('⚠️  Slot already booked');
+          return res.status(400).json({
+            success: false,
+            message: 'This time slot is already booked'
+          });
+        }
+      }
+
+      // Create a temporary reservation
+      // familyMemberId is the user's ID (not a separate table)
+      const reservation = await Appointment.create({
+        doctorId,
+        appointmentDate: new Date(appointmentDate),
+        status: 'reserved',
+        reservedAt: new Date(),
+        reservedBy: req.user.id,
+        familyMemberId: req.user.id, // Family member is the logged-in user
+        duration: 30,
+        type: 'consultation',
+        priority: 'medium'
+        // reason, elderId, symptoms, notes will be added when completing reservation
+      });
+
+      console.log('✅ Reservation created:', reservation.id);
+
+      // Set expiry time (10 minutes from now)
+      const expiresAt = new Date(Date.now() + (10 * 60000));
+
+      res.json({
+        success: true,
+        reservation: {
+          id: reservation.id,
+          expiresAt,
+          remainingSeconds: 600 // 10 minutes in seconds
+        },
+        message: 'Time slot reserved for 10 minutes'
+      });
+    } catch (error) {
+      console.error('❌ Error reserving time slot:', error);
+      console.error('   Error details:', error.message);
+      console.error('   Stack:', error.stack);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to reserve time slot',
+        error: error.message 
+      });
+    }
+  }
+
+  // Complete reservation with booking details
+  static async completeReservation(req, res) {
+    try {
+      const { reservationId } = req.params;
+      const {
+        elderId,
+        duration = 30,
+        type = 'consultation',
+        priority = 'medium',
+        reason,
+        symptoms,
+        notes
+      } = req.body;
+
+      console.log('🔄 Completing reservation:', { 
+        reservationId, 
+        elderId, 
+        reason,
+        userId: req.user.id 
+      });
+
+      if (!elderId || !reason) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Elder ID and reason are required' 
+        });
+      }
+
+      // Find the reservation
+      const reservation = await Appointment.findByPk(reservationId);
+      
+      if (!reservation) {
+        console.log('❌ Reservation not found:', reservationId);
+        return res.status(404).json({ 
+          success: false,
+          message: 'Reservation not found' 
+        });
+      }
+
+      console.log('📋 Reservation details:', {
+        id: reservation.id,
+        status: reservation.status,
+        reservedBy: reservation.reservedBy,
+        reservedAt: reservation.reservedAt,
+        currentUser: req.user.id
+      });
+
+      if (reservation.status !== 'reserved') {
+        console.log('❌ Invalid status:', reservation.status, '(expected: reserved)');
+        return res.status(400).json({ 
+          success: false,
+          message: `Invalid reservation status: ${reservation.status}. Expected: reserved` 
+        });
+      }
+
+      // Check if reservation has expired
+      const reservedAt = new Date(reservation.reservedAt);
+      const expiresAt = new Date(reservedAt.getTime() + (10 * 60000));
+      const now = new Date();
+      
+      console.log('⏰ Time check:', {
+        reservedAt,
+        expiresAt,
+        now,
+        expired: now >= expiresAt
+      });
+      
+      if (now >= expiresAt) {
+        console.log('❌ Reservation expired');
+        await reservation.destroy();
+        return res.status(400).json({
+          success: false,
+          message: 'Reservation has expired. Please select a new time slot.'
+        });
+      }
+
+      // Check if user is the one who reserved this slot
+      if (reservation.reservedBy !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only complete your own reservations'
+        });
+      }
+
+      // Get family member ID
+      const familyMemberId = req.user.role === 'family_member' ? req.user.id : null;
+
+      console.log('💾 Updating reservation to pending appointment...');
+
+      // Update reservation to pending appointment
+      await reservation.update({
+        elderId,
+        familyMemberId,
+        duration,
+        type,
+        priority,
+        reason,
+        symptoms,
+        notes,
+        status: 'pending',
+        reservedAt: null,
+        reservedBy: null
+      });
+
+      console.log('✅ Reservation updated to pending appointment');
+
+      // Fetch the complete appointment with relations
+      const completeAppointment = await Appointment.findByPk(reservation.id, {
+        include: [
+          {
+            model: Elder,
+            as: 'elder',
+            attributes: ['id', 'firstName', 'lastName', 'phone', 'dateOfBirth', 'gender']
+          },
+          {
+            model: Doctor,
+            as: 'doctor',
+            include: [
+              {
+                model: User,
+                as: 'user',
+                attributes: ['firstName', 'lastName', 'email']
+              }
+            ]
+          }
+        ]
+      });
+
+      res.json({
+        success: true,
+        appointment: completeAppointment,
+        message: 'Appointment booked successfully'
+      });
+    } catch (error) {
+      console.error('❌ Error completing reservation:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to complete reservation',
+        error: error.message 
+      });
+    }
+  }
+
+  // Cancel reservation
+  static async cancelReservation(req, res) {
+    try {
+      const { reservationId } = req.params;
+
+      const reservation = await Appointment.findByPk(reservationId);
+      
+      if (!reservation) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Reservation not found' 
+        });
+      }
+
+      if (reservation.status !== 'reserved') {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Can only cancel reserved slots' 
+        });
+      }
+
+      // Check if user is the one who reserved this slot
+      if (reservation.reservedBy !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only cancel your own reservations'
+        });
+      }
+
+      await reservation.destroy();
+
+      res.json({
+        success: true,
+        message: 'Reservation cancelled successfully'
+      });
+    } catch (error) {
+      console.error('❌ Error cancelling reservation:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to cancel reservation',
+        error: error.message 
+      });
+    }
   }
 
   // Book appointment

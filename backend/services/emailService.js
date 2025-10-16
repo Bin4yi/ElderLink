@@ -265,6 +265,489 @@ class EmailService {
       throw error;
     }
   }
+
+  /**
+   * Send emergency alert email
+   */
+  async sendEmergencyAlert(options) {
+    try {
+      const {
+        to,
+        recipientName,
+        elderName,
+        elderPhone,
+        location,
+        timestamp,
+        alertType,
+        recipientRole
+      } = options;
+
+      const formattedTime = new Date(timestamp).toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      // Format location
+      let locationText = 'Location unavailable';
+      if (location && location.available) {
+        if (location.address && location.address.formattedAddress) {
+          locationText = location.address.formattedAddress;
+        } else if (location.latitude && location.longitude) {
+          locationText = `Coordinates: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+        }
+      } else if (typeof location === 'string') {
+        locationText = location;
+      }
+
+      // FIXED: Handle both 'family_member' and other roles
+      const roleMessage = recipientRole === 'family_member' 
+        ? 'You are receiving this alert as a family member.'
+        : 'You are receiving this alert as an assigned caregiver.';
+
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || 'noreply@elderlink.com',
+        to: to,
+        subject: `🚨 EMERGENCY ALERT - ${elderName}`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                margin: 0;
+                padding: 0;
+              }
+              .container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f9f9f9;
+              }
+              .header {
+                background-color: #e74c3c;
+                color: white;
+                padding: 30px 20px;
+                text-align: center;
+                border-radius: 5px 5px 0 0;
+              }
+              .header h1 {
+                margin: 0;
+                font-size: 28px;
+              }
+              .content {
+                background-color: white;
+                padding: 30px;
+                border-radius: 0 0 5px 5px;
+              }
+              .alert-box {
+                background-color: #fff3cd;
+                border-left: 4px solid #ffc107;
+                padding: 15px;
+                margin: 20px 0;
+                font-weight: bold;
+                font-size: 16px;
+              }
+              .info-box {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 5px;
+                padding: 15px;
+                margin: 20px 0;
+              }
+              .info-box h3 {
+                margin-top: 0;
+                color: #495057;
+              }
+              .info-box ul {
+                list-style: none;
+                padding: 0;
+                margin: 10px 0;
+              }
+              .info-box li {
+                padding: 8px 0;
+                border-bottom: 1px solid #e9ecef;
+              }
+              .info-box li:last-child {
+                border-bottom: none;
+              }
+              .info-box strong {
+                display: inline-block;
+                width: 120px;
+                color: #6c757d;
+              }
+              .button {
+                display: inline-block;
+                padding: 12px 24px;
+                background-color: #e74c3c;
+                color: white;
+                text-decoration: none;
+                border-radius: 5px;
+                margin-top: 20px;
+                font-weight: bold;
+              }
+              .footer {
+                text-align: center;
+                margin-top: 20px;
+                color: #666;
+                font-size: 12px;
+                padding: 20px;
+              }
+              .emergency-number {
+                background-color: #d4edda;
+                border: 2px solid #28a745;
+                border-radius: 5px;
+                padding: 15px;
+                margin: 20px 0;
+                text-align: center;
+              }
+              .emergency-number strong {
+                color: #155724;
+                font-size: 18px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🚨 EMERGENCY ALERT</h1>
+              </div>
+              <div class="content">
+                <h2>Hello ${recipientName},</h2>
+                
+                <div class="alert-box">
+                  ⚠️ IMMEDIATE ATTENTION REQUIRED
+                </div>
+                
+                <p style="font-size: 16px;"><strong>${elderName}</strong> has triggered an emergency alert and needs immediate assistance.</p>
+                
+                <div class="info-box">
+                  <h3>📋 Alert Details:</h3>
+                  <ul>
+                    <li><strong>Alert Type:</strong> ${alertType || 'SOS Button'}</li>
+                    <li><strong>Time:</strong> ${formattedTime}</li>
+                    <li><strong>Location:</strong> ${locationText}</li>
+                    <li><strong>Elder Phone:</strong> ${elderPhone || 'Not available'}</li>
+                  </ul>
+                </div>
+                
+                <div class="emergency-number">
+                  <strong>📞 If needed, call emergency services immediately: 911</strong>
+                </div>
+                
+                <p style="color: #666; margin-top: 20px; font-size: 14px;">
+                  ${roleMessage}
+                </p>
+                
+                <div style="text-align: center;">
+                  <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard" class="button">
+                    View Dashboard →
+                  </a>
+                </div>
+                
+                <p style="margin-top: 30px; color: #e74c3c; font-weight: bold; text-align: center;">
+                  Please respond immediately or contact emergency services if needed.
+                </p>
+              </div>
+              <div class="footer">
+                <p>This is an automated emergency alert from ElderLink.</p>
+                <p>For immediate assistance, call emergency services.</p>
+                <p style="margin-top: 10px; color: #999;">
+                  ElderLink Emergency System | ${new Date().getFullYear()}
+                </p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Emergency alert email sent to ${to}`);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error sending emergency alert email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Send health alert email to family members
+   */
+  async sendHealthAlertEmail(options) {
+    try {
+      const {
+        to,
+        recipientName,
+        elderName,
+        alertType,
+        severity,
+        message,
+        triggerValue,
+        normalRange,
+        timestamp
+      } = options;
+
+      const formattedTime = new Date(timestamp).toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Severity colors and icons
+      const severityConfig = {
+        critical: { color: '#dc3545', icon: '🚨', bgColor: '#f8d7da', label: 'CRITICAL' },
+        high: { color: '#fd7e14', icon: '⚠️', bgColor: '#ffe5d0', label: 'HIGH' },
+        medium: { color: '#ffc107', icon: '⚡', bgColor: '#fff3cd', label: 'MEDIUM' },
+        low: { color: '#17a2b8', icon: 'ℹ️', bgColor: '#d1ecf1', label: 'LOW' }
+      };
+
+      const config = severityConfig[severity] || severityConfig.medium;
+
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || 'noreply@elderlink.com',
+        to: to,
+        subject: `${config.icon} Health Alert - ${elderName} [${config.label}]`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                margin: 0;
+                padding: 0;
+              }
+              .container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f9f9f9;
+              }
+              .header {
+                background-color: ${config.color};
+                color: white;
+                padding: 30px 20px;
+                text-align: center;
+                border-radius: 5px 5px 0 0;
+              }
+              .header h1 {
+                margin: 0;
+                font-size: 28px;
+              }
+              .severity-badge {
+                display: inline-block;
+                padding: 8px 16px;
+                background-color: rgba(255,255,255,0.2);
+                border-radius: 20px;
+                margin-top: 10px;
+                font-weight: bold;
+              }
+              .content {
+                background-color: white;
+                padding: 30px;
+                border-radius: 0 0 5px 5px;
+              }
+              .alert-box {
+                background-color: ${config.bgColor};
+                border-left: 4px solid ${config.color};
+                padding: 20px;
+                margin: 20px 0;
+                border-radius: 5px;
+              }
+              .alert-box h3 {
+                margin-top: 0;
+                color: ${config.color};
+              }
+              .info-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 12px 0;
+                border-bottom: 1px solid #e9ecef;
+              }
+              .info-row:last-child {
+                border-bottom: none;
+              }
+              .info-label {
+                font-weight: bold;
+                color: #6c757d;
+              }
+              .info-value {
+                color: #495057;
+                text-align: right;
+              }
+              .vital-reading {
+                background-color: #f8f9fa;
+                border: 2px solid ${config.color};
+                border-radius: 8px;
+                padding: 20px;
+                margin: 20px 0;
+                text-align: center;
+              }
+              .vital-reading .value {
+                font-size: 32px;
+                font-weight: bold;
+                color: ${config.color};
+                margin: 10px 0;
+              }
+              .vital-reading .normal {
+                color: #6c757d;
+                font-size: 14px;
+              }
+              .button {
+                display: inline-block;
+                padding: 12px 24px;
+                background-color: ${config.color};
+                color: white;
+                text-decoration: none;
+                border-radius: 5px;
+                margin-top: 20px;
+                font-weight: bold;
+              }
+              .footer {
+                text-align: center;
+                margin-top: 20px;
+                color: #666;
+                font-size: 12px;
+                padding: 20px;
+              }
+              .action-required {
+                background-color: #fff3cd;
+                border: 2px solid #ffc107;
+                border-radius: 5px;
+                padding: 15px;
+                margin: 20px 0;
+                text-align: center;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>${config.icon} Health Alert</h1>
+                <div class="severity-badge">${config.label} PRIORITY</div>
+              </div>
+              <div class="content">
+                <h2>Dear ${recipientName},</h2>
+                
+                <p style="font-size: 16px;">This is an automated health alert regarding <strong>${elderName}</strong>.</p>
+                
+                <div class="alert-box">
+                  <h3>${message}</h3>
+                  <div class="info-row">
+                    <span class="info-label">Alert Time:</span>
+                    <span class="info-value">${formattedTime}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Alert Type:</span>
+                    <span class="info-value">${alertType.replace(/_/g, ' ')}</span>
+                  </div>
+                </div>
+                
+                <div class="vital-reading">
+                  <h3 style="margin-top: 0; color: #495057;">Current Reading</h3>
+                  <div class="value">${triggerValue}</div>
+                  <div class="normal">Normal Range: ${normalRange}</div>
+                </div>
+                
+                ${severity === 'critical' || severity === 'high' ? `
+                  <div class="action-required">
+                    <strong>⚠️ IMMEDIATE ATTENTION RECOMMENDED</strong>
+                    <p style="margin: 10px 0;">Please contact ${elderName} or their caregiver immediately to ensure they receive appropriate care.</p>
+                  </div>
+                ` : ''}
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                  <h4 style="margin-top: 0;">📋 Recommended Actions:</h4>
+                  <ul style="margin: 10px 0; padding-left: 20px;">
+                    ${severity === 'critical' ? `
+                      <li>Contact ${elderName} immediately</li>
+                      <li>Consider calling emergency services if needed</li>
+                      <li>Notify the assigned healthcare provider</li>
+                    ` : severity === 'high' ? `
+                      <li>Check in with ${elderName} as soon as possible</li>
+                      <li>Monitor their condition closely</li>
+                      <li>Contact healthcare provider if condition worsens</li>
+                    ` : `
+                      <li>Keep monitoring the situation</li>
+                      <li>Check in with ${elderName} when convenient</li>
+                      <li>Note any changes in their condition</li>
+                    `}
+                  </ul>
+                </div>
+                
+                <div style="text-align: center;">
+                  <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/family/health-monitoring" class="button">
+                    View Health Records →
+                  </a>
+                </div>
+                
+                <p style="margin-top: 30px; color: #666; font-size: 14px;">
+                  You are receiving this alert as a family member of ${elderName}. The assigned healthcare team has also been notified.
+                </p>
+              </div>
+              <div class="footer">
+                <p>This is an automated health monitoring alert from ElderLink.</p>
+                <p style="margin-top: 10px; color: #999;">
+                  ElderLink Health Monitoring System | ${new Date().getFullYear()}
+                </p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Health alert email sent to ${to}`);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error sending health alert email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Generic send email method
+   */
+  async sendEmail({ to, subject, html, text }) {
+    try {
+      if (!this.transporter) {
+        console.error('❌ Email transporter not initialized');
+        return { success: false, error: 'Email transporter not initialized' };
+      }
+
+      const mailOptions = {
+        from: `"ElderLink" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        html: html || text,
+        text: text || html?.replace(/<[^>]*>/g, ''), // Strip HTML if no text provided
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Email sent to ${to}: ${subject}`);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error sending email:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 module.exports = new EmailService();

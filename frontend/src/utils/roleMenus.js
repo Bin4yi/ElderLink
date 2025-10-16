@@ -3,7 +3,9 @@ import {
   Home, Users, Package, Activity, Settings, User, Heart,
   Stethoscope, Calendar, FileText, Pill, Truck, Shield,
   Monitor, AlertTriangle, UserCheck, ClipboardList, BarChart3,
-  Brain // NEW: Icon for mental health
+  Brain, // Icon for mental health
+  Navigation, // Icon for ambulance tracking
+  Clock // Icon for analytics
 } from 'lucide-react';
 
 export const getRoleMenuItems = (role) => {
@@ -28,6 +30,17 @@ export const getRoleMenuItems = (role) => {
         { path: '/admin/packages', icon: Package, label: 'Package Management' },
         { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
         { path: '/admin/settings', icon: Settings, label: 'System Settings' }
+      ];
+
+    case 'coordinator':
+      return [
+        { path: '/coordinator/dashboard?tab=overview', icon: Home, label: 'Overview' },
+        { path: '/coordinator/dashboard?tab=queue', icon: AlertTriangle, label: 'Emergency Queue' },
+        { path: '/coordinator/dashboard?tab=ambulances', icon: Truck, label: 'Manage Ambulances' },
+        { path: '/coordinator/dashboard?tab=drivers', icon: Users, label: 'Manage Drivers' },
+        { path: '/coordinator/dashboard?tab=fleet', icon: Navigation, label: 'Fleet Tracker' },
+        { path: '/coordinator/dashboard?tab=analytics', icon: BarChart3, label: 'Analytics' },
+        { path: '/profile', icon: User, label: 'Profile' }
       ];
 
     case 'doctor':

@@ -62,11 +62,20 @@ export const healthReportsService = {
       console.log('📄 PDF response received:', response);
       
       // Check if response is actually a PDF
-      if (response.headers['content-type'] !== 'application/pdf') {
-        // If it's not a PDF, it might be an error response
+      const contentType = response.headers['content-type'] || response.headers['Content-Type'];
+      
+      if (contentType && !contentType.includes('application/pdf')) {
+        // If it's not a PDF, it might be an error response (JSON)
+        // Parse the blob as text to get the error message
         const text = await response.data.text();
-        console.error('❌ Expected PDF but got:', response.headers['content-type'], text);
-        throw new Error('Server returned invalid PDF format');
+        console.error('❌ Expected PDF but got:', contentType, text);
+        
+        try {
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.message || 'Server returned invalid PDF format');
+        } catch (parseError) {
+          throw new Error('Unable to generate PDF. Please try again.');
+        }
       }
       
       // Create blob and download
@@ -97,13 +106,13 @@ export const healthReportsService = {
       
       // Better error handling for PDF downloads
       if (error.response?.status === 404) {
-        throw new Error('PDF report endpoint not found');
+        throw new Error('No data found for PDF report');
+      } else if (error.response?.status === 501) {
+        throw new Error('PDF generation feature is coming soon!');
       } else if (error.response?.status === 500) {
         throw new Error('Server error while generating PDF');
-      } else if (error.message.includes('invalid PDF format')) {
-        throw new Error('Server returned invalid PDF format. Please try again.');
       } else {
-        throw new Error('Failed to download PDF report: ' + error.message);
+        throw error; // Re-throw the parsed error message
       }
     }
   }

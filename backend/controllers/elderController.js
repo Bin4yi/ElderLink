@@ -552,6 +552,7 @@ const getAssignedEldersForStaff = async (req, res) => {
   try {
     const staffId = req.user.id;
     console.log('🏥 Staff requesting assigned elders:', staffId);
+    console.log('🏥 Staff details:', req.user);
     
     // Get all active assignments for this staff member
     const assignments = await StaffAssignment.findAll({
@@ -563,8 +564,10 @@ const getAssignedEldersForStaff = async (req, res) => {
     });
 
     console.log('📋 Found assignments:', assignments.length);
+    console.log('📋 Assignment details:', JSON.stringify(assignments, null, 2));
 
     if (assignments.length === 0) {
+      console.log('⚠️ No assignments found for staff:', staffId);
       return res.json({
         success: true,
         elders: [],
@@ -591,6 +594,7 @@ const getAssignedEldersForStaff = async (req, res) => {
         'dateOfBirth', 
         'gender', 
         'phone', 
+        'photo',                 // ✅ Added: photo field
         'address',
         'emergencyContact',
         'medicalHistory',        // ✅ Fixed: use medicalHistory instead of medicalConditions
@@ -637,6 +641,7 @@ const getAssignedEldersForStaff = async (req, res) => {
     });
 
     console.log(`✅ Found ${eldersWithAssignmentInfo.length} assigned elders for staff`);
+    console.log('✅ Elders with assignment info:', JSON.stringify(eldersWithAssignmentInfo, null, 2));
     
     res.json({
       success: true,
@@ -646,9 +651,11 @@ const getAssignedEldersForStaff = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Get assigned elders for staff error:', error);
+    console.error('❌ Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Internal server error',
+      error: error.message
     });
   }
 };

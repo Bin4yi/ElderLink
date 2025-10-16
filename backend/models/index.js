@@ -7,6 +7,7 @@ const User = require("./User");
 const Elder = require("./Elder");
 const Subscription = require("./Subscription");
 const HealthMonitoring = require("./HealthMonitoring");
+const HealthAlert = require("./HealthAlert");
 const Notification = require("./Notification");
 const StaffAssignment = require("./StaffAssignment"); // ✅ Changed from StaffAssignmentModel
 const DoctorAssignment = require("./DoctorAssignment"); // ✅ Add this
@@ -20,6 +21,12 @@ const Inventory = require("./Inventory");
 const InventoryTransaction = require("./InventoryTransaction");
 const Prescription = require("./Prescription");
 const PrescriptionItem = require("./PrescriptionItem");
+
+// Import ambulance and emergency models
+const Ambulance = require("./Ambulance");
+const EmergencyAlert = require("./EmergencyAlert");
+const AmbulanceDispatch = require("./AmbulanceDispatch");
+const EmergencyLocation = require("./EmergencyLocation");
 
 // === Mental Health Models ===
 const MentalHealthAssignment = require("./MentalHealthAssignment");
@@ -46,6 +53,7 @@ const clearAssociations = (model) => {
   Elder,
   Subscription,
   HealthMonitoring,
+  HealthAlert,
   Notification,
   StaffAssignment,
   DoctorAssignment,
@@ -53,6 +61,10 @@ const clearAssociations = (model) => {
   InventoryTransaction,
   Prescription,
   PrescriptionItem,
+  Ambulance,
+  EmergencyAlert,
+  AmbulanceDispatch,
+  EmergencyLocation,
 ].forEach(clearAssociations);
 
 // User associations
@@ -62,6 +74,11 @@ User.hasMany(HealthMonitoring, {
   foreignKey: "staffId",
   as: "healthMonitorings",
 });
+User.hasMany(HealthAlert, {
+  foreignKey: "acknowledgedBy",
+  as: "acknowledgedAlerts",
+});
+User.hasMany(HealthAlert, { foreignKey: "resolvedBy", as: "resolvedAlerts" });
 User.hasMany(Notification, { foreignKey: "userId", as: "notifications" });
 User.hasMany(StaffAssignment, {
   foreignKey: "staffId",
@@ -88,6 +105,7 @@ Elder.belongsTo(Subscription, {
   as: "subscription",
 });
 Elder.hasMany(HealthMonitoring, { foreignKey: "elderId", as: "healthRecords" });
+Elder.hasMany(HealthAlert, { foreignKey: "elderId", as: "healthAlerts" });
 Elder.hasMany(Notification, {
   foreignKey: "elderId",
   as: "elderNotifications",
@@ -108,6 +126,22 @@ Subscription.hasOne(Elder, { foreignKey: "subscriptionId", as: "elder" });
 // HealthMonitoring associations
 HealthMonitoring.belongsTo(User, { foreignKey: "staffId", as: "staff" });
 HealthMonitoring.belongsTo(Elder, { foreignKey: "elderId", as: "elder" });
+HealthMonitoring.hasMany(HealthAlert, {
+  foreignKey: "healthMonitoringId",
+  as: "alerts",
+});
+
+// HealthAlert associations
+HealthAlert.belongsTo(Elder, { foreignKey: "elderId", as: "elder" });
+HealthAlert.belongsTo(HealthMonitoring, {
+  foreignKey: "healthMonitoringId",
+  as: "healthMonitoring",
+});
+HealthAlert.belongsTo(User, {
+  foreignKey: "acknowledgedBy",
+  as: "acknowledgedByUser",
+});
+HealthAlert.belongsTo(User, { foreignKey: "resolvedBy", as: "resolvedByUser" });
 
 // Notification associations
 Notification.belongsTo(User, { foreignKey: "userId", as: "user" });
@@ -284,6 +318,79 @@ User.hasMany(Prescription, {
 // Elder prescriptions
 Elder.hasMany(Prescription, { foreignKey: "elderId", as: "prescriptions" });
 
+// === AMBULANCE AND EMERGENCY SYSTEM ASSOCIATIONS ===
+
+// Ambulance associations
+Ambulance.belongsTo(User, { foreignKey: "driverId", as: "driver" });
+Ambulance.hasMany(AmbulanceDispatch, {
+  foreignKey: "ambulanceId",
+  as: "dispatches",
+});
+
+// EmergencyAlert associations
+EmergencyAlert.belongsTo(Elder, { foreignKey: "elderId", as: "elder" });
+EmergencyAlert.belongsTo(User, { foreignKey: "userId", as: "user" });
+EmergencyAlert.belongsTo(User, {
+  foreignKey: "acknowledgedBy",
+  as: "acknowledgedByUser",
+});
+EmergencyAlert.hasMany(AmbulanceDispatch, {
+  foreignKey: "emergencyAlertId",
+  as: "dispatches",
+});
+EmergencyAlert.hasMany(EmergencyLocation, {
+  foreignKey: "emergencyAlertId",
+  as: "locations",
+});
+
+// AmbulanceDispatch associations
+AmbulanceDispatch.belongsTo(EmergencyAlert, {
+  foreignKey: "emergencyAlertId",
+  as: "emergencyAlert",
+});
+AmbulanceDispatch.belongsTo(Ambulance, {
+  foreignKey: "ambulanceId",
+  as: "ambulance",
+});
+AmbulanceDispatch.belongsTo(User, { foreignKey: "driverId", as: "driver" });
+AmbulanceDispatch.belongsTo(User, {
+  foreignKey: "coordinatorId",
+  as: "coordinator",
+});
+AmbulanceDispatch.hasMany(EmergencyLocation, {
+  foreignKey: "ambulanceDispatchId",
+  as: "locations",
+});
+
+// EmergencyLocation associations
+EmergencyLocation.belongsTo(EmergencyAlert, {
+  foreignKey: "emergencyAlertId",
+  as: "emergencyAlert",
+});
+EmergencyLocation.belongsTo(AmbulanceDispatch, {
+  foreignKey: "ambulanceDispatchId",
+  as: "dispatch",
+});
+
+// Reverse associations
+User.hasMany(Ambulance, { foreignKey: "driverId", as: "ambulances" });
+User.hasOne(Ambulance, { foreignKey: "driverId", as: "assignedAmbulance" }); // For getting single ambulance
+User.hasMany(EmergencyAlert, { foreignKey: "userId", as: "emergencyAlerts" });
+User.hasMany(EmergencyAlert, {
+  foreignKey: "acknowledgedBy",
+  as: "acknowledgedEmergencies",
+});
+User.hasMany(AmbulanceDispatch, {
+  foreignKey: "driverId",
+  as: "driverDispatches",
+});
+User.hasMany(AmbulanceDispatch, {
+  foreignKey: "coordinatorId",
+  as: "coordinatedDispatches",
+});
+
+Elder.hasMany(EmergencyAlert, { foreignKey: "elderId", as: "emergencyAlerts" });
+
 // === MENTAL HEALTH ASSOCIATIONS ===
 
 // Mental Health Assignment Associations
@@ -416,6 +523,7 @@ module.exports = {
   Elder,
   Subscription,
   HealthMonitoring,
+  HealthAlert,
   Notification,
   StaffAssignment,
   DoctorAssignment,
@@ -427,4 +535,8 @@ module.exports = {
   InventoryTransaction,
   Prescription,
   PrescriptionItem,
+  Ambulance,
+  EmergencyAlert,
+  AmbulanceDispatch,
+  EmergencyLocation,
 };
