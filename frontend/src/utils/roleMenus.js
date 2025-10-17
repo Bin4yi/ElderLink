@@ -1,11 +1,10 @@
 // src/utils/roleMenus.js
 import { 
   Home, Users, Package, Activity, Settings, User, Heart,
-  Stethoscope, Calendar, FileText, Pill, Truck, Shield,
-  Monitor, AlertTriangle, UserCheck, ClipboardList, BarChart3,
+  Stethoscope, Calendar, FileText, Pill, Truck,
+  Monitor, AlertTriangle, ClipboardList, BarChart3,
   Brain, // Icon for mental health
-  Navigation, // Icon for ambulance tracking
-  Clock // Icon for analytics
+  Navigation // Icon for ambulance tracking
 } from 'lucide-react';
 
 export const getRoleMenuItems = (role) => {
@@ -49,6 +48,7 @@ export const getRoleMenuItems = (role) => {
         { path: '/doctor/patients', icon: Users, label: 'Patients' },
         { path: '/doctor/consultations', icon: Stethoscope, label: 'Consultations' },
         { path: '/doctor/appointments', icon: Calendar, label: 'Appointments' },
+        { path: '/doctor/prescriptions', icon: Pill, label: 'Prescriptions [TEST]' }, // TEMPORARY - For testing prescription system
         { path: '/doctor/records', icon: FileText, label: 'Medical Records' },
         { path: '/doctor/profile', icon: User, label: 'Profile' }
       ];

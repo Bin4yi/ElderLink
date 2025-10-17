@@ -5,11 +5,11 @@ import RoleLayout from '../../common/RoleLayout';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
-  FileText, Clock, CheckCircle, AlertCircle, User, Calendar,
-  Search, Filter, Eye, Package, DollarSign, Truck
+  FileText, Clock, CheckCircle, User, Calendar,
+  Search, Eye, Package, DollarSign, Truck
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5002/api';
 
 const PrescriptionManagement = () => {
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ const PrescriptionManagement = () => {
 
   useEffect(() => {
     fetchPrescriptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, selectedStatus, selectedPriority]);
 
   useEffect(() => {
@@ -324,6 +325,16 @@ const PrescriptionManagement = () => {
                           >
                             <Package className="h-4 w-4" />
                             Fill
+                          </button>
+                        )}
+                        
+                        {(prescription.status === 'filled' || prescription.status === 'partially_filled') && (
+                          <button
+                            onClick={() => navigate(`/pharmacist/prescriptions/${prescription.id}/create-delivery`)}
+                            className="flex items-center gap-1 px-3 py-1 text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors"
+                          >
+                            <Truck className="h-4 w-4" />
+                            Create Delivery
                           </button>
                         )}
                       </div>

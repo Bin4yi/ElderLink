@@ -169,17 +169,38 @@ const fillPrescription = async (req, res) => {
   
   try {
     const { id } = req.params;
-    const { items, notes, partialFill = false } = req.body;
+    const { items, totalAmount } = req.body;
     const pharmacyId = req.user.id;
 
     console.log('💊 Filling prescription:', id);
 
     const prescription = await Prescription.findOne({
       where: { id, pharmacyId },
-      include: [{
-        model: PrescriptionItem,
-        as: 'items'
-      }],
+      include: [
+        {
+          model: PrescriptionItem,
+          as: 'items'
+        },
+        {
+          model: User,
+          as: 'doctor',
+          attributes: ['id', 'firstName', 'lastName', 'email']
+        },
+        {
+          model: Elder,
+          as: 'elder',
+          attributes: ['id', 'firstName', 'lastName'],
+          include: [{
+            model: Subscription,
+            as: 'subscription',
+            include: [{
+              model: User,
+              as: 'user',
+              attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+            }]
+          }]
+        }
+      ],
       transaction
     });
 
@@ -187,7 +208,7 @@ const fillPrescription = async (req, res) => {
       await transaction.rollback();
       return res.status(404).json({
         success: false,
-        message: 'Prescription not found'
+        message: 'Prescription not found or not assigned to your pharmacy'
       });
     }
 
@@ -199,8 +220,8 @@ const fillPrescription = async (req, res) => {
       });
     }
 
-    let totalAmount = 0;
     let allItemsFilled = true;
+    let anyItemFilled = false;
 
     // Process each item
     for (const itemUpdate of items) {
@@ -214,91 +235,114 @@ const fillPrescription = async (req, res) => {
         });
       }
 
-      const quantityToDispense = itemUpdate.quantityDispensed;
+      // Update prescription item with pharmacy data
+      // Handle manual entry (inventoryId will be 'manual' or null)
+      const inventoryIdToSave = (itemUpdate.inventoryId && itemUpdate.inventoryId !== 'manual') 
+        ? itemUpdate.inventoryId 
+        : null;
 
-      if (quantityToDispense > 0) {
-        // Find inventory item
+      await prescriptionItem.update({
+        inventoryId: inventoryIdToSave,
+        quantityDispensed: itemUpdate.quantityDispensed,
+        unitPrice: itemUpdate.unitPrice,
+        totalPrice: itemUpdate.totalPrice,
+        status: itemUpdate.status,
+        notes: itemUpdate.notes || prescriptionItem.notes
+      }, { transaction });
+
+      // Update inventory if item was matched (not manual entry)
+      if (inventoryIdToSave && itemUpdate.quantityDispensed > 0) {
         const inventoryItem = await Inventory.findOne({
           where: {
             id: itemUpdate.inventoryId,
-            pharmacyId,
-            quantity: { [Op.gte]: quantityToDispense }
+            pharmacyId
           },
           transaction
         });
 
-        if (!inventoryItem) {
-          await transaction.rollback();
-          return res.status(400).json({
-            success: false,
-            message: `Insufficient stock for ${prescriptionItem.medicationName}`
-          });
+        if (inventoryItem) {
+          // Update inventory quantity
+          await inventoryItem.update({
+            quantity: inventoryItem.quantity - itemUpdate.quantityDispensed,
+            totalSold: inventoryItem.totalSold + itemUpdate.quantityDispensed
+          }, { transaction });
+
+          // Create inventory transaction
+          await InventoryTransaction.create({
+            inventoryId: inventoryItem.id,
+            type: 'stock_out',
+            quantity: itemUpdate.quantityDispensed,
+            reason: 'Prescription fill',
+            performedBy: req.user.id,
+            referenceNumber: prescription.prescriptionNumber,
+            unitCost: itemUpdate.unitPrice,
+            totalAmount: itemUpdate.totalPrice
+          }, { transaction });
+
+          anyItemFilled = true;
         }
+      }
 
-        // Update inventory quantity
-        await inventoryItem.update({
-          quantity: inventoryItem.quantity - quantityToDispense,
-          totalSold: inventoryItem.totalSold + quantityToDispense
-        }, { transaction });
-
-        // Create inventory transaction
-        await InventoryTransaction.create({
-          inventoryId: inventoryItem.id,
-          type: 'stock_out',
-          quantity: quantityToDispense,
-          reason: 'Prescription fill',
-          performedBy: req.user.id,
-          referenceNumber: prescription.prescriptionNumber,
-          unitCost: inventoryItem.sellingPrice,
-          totalAmount: inventoryItem.sellingPrice * quantityToDispense
-        }, { transaction });
-
-        // Update prescription item
-        const newQuantityDispensed = prescriptionItem.quantityDispensed + quantityToDispense;
-        const itemStatus = newQuantityDispensed >= prescriptionItem.quantityPrescribed ? 'filled' : 'partially_filled';
-
-        await prescriptionItem.update({
-          inventoryId: inventoryItem.id,
-          quantityDispensed: newQuantityDispensed,
-          unitPrice: inventoryItem.sellingPrice,
-          totalPrice: inventoryItem.sellingPrice * newQuantityDispensed,
-          status: itemStatus,
-          notes: itemUpdate.notes
-        }, { transaction });
-
-        totalAmount += inventoryItem.sellingPrice * quantityToDispense;
-
-        if (itemStatus !== 'filled') {
-          allItemsFilled = false;
-        }
-      } else {
+      if (itemUpdate.status !== 'filled') {
         allItemsFilled = false;
       }
     }
 
     // Update prescription status
-    const newStatus = allItemsFilled && !partialFill ? 'filled' : 'partially_filled';
+    const newStatus = allItemsFilled ? 'filled' : anyItemFilled ? 'partially_filled' : 'pending';
     
     await prescription.update({
       status: newStatus,
-      filledDate: newStatus === 'filled' ? new Date() : prescription.filledDate,
+      filledDate: allItemsFilled ? new Date() : prescription.filledDate,
       filledBy: req.user.id,
-      totalAmount: prescription.totalAmount + totalAmount,
-      notes: notes || prescription.notes
+      totalAmount: totalAmount || 0
     }, { transaction });
 
     await transaction.commit();
 
     console.log('✅ Prescription filled successfully:', prescription.prescriptionNumber);
 
+    // Send email notification to family member
+    if (prescription.elder?.subscription?.user) {
+      try {
+        const familyMember = prescription.elder.subscription.user;
+        const emailService = require('../services/emailService');
+        
+        // Prepare bill items
+        const billItems = prescription.items.map(item => ({
+          name: item.medicationName,
+          quantity: item.quantityDispensed,
+          unitPrice: item.unitPrice,
+          total: item.totalPrice,
+          status: item.status
+        }));
+
+        await emailService.sendPrescriptionBillEmail({
+          to: familyMember.email,
+          familyMemberName: `${familyMember.firstName} ${familyMember.lastName}`,
+          elderName: `${prescription.elder.firstName} ${prescription.elder.lastName}`,
+          prescriptionNumber: prescription.prescriptionNumber,
+          doctorName: `Dr. ${prescription.doctor.firstName} ${prescription.doctor.lastName}`,
+          items: billItems,
+          totalAmount: prescription.totalAmount,
+          status: newStatus
+        });
+
+        console.log('📧 Bill email sent to family member:', familyMember.email);
+      } catch (emailError) {
+        console.error('❌ Error sending bill email:', emailError);
+        // Don't fail the request if email fails
+      }
+    }
+
     res.json({
       success: true,
       data: {
         prescriptionId: prescription.id,
         status: newStatus,
-        totalAmount: prescription.totalAmount + totalAmount
+        totalAmount: prescription.totalAmount
       },
-      message: `Prescription ${newStatus === 'filled' ? 'filled' : 'partially filled'} successfully`
+      message: `Prescription ${newStatus === 'filled' ? 'filled' : 'partially filled'} successfully. Bill sent to family member.`
     });
 
   } catch (error) {
@@ -444,10 +488,192 @@ const cancelPrescription = async (req, res) => {
   }
 };
 
+/**
+ * DOCTOR FUNCTIONS
+ * Doctor creates a prescription for an elder - NEW WORKFLOW
+ * Doctor enters medication details manually and selects pharmacy
+ * Pharmacy will fill the prescription later (match inventory, calculate bill)
+ */
+const createPrescription = async (req, res) => {
+  try {
+    const doctorId = req.user.id;
+    const { elderId, pharmacyId, items, notes, deliveryRequired, deliveryAddress, priority } = req.body;
+
+    // Validation
+    if (!elderId) {
+      return res.status(400).json({
+        success: false,
+        message: "Elder ID is required",
+      });
+    }
+
+    if (!pharmacyId) {
+      return res.status(400).json({
+        success: false,
+        message: "Pharmacy selection is required",
+      });
+    }
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one medication is required",
+      });
+    }
+
+    // Verify elder exists
+    const elder = await Elder.findByPk(elderId);
+    if (!elder) {
+      return res.status(404).json({
+        success: false,
+        message: "Elder not found",
+      });
+    }
+
+    // Verify pharmacy exists and is active
+    const pharmacy = await User.findOne({
+      where: { 
+        id: pharmacyId, 
+        role: 'pharmacist',
+        isActive: true 
+      }
+    });
+    if (!pharmacy) {
+      return res.status(404).json({
+        success: false,
+        message: "Selected pharmacy not found or inactive",
+      });
+    }
+
+    // Generate prescription number
+    const prescriptionNumber = `RX${Date.now()}`;
+
+    // Create prescription (totalAmount will be calculated by pharmacy)
+    const prescription = await Prescription.create({
+      prescriptionNumber,
+      doctorId,
+      elderId,
+      pharmacyId,
+      status: "pending",
+      issuedDate: new Date(),
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days validity
+      totalAmount: 0, // Will be filled by pharmacy
+      notes,
+      deliveryRequired: deliveryRequired !== false,
+      deliveryAddress: deliveryAddress || null,
+      priority: priority || "normal",
+    });
+
+    // Create prescription items (doctor enters medication details manually)
+    // inventoryId, prices, and quantities dispensed will be filled by pharmacy
+    for (const item of items) {
+      await PrescriptionItem.create({
+        prescriptionId: prescription.id,
+        inventoryId: null, // Pharmacy will match this later
+        medicationName: item.medicationName || item.name,
+        genericName: item.genericName || null,
+        strength: item.strength || null,
+        dosage: item.dosage || "",
+        frequency: item.frequency || "",
+        duration: item.duration || "",
+        quantityPrescribed: item.quantityPrescribed || item.quantity,
+        quantityDispensed: 0, // Pharmacy will fill this
+        instructions: item.instructions || "",
+        substitutionAllowed: item.substitutionAllowed !== false,
+        unitPrice: 0, // Pharmacy will set this
+        totalPrice: 0, // Pharmacy will calculate this
+        status: "pending",
+      });
+    }
+
+    // Fetch complete prescription with relationships
+    const completePrescription = await Prescription.findByPk(prescription.id, {
+      include: [
+        { 
+          model: Elder, 
+          as: "elder", 
+          attributes: ["id", "firstName", "lastName", "dateOfBirth"] 
+        },
+        { 
+          model: User, 
+          as: "doctor", 
+          attributes: ["id", "firstName", "lastName", "email"] 
+        },
+        { 
+          model: User, 
+          as: "pharmacy", 
+          attributes: ["id", "firstName", "lastName", "email", "phone"] 
+        },
+        {
+          model: PrescriptionItem,
+          as: "items",
+        },
+      ],
+    });
+
+    console.log('✅ Prescription created successfully:', prescriptionNumber);
+
+    res.status(201).json({
+      success: true,
+      message: "Prescription created successfully",
+      prescription: completePrescription,
+    });
+  } catch (error) {
+    console.error("Error creating prescription:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create prescription",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get all prescriptions created by a doctor
+ */
+const getDoctorPrescriptions = async (req, res) => {
+  try {
+    const doctorId = req.user.id;
+    const { status, elderId } = req.query;
+
+    const whereClause = { doctorId };
+    if (status) whereClause.status = status;
+    if (elderId) whereClause.elderId = elderId;
+
+    const prescriptions = await Prescription.findAll({
+      where: whereClause,
+      include: [
+        { model: Elder, as: "elder", attributes: ["id", "firstName", "lastName"] },
+        {
+          model: PrescriptionItem,
+          as: "items",
+          include: [{ model: Inventory, as: "inventory" }],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    res.json({
+      success: true,
+      prescriptions,
+    });
+  } catch (error) {
+    console.error("Error fetching doctor prescriptions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch prescriptions",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getPrescriptions,
   getPrescription,
   fillPrescription,
   getPrescriptionStats,
-  cancelPrescription
+  cancelPrescription,
+  // Doctor functions
+  createPrescription,
+  getDoctorPrescriptions,
 };

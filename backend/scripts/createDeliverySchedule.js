@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+const fs = require('fs');
+const path = require('path');
+
+const content = `import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import RoleLayout from '../../common/RoleLayout';
 import axios from 'axios';
@@ -38,8 +41,8 @@ const DeliverySchedule = () => {
       if (selectedStatus !== 'all') params.status = selectedStatus;
       if (selectedDate) params.date = selectedDate;
 
-      const response = await axios.get(`${API_BASE_URL}/deliveries`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await axios.get(\`\${API_BASE_URL}/deliveries\`, {
+        headers: { Authorization: \`Bearer \${token}\` },
         params
       });
 
@@ -57,8 +60,8 @@ const DeliverySchedule = () => {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/deliveries/stats`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.get(\`\${API_BASE_URL}/deliveries/stats\`, {
+        headers: { Authorization: \`Bearer \${token}\` }
       });
 
       if (response.data.success) {
@@ -75,9 +78,9 @@ const DeliverySchedule = () => {
       const token = localStorage.getItem('token');
       
       const response = await axios.patch(
-        `${API_BASE_URL}/deliveries/${deliveryId}/status`,
+        \`\${API_BASE_URL}/deliveries/\${deliveryId}/status\`,
         { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` }}
+        { headers: { Authorization: \`Bearer \${token}\` }}
       );
 
       if (response.data.success) {
@@ -85,7 +88,7 @@ const DeliverySchedule = () => {
           word.charAt(0).toUpperCase() + word.slice(1)
         ).join(' ');
         
-        toast.success(`Delivery status updated to ${statusText}!`);
+        toast.success(\`Delivery status updated to \${statusText}!\`);
         
         if (newStatus === 'delivered') {
           toast.success('Email notification sent to family member!', {
@@ -122,7 +125,7 @@ const DeliverySchedule = () => {
   };
 
   const filtered = deliveries.filter((d) => {
-    const patientName = `${d.elder?.firstName || ''} ${d.elder?.lastName || ''}`.toLowerCase();
+    const patientName = \`\${d.elder?.firstName || ''} \${d.elder?.lastName || ''}\`.toLowerCase();
     const matchesSearch = patientName.includes(search.toLowerCase()) || 
                          d.deliveryNumber?.toLowerCase().includes(search.toLowerCase());
     return matchesSearch;
@@ -143,8 +146,8 @@ const DeliverySchedule = () => {
   const StatCard = ({ icon: Icon, title, value, color = "blue" }) => (
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="flex items-center">
-        <div className={`p-3 rounded-full bg-${color}-100 mr-4`}>
-          <Icon className={`h-6 w-6 text-${color}-600`} />
+        <div className={\`p-3 rounded-full bg-\${color}-100 mr-4\`}>
+          <Icon className={\`h-6 w-6 text-\${color}-600\`} />
         </div>
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
@@ -231,7 +234,7 @@ const DeliverySchedule = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
                         <h3 className="text-lg font-semibold">{delivery.deliveryNumber}</h3>
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(delivery.status)}`}>
+                        <span className={\`px-3 py-1 text-xs font-semibold rounded-full \${getStatusColor(delivery.status)}\`}>
                           {getStatusText(delivery.status)}
                         </span>
                         {delivery.status === 'delivered' && (
@@ -288,7 +291,7 @@ const DeliverySchedule = () => {
                     </div>
                     <div className="flex flex-col gap-2 ml-4">
                       <button
-                        onClick={() => navigate(`/pharmacist/deliveries/${delivery.id}`)}
+                        onClick={() => navigate(\`/pharmacist/deliveries/\${delivery.id}\`)}
                         className="flex items-center gap-1 px-3 py-1 text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
                       >
                         <Eye className="h-4 w-4" />
@@ -326,3 +329,9 @@ const DeliverySchedule = () => {
 };
 
 export default DeliverySchedule;
+`;
+
+const filePath = path.join(__dirname, '../../frontend/src/components/pharmacist/delivery/DeliverySchedule.js');
+fs.writeFileSync(filePath, content, 'utf8');
+console.log('✅ DeliverySchedule.js created successfully!');
+console.log('File size:', fs.statSync(filePath).size, 'bytes');
