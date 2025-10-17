@@ -6,7 +6,8 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
-  Dimensions
+  Dimensions,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -107,19 +108,6 @@ const HomeScreen = ({ navigation }) => {
       </View>
 
       {/* Emergency System Status */}
-      {!isSystemReady && (
-        <Alert
-          type="warning"
-          title="Emergency System Setup"
-          message={
-            !hasEmergencyContacts 
-              ? "Please add emergency contacts in Settings for full protection."
-              : "Emergency system is being configured."
-          }
-          style={styles.systemAlert}
-        />
-      )}
-
       {emergencyError && (
         <Alert
           type="error"
@@ -144,28 +132,7 @@ const HomeScreen = ({ navigation }) => {
         />
       </Card>
 
-      {/* Quick Actions */}
-      <Card style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        
-        <View style={styles.quickActionsGrid}>
-          <TouchableOpacity
-            style={styles.quickActionItem}
-            onPress={navigateToProfile}
-          >
-            <Ionicons name="person-circle" size={32} color={COLORS.primary} />
-            <Text style={styles.quickActionText}>My Profile</Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.quickActionItem}
-            onPress={() => navigation.navigate(ROUTES.SETTINGS)}
-          >
-            <Ionicons name="settings" size={32} color={COLORS.primary} />
-            <Text style={styles.quickActionText}>Settings</Text>
-          </TouchableOpacity>
-        </View>
-      </Card>
     </ScrollView>
   );
 };
@@ -181,33 +148,35 @@ const styles = StyleSheet.create({
   },
   
   header: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 30,
-    paddingTop: 20,
-    paddingBottom: 30,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 28,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray200,
   },
   
   greeting: {
-    fontSize: 24,
+    fontSize: 16,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.white,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
   },
   
   userName: {
     fontSize: 32,
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
-    color: COLORS.white,
-    marginBottom: 8,
+    color: COLORS.textPrimary,
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   
   dateText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.white,
-    opacity: 0.9,
+    color: COLORS.textSecondary,
+    opacity: 0.75,
   },
   
   systemAlert: {
@@ -217,8 +186,17 @@ const styles = StyleSheet.create({
   
   emergencyCard: {
     marginHorizontal: 20,
-    marginTop: 20,
-    paddingVertical: 30,
+    marginTop: 24,
+    marginBottom: 40,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
   },
   
   emergencyHeader: {
@@ -229,25 +207,21 @@ const styles = StyleSheet.create({
   },
   
   emergencyTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
-    color: COLORS.emergency?.text || COLORS.textPrimary,
+    color: COLORS.textPrimary,
     marginLeft: 12,
   },
   
   emergencyDescription: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.emergency?.text || COLORS.textPrimary,
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
     lineHeight: 22,
-  },
-  
-  sectionCard: {
-    marginHorizontal: 20,
-    marginTop: 20,
+    paddingHorizontal: 8,
   },
   
   sectionHeader: {
@@ -261,14 +235,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-  },
-  
-  sectionTitle: {
-    fontSize: 22,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-    marginLeft: 12,
   },
   
   healthStatus: {
@@ -379,32 +345,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.textSecondary,
-  },
-  
-  quickActionsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 16,
-  },
-  
-  quickActionItem: {
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: COLORS.gray50,
-    borderRadius: 16,
-    flex: 1,
-    marginHorizontal: 4,
-    minHeight: 100,
-    justifyContent: 'center',
-  },
-  
-  quickActionText: {
-    fontSize: 14,
-    fontFamily: 'OpenSans-SemiBold',
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginTop: 8,
-    textAlign: 'center',
   },
 });
 

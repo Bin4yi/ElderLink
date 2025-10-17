@@ -1,3 +1,4 @@
+// frontend/src/components/mental-health/t-plans/t-plans.js
 import React, { useState, useEffect } from "react";
 import {
   FileText,
@@ -9,12 +10,12 @@ import {
   CheckCircle,
   Clock,
   AlertTriangle,
-  User,
-  Calendar,
-  Target,
   Activity,
+  Target,
 } from "lucide-react";
-import RoleLayout from "../../common/RoleLayout"; // Add this import for sidebar layout
+import RoleLayout from "../../common/RoleLayout";
+import mentalHealthService from "../../../services/mentalHealthService";
+import toast from "react-hot-toast";
 
 const TreatmentPlans = () => {
   const [treatmentPlans, setTreatmentPlans] = useState([]);
@@ -22,187 +23,65 @@ const TreatmentPlans = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [showNewPlanModal, setShowNewPlanModal] = useState(false);
-
-  // Mock clients for dropdown
-  const mockClients = [
-    { id: "C001", name: "Margaret Johnson" },
-    { id: "C002", name: "Robert Chen" },
-    { id: "C003", name: "Dorothy Williams" },
-  ];
-
-  // State for new plan form
-  const [newPlan, setNewPlan] = useState({
-    clientId: "",
-    clientName: "",
-    state: "active",
-    priority: "medium",
-    goals: "",
-    interventions: "",
-    notes: "",
-  });
-
-  // Mock data
-  const mockTreatmentPlans = [
-    {
-      id: 1,
-      clientName: "Margaret Johnson",
-      clientId: "C001",
-      planTitle: "Anxiety Management Treatment Plan",
-      status: "active",
-      priority: "medium",
-      startDate: "2024-12-01",
-      endDate: "2025-03-01",
-      progress: 65,
-      primaryDiagnosis: "Generalized Anxiety Disorder",
-      secondaryDiagnosis: "Mild Depression",
-      therapist: "Dr. Sarah Mitchell",
-      goals: [
-        {
-          id: 1,
-          description: "Reduce anxiety symptoms by 50%",
-          status: "in_progress",
-          targetDate: "2025-02-01",
-          progress: 70,
-        },
-        {
-          id: 2,
-          description: "Improve sleep quality",
-          status: "completed",
-          targetDate: "2025-01-15",
-          progress: 100,
-        },
-        {
-          id: 3,
-          description: "Develop coping mechanisms",
-          status: "in_progress",
-          targetDate: "2025-02-15",
-          progress: 60,
-        },
-      ],
-      interventions: [
-        "Cognitive Behavioral Therapy - 2x weekly",
-        "Mindfulness exercises - daily",
-        "Medication management",
-        "Support group participation",
-      ],
-      nextReview: "2025-01-20",
-      lastUpdated: "2025-01-10",
-    },
-    {
-      id: 2,
-      clientName: "Robert Chen",
-      clientId: "C002",
-      planTitle: "Social Isolation Recovery Plan",
-      status: "active",
-      priority: "high",
-      startDate: "2024-11-15",
-      endDate: "2025-02-15",
-      progress: 40,
-      primaryDiagnosis: "Social Isolation",
-      secondaryDiagnosis: "PTSD",
-      therapist: "Dr. Sarah Mitchell",
-      goals: [
-        {
-          id: 1,
-          description: "Increase social interactions",
-          status: "in_progress",
-          targetDate: "2025-01-30",
-          progress: 45,
-        },
-        {
-          id: 2,
-          description: "Join community activities",
-          status: "not_started",
-          targetDate: "2025-02-10",
-          progress: 0,
-        },
-        {
-          id: 3,
-          description: "Reduce PTSD symptoms",
-          status: "in_progress",
-          targetDate: "2025-02-15",
-          progress: 35,
-        },
-      ],
-      interventions: [
-        "Group therapy - weekly",
-        "Individual counseling - weekly",
-        "Community engagement activities",
-        "PTSD-focused therapy",
-      ],
-      nextReview: "2025-01-18",
-      lastUpdated: "2025-01-08",
-    },
-    {
-      id: 3,
-      clientName: "Dorothy Williams",
-      clientId: "C003",
-      planTitle: "Crisis Intervention and Safety Plan",
-      status: "critical",
-      priority: "critical",
-      startDate: "2025-01-10",
-      endDate: "2025-04-10",
-      progress: 15,
-      primaryDiagnosis: "Major Depressive Disorder",
-      secondaryDiagnosis: "Suicidal Ideation",
-      therapist: "Dr. Sarah Mitchell",
-      goals: [
-        {
-          id: 1,
-          description: "Ensure immediate safety",
-          status: "completed",
-          targetDate: "2025-01-12",
-          progress: 100,
-        },
-        {
-          id: 2,
-          description: "Implement safety plan",
-          status: "in_progress",
-          targetDate: "2025-01-15",
-          progress: 80,
-        },
-        {
-          id: 3,
-          description: "Stabilize mood",
-          status: "in_progress",
-          targetDate: "2025-02-01",
-          progress: 20,
-        },
-      ],
-      interventions: [
-        "Daily check-ins",
-        "Crisis intervention therapy",
-        "Medication adjustment",
-        "Family support coordination",
-        "24/7 emergency contact available",
-      ],
-      nextReview: "2025-01-13",
-      lastUpdated: "2025-01-11",
-    },
-  ];
+  const [clients, setClients] = useState([]);
 
   useEffect(() => {
-    setTimeout(() => {
-      setTreatmentPlans(mockTreatmentPlans);
+    loadData();
+  }, [selectedFilter]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      const filters =
+        selectedFilter !== "all" ? { status: selectedFilter } : {};
+      const plansResponse =
+        await mentalHealthService.getSpecialistTreatmentPlans(filters);
+      setTreatmentPlans(plansResponse.treatmentPlans || []);
+
+      const clientsResponse = await mentalHealthService.getSpecialistClients();
+      setClients(clientsResponse.clients || []);
+    } catch (error) {
+      console.error("Error loading treatment plans:", error);
+      toast.error("Failed to load treatment plans");
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
+
+  const handleCreatePlan = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    try {
+      await mentalHealthService.createTreatmentPlan({
+        elderId: formData.get("elderId"),
+        planTitle: formData.get("planTitle"),
+        priority: formData.get("priority"),
+        startDate: formData.get("startDate"),
+        endDate: formData.get("endDate"),
+        primaryDiagnosis: formData.get("primaryDiagnosis"),
+        goals: [],
+        interventions: [],
+      });
+
+      toast.success("Treatment plan created successfully!");
+      setShowNewPlanModal(false);
+      loadData();
+    } catch (error) {
+      console.error("Error creating treatment plan:", error);
+      toast.error("Failed to create treatment plan");
+    }
+  };
 
   const filteredPlans = treatmentPlans.filter((plan) => {
-    const matchesSearch =
-      plan.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      plan.planTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      plan.primaryDiagnosis.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesFilter =
-      selectedFilter === "all" ||
-      (selectedFilter === "active" && plan.status === "active") ||
-      (selectedFilter === "completed" && plan.status === "completed") ||
-      (selectedFilter === "critical" && plan.status === "critical") ||
-      (selectedFilter === "high_priority" && plan.priority === "high") ||
-      (selectedFilter === "critical_priority" && plan.priority === "critical");
-
-    return matchesSearch && matchesFilter;
+    const clientName =
+      `${plan.elder?.firstName} ${plan.elder?.lastName}`.toLowerCase();
+    const title = plan.planTitle.toLowerCase();
+    return (
+      clientName.includes(searchTerm.toLowerCase()) ||
+      title.includes(searchTerm.toLowerCase())
+    );
   });
 
   const getStatusColor = (status) => {
@@ -233,49 +112,6 @@ const TreatmentPlans = () => {
       default:
         return "bg-gray-100 text-gray-800";
     }
-  };
-
-  const getGoalStatusColor = (status) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "in_progress":
-        return "bg-blue-100 text-blue-800";
-      case "not_started":
-        return "bg-gray-100 text-gray-800";
-      case "overdue":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  // Handle form input changes
-  const handleNewPlanChange = (e) => {
-    const { name, value } = e.target;
-    setNewPlan((prev) => ({
-      ...prev,
-      [name]: value,
-      ...(name === "clientId" && {
-        clientName: mockClients.find((c) => c.id === value)?.name || "",
-      }),
-    }));
-  };
-
-  // Handle new plan submit (demo only, just closes modal)
-  const handleCreatePlan = (e) => {
-    e.preventDefault();
-    // Add logic to save new plan if needed
-    setShowNewPlanModal(false);
-    setNewPlan({
-      clientId: "",
-      clientName: "",
-      state: "active",
-      priority: "medium",
-      goals: "",
-      interventions: "",
-      notes: "",
-    });
   };
 
   if (loading) {
@@ -313,10 +149,6 @@ const TreatmentPlans = () => {
                 <Plus className="w-4 h-4" />
                 Create Plan
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <Activity className="w-4 h-4" />
-                Progress Review
-              </button>
             </div>
           </div>
         </div>
@@ -336,6 +168,7 @@ const TreatmentPlans = () => {
               </div>
             </div>
           </div>
+
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -351,6 +184,7 @@ const TreatmentPlans = () => {
               </div>
             </div>
           </div>
+
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -364,6 +198,7 @@ const TreatmentPlans = () => {
               </div>
             </div>
           </div>
+
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -374,10 +209,14 @@ const TreatmentPlans = () => {
                   Avg Progress
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {Math.round(
-                    treatmentPlans.reduce((acc, p) => acc + p.progress, 0) /
-                      treatmentPlans.length
-                  )}
+                  {treatmentPlans.length > 0
+                    ? Math.round(
+                        treatmentPlans.reduce(
+                          (acc, p) => acc + (p.progress || 0),
+                          0
+                        ) / treatmentPlans.length
+                      )
+                    : 0}
                   %
                 </p>
               </div>
@@ -393,7 +232,7 @@ const TreatmentPlans = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Search treatment plans by client name, plan title, or diagnosis..."
+                  placeholder="Search treatment plans by client name or plan title..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -410,8 +249,6 @@ const TreatmentPlans = () => {
                 <option value="active">Active</option>
                 <option value="completed">Completed</option>
                 <option value="critical">Critical</option>
-                <option value="high_priority">High Priority</option>
-                <option value="critical_priority">Critical Priority</option>
               </select>
               <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                 <Filter className="w-4 h-4" />
@@ -423,255 +260,272 @@ const TreatmentPlans = () => {
 
         {/* Treatment Plans List */}
         <div className="space-y-6">
-          {filteredPlans.map((plan) => (
-            <div
-              key={plan.id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
-            >
-              {/* Plan Header */}
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                  <div className="mb-4 lg:mb-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900">
-                        {plan.planTitle}
-                      </h3>
-                      <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                          plan.status
-                        )}`}
-                      >
-                        {plan.status.toUpperCase()}
-                      </span>
-                      <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${getPriorityColor(
-                          plan.priority
-                        )}`}
-                      >
-                        {plan.priority.toUpperCase()} PRIORITY
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <User className="w-4 h-4" />
-                        {plan.clientName}
+          {filteredPlans.length > 0 ? (
+            filteredPlans.map((plan) => (
+              <div
+                key={plan.id}
+                className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+              >
+                <div className="flex flex-col lg:flex-row gap-6">
+                  {/* Main Info */}
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                          {plan.planTitle}
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                          <FileText className="w-4 h-4" />
+                          <span>
+                            Client: {plan.elder?.firstName}{" "}
+                            {plan.elder?.lastName}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Target className="w-4 h-4" />
+                          <span>Diagnosis: {plan.primaryDiagnosis}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {plan.startDate} - {plan.endDate}
-                      </div>
-                      <div>Therapist: {plan.therapist}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {plan.progress}%
-                      </div>
-                      <div className="text-sm text-gray-500">Progress</div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                        <Eye className="w-5 h-5" />
-                      </button>
-                      <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-                        <Activity className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
-                    <span>Overall Progress</span>
-                    <span>{plan.progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${plan.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Plan Details */}
-              <div className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Diagnosis */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">
-                      Diagnosis
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                        <span className="text-sm text-gray-700">
-                          Primary: {plan.primaryDiagnosis}
+                      <div className="flex flex-col gap-2 items-end">
+                        <span
+                          className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                            plan.status
+                          )}`}
+                        >
+                          {plan.status.replace("_", " ").toUpperCase()}
                         </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                        <span className="text-sm text-gray-700">
-                          Secondary: {plan.secondaryDiagnosis}
+                        <span
+                          className={`px-3 py-1 text-xs font-medium rounded-full ${getPriorityColor(
+                            plan.priority
+                          )}`}
+                        >
+                          {plan.priority.toUpperCase()}
                         </span>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Key Dates */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">
-                      Key Dates
-                    </h4>
-                    <div className="space-y-2 text-sm text-gray-700">
-                      <div>Next Review: {plan.nextReview}</div>
-                      <div>Last Updated: {plan.lastUpdated}</div>
-                      <div>End Date: {plan.endDate}</div>
+                    {/* Progress Bar */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          Overall Progress
+                        </span>
+                        <span className="text-sm font-semibold text-purple-600">
+                          {plan.progress || 0}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-purple-600 h-2 rounded-full transition-all"
+                          style={{ width: `${plan.progress || 0}%` }}
+                        ></div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Goals */}
-                <div className="mt-6">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">
-                    Treatment Goals
-                  </h4>
-                  <div className="space-y-3">
-                    {plan.goals.map((goal) => (
-                      <div
-                        key={goal.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
-                            <Target className="w-4 h-4 text-purple-600" />
-                            <span className="text-sm font-medium text-gray-900">
-                              {goal.description}
-                            </span>
-                            <span
-                              className={`px-2 py-1 text-xs font-medium rounded-full ${getGoalStatusColor(
-                                goal.status
-                              )}`}
+                    {/* Goals Summary */}
+                    {plan.goals && plan.goals.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">
+                          Treatment Goals ({plan.goals.length})
+                        </h4>
+                        <div className="space-y-2">
+                          {plan.goals.slice(0, 3).map((goal, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 text-sm"
                             >
-                              {goal.status.replace("_", " ").toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="mt-2 ml-7">
-                            <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                              <span>Target: {goal.targetDate}</span>
-                              <span>{goal.progress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-1.5">
                               <div
-                                className={`h-1.5 rounded-full transition-all duration-300 ${
+                                className={`w-2 h-2 rounded-full ${
                                   goal.status === "completed"
                                     ? "bg-green-500"
                                     : goal.status === "in_progress"
                                     ? "bg-blue-500"
-                                    : "bg-gray-400"
+                                    : "bg-gray-300"
                                 }`}
-                                style={{ width: `${goal.progress}%` }}
                               ></div>
+                              <span className="text-gray-700">
+                                {goal.description}
+                              </span>
+                              <span className="text-gray-500 text-xs">
+                                ({goal.progress || 0}%)
+                              </span>
                             </div>
-                          </div>
+                          ))}
+                          {plan.goals.length > 3 && (
+                            <p className="text-sm text-gray-500 ml-4">
+                              +{plan.goals.length - 3} more goals
+                            </p>
+                          )}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    )}
 
-                {/* Interventions */}
-                <div className="mt-6">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">
-                    Interventions
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {plan.interventions.map((intervention, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 text-sm text-gray-700"
-                      >
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                        {intervention}
+                    {/* Interventions */}
+                    {plan.interventions && plan.interventions.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">
+                          Key Interventions
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {plan.interventions
+                            .slice(0, 3)
+                            .map((intervention, index) => (
+                              <span
+                                key={index}
+                                className="px-3 py-1 bg-purple-50 text-purple-700 text-xs rounded-full"
+                              >
+                                {intervention}
+                              </span>
+                            ))}
+                          {plan.interventions.length > 3 && (
+                            <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                              +{plan.interventions.length - 3} more
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    ))}
+                    )}
+                  </div>
+
+                  {/* Dates and Actions */}
+                  <div className="lg:w-64 flex flex-col gap-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Start Date
+                          </p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {new Date(plan.startDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {plan.endDate && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              End Date
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {new Date(plan.endDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Last Updated
+                          </p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {new Date(plan.lastUpdated).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        <Eye className="w-4 h-4" />
+                        View Details
+                      </button>
+                      <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        <Edit className="w-4 h-4" />
+                        Edit Plan
+                      </button>
+                      <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        <Activity className="w-4 h-4" />
+                        Update Progress
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm p-16 text-center">
+              <FileText className="w-24 h-24 text-gray-300 mx-auto mb-6" />
+              <h2 className="text-2xl font-bold text-gray-600 mb-4">
+                No Treatment Plans Found
+              </h2>
+              <p className="text-gray-500 mb-8">
+                Create your first treatment plan to get started.
+              </p>
+              <button
+                onClick={() => setShowNewPlanModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Create Treatment Plan
+              </button>
             </div>
-          ))}
+          )}
         </div>
 
-        {/* New Treatment Plan Modal */}
+        {/* New Plan Modal */}
         {showNewPlanModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-4xl m-4 max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900">
-                  Create New Treatment Plan
+                  Create Treatment Plan
                 </h2>
                 <button
                   onClick={() => setShowNewPlanModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
                 >
                   ×
                 </button>
               </div>
 
-              <form className="space-y-6" onSubmit={handleCreatePlan}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Client Dropdown */}
+              <form onSubmit={handleCreatePlan} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Client
+                  </label>
+                  <select
+                    name="elderId"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select a client</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.elderId}>
+                        {client.elder?.firstName} {client.elder?.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Plan Title
+                  </label>
+                  <input
+                    type="text"
+                    name="planTitle"
+                    placeholder="e.g., Anxiety Management Treatment Plan"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Client
+                      Primary Diagnosis
                     </label>
-                    <select
-                      name="clientId"
-                      value={newPlan.clientId}
-                      onChange={handleNewPlanChange}
+                    <input
+                      type="text"
+                      name="primaryDiagnosis"
+                      placeholder="e.g., Generalized Anxiety Disorder"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       required
-                    >
-                      <option value="">Select client</option>
-                      {mockClients.map((client) => (
-                        <option key={client.id} value={client.id}>
-                          {client.name}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
-                  {/* State Dropdown */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      State
-                    </label>
-                    <select
-                      name="state"
-                      value={newPlan.state}
-                      onChange={handleNewPlanChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="active">Active</option>
-                      <option value="completed">Completed</option>
-                      <option value="critical">Critical</option>
-                      <option value="on_hold">On Hold</option>
-                    </select>
-                  </div>
-                  {/* Priority Dropdown */}
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Priority
                     </label>
                     <select
                       name="priority"
-                      value={newPlan.priority}
-                      onChange={handleNewPlanChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       required
                     >
@@ -683,46 +537,29 @@ const TreatmentPlans = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Treatment Goals
-                  </label>
-                  <textarea
-                    name="goals"
-                    rows="4"
-                    value={newPlan.goals}
-                    onChange={handleNewPlanChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Enter treatment goals and objectives..."
-                  ></textarea>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      name="startDate"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Interventions
-                  </label>
-                  <textarea
-                    name="interventions"
-                    rows="4"
-                    value={newPlan.interventions}
-                    onChange={handleNewPlanChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="List planned interventions and treatments..."
-                  ></textarea>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notes
-                  </label>
-                  <textarea
-                    name="notes"
-                    rows="3"
-                    value={newPlan.notes}
-                    onChange={handleNewPlanChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Additional notes and observations..."
-                  ></textarea>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Target End Date
+                    </label>
+                    <input
+                      type="date"
+                      name="endDate"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">
@@ -737,7 +574,7 @@ const TreatmentPlans = () => {
                     type="submit"
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                   >
-                    Create Treatment Plan
+                    Create Plan
                   </button>
                 </div>
               </form>

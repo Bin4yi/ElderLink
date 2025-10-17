@@ -1,3 +1,4 @@
+// frontend/src/components/mental-health/assessments/assessments.js
 import React, { useState, useEffect } from "react";
 import {
   Brain,
@@ -12,7 +13,9 @@ import {
   Edit,
   Calendar,
 } from "lucide-react";
-import RoleLayout from "../../common/RoleLayout"; // Add this import for sidebar layout
+import RoleLayout from "../../common/RoleLayout";
+import mentalHealthService from "../../../services/mentalHealthService";
+import toast from "react-hot-toast";
 
 const MentalHealthAssessments = () => {
   const [assessments, setAssessments] = useState([]);
@@ -20,118 +23,64 @@ const MentalHealthAssessments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [showNewAssessmentModal, setShowNewAssessmentModal] = useState(false);
-
-  // Mock data
-  const mockAssessments = [
-    {
-      id: 1,
-      clientName: "Margaret Johnson",
-      clientId: "C001",
-      assessmentType: "Initial Mental Health Evaluation",
-      status: "completed",
-      priority: "medium",
-      scheduledDate: "2025-01-05",
-      completedDate: "2025-01-05",
-      duration: "45 minutes",
-      score: "PHQ-9: 8/27 (Mild Depression)",
-      findings: "Mild depressive symptoms with good coping mechanisms",
-      recommendations: "CBT sessions twice weekly, mindfulness exercises",
-      nextAssessment: "2025-02-05",
-      assessor: "Dr. Sarah Mitchell",
-      riskLevel: "low",
-    },
-    {
-      id: 2,
-      clientName: "Robert Chen",
-      clientId: "C002",
-      assessmentType: "PTSD Assessment",
-      status: "in_progress",
-      priority: "high",
-      scheduledDate: "2025-01-12",
-      completedDate: null,
-      duration: "60 minutes",
-      score: "PCL-5: In Progress",
-      findings: "Assessment in progress",
-      recommendations: "To be determined",
-      nextAssessment: "TBD",
-      assessor: "Dr. Sarah Mitchell",
-      riskLevel: "medium",
-    },
-    {
-      id: 3,
-      clientName: "Dorothy Williams",
-      clientId: "C003",
-      assessmentType: "Suicide Risk Assessment",
-      status: "urgent",
-      priority: "critical",
-      scheduledDate: "2025-01-10",
-      completedDate: "2025-01-10",
-      duration: "90 minutes",
-      score: "Columbia Scale: High Risk",
-      findings: "Immediate intervention required",
-      recommendations: "Daily check-ins, safety plan implementation",
-      nextAssessment: "2025-01-17",
-      assessor: "Dr. Sarah Mitchell",
-      riskLevel: "high",
-    },
-    {
-      id: 4,
-      clientName: "James Patterson",
-      clientId: "C004",
-      assessmentType: "Cognitive Assessment",
-      status: "scheduled",
-      priority: "medium",
-      scheduledDate: "2025-01-15",
-      completedDate: null,
-      duration: "30 minutes",
-      score: "Pending",
-      findings: "Scheduled for assessment",
-      recommendations: "Pending assessment",
-      nextAssessment: "TBD",
-      assessor: "Dr. Sarah Mitchell",
-      riskLevel: "low",
-    },
-  ];
-
-  const assessmentTypes = [
-    "Initial Mental Health Evaluation",
-    "Depression Screening (PHQ-9)",
-    "Anxiety Assessment (GAD-7)",
-    "PTSD Assessment (PCL-5)",
-    "Cognitive Assessment (MMSE)",
-    "Suicide Risk Assessment",
-    "Substance Abuse Screening",
-    "Sleep Disorder Assessment",
-    "Social Isolation Evaluation",
-  ];
+  const [clients, setClients] = useState([]);
 
   useEffect(() => {
-    setTimeout(() => {
-      setAssessments(mockAssessments);
+    loadData();
+  }, [selectedFilter]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      // Load assessments
+      const filters =
+        selectedFilter !== "all" ? { status: selectedFilter } : {};
+      const assessmentsResponse =
+        await mentalHealthService.getSpecialistAssessments(filters);
+      setAssessments(assessmentsResponse.assessments || []);
+
+      // Load clients for the modal
+      const clientsResponse = await mentalHealthService.getSpecialistClients();
+      setClients(clientsResponse.clients || []);
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast.error("Failed to load assessments");
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
+
+  const handleCreateAssessment = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    try {
+      await mentalHealthService.createAssessment({
+        elderId: formData.get("elderId"),
+        assessmentType: formData.get("assessmentType"),
+        priority: formData.get("priority"),
+        scheduledDate: formData.get("scheduledDate"),
+        duration: parseInt(formData.get("duration")),
+      });
+
+      toast.success("Assessment created successfully!");
+      setShowNewAssessmentModal(false);
+      loadData();
+    } catch (error) {
+      console.error("Error creating assessment:", error);
+      toast.error("Failed to create assessment");
+    }
+  };
 
   const filteredAssessments = assessments.filter((assessment) => {
-    const matchesSearch =
-      assessment.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      assessment.assessmentType
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      assessment.clientId.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesFilter =
-      selectedFilter === "all" ||
-      (selectedFilter === "completed" && assessment.status === "completed") ||
-      (selectedFilter === "in_progress" &&
-        assessment.status === "in_progress") ||
-      (selectedFilter === "scheduled" && assessment.status === "scheduled") ||
-      (selectedFilter === "urgent" && assessment.status === "urgent") ||
-      (selectedFilter === "high_risk" && assessment.riskLevel === "high") ||
-      (selectedFilter === "medium_risk" && assessment.riskLevel === "medium") ||
-      (selectedFilter === "low_risk" && assessment.riskLevel === "low");
-
-    return matchesSearch && matchesFilter;
+    const clientName =
+      `${assessment.elder?.firstName} ${assessment.elder?.lastName}`.toLowerCase();
+    const type = assessment.assessmentType.toLowerCase();
+    return (
+      clientName.includes(searchTerm.toLowerCase()) ||
+      type.includes(searchTerm.toLowerCase())
+    );
   });
 
   const getStatusColor = (status) => {
@@ -214,10 +163,6 @@ const MentalHealthAssessments = () => {
                 <Plus className="w-4 h-4" />
                 New Assessment
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <Calendar className="w-4 h-4" />
-                Schedule Assessment
-              </button>
             </div>
           </div>
         </div>
@@ -239,6 +184,7 @@ const MentalHealthAssessments = () => {
               </div>
             </div>
           </div>
+
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -252,6 +198,7 @@ const MentalHealthAssessments = () => {
               </div>
             </div>
           </div>
+
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -265,6 +212,7 @@ const MentalHealthAssessments = () => {
               </div>
             </div>
           </div>
+
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -306,9 +254,6 @@ const MentalHealthAssessments = () => {
                 <option value="in_progress">In Progress</option>
                 <option value="scheduled">Scheduled</option>
                 <option value="urgent">Urgent</option>
-                <option value="high_risk">High Risk</option>
-                <option value="medium_risk">Medium Risk</option>
-                <option value="low_risk">Low Risk</option>
               </select>
               <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                 <Filter className="w-4 h-4" />
@@ -340,9 +285,6 @@ const MentalHealthAssessments = () => {
                     Scheduled Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Score/Results
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -357,10 +299,11 @@ const MentalHealthAssessments = () => {
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {assessment.clientName}
+                            {assessment.elder?.firstName}{" "}
+                            {assessment.elder?.lastName}
                           </div>
                           <div className="text-sm text-gray-500">
-                            ID: {assessment.clientId}
+                            ID: {assessment.elderId?.slice(0, 8)}
                           </div>
                         </div>
                       </div>
@@ -370,7 +313,7 @@ const MentalHealthAssessments = () => {
                         {assessment.assessmentType}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {assessment.duration}
+                        {assessment.duration} minutes
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -404,16 +347,6 @@ const MentalHealthAssessments = () => {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {assessment.score}
-                      </div>
-                      {assessment.findings && (
-                        <div className="text-sm text-gray-500 max-w-xs truncate">
-                          {assessment.findings}
-                        </div>
-                      )}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex gap-2">
                         <button className="text-blue-600 hover:text-blue-900">
@@ -421,9 +354,6 @@ const MentalHealthAssessments = () => {
                         </button>
                         <button className="text-green-600 hover:text-green-900">
                           <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-purple-600 hover:text-purple-900">
-                          <FileText className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -450,17 +380,23 @@ const MentalHealthAssessments = () => {
                 </button>
               </div>
 
-              <form className="space-y-4">
+              <form onSubmit={handleCreateAssessment} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Client
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <select
+                      name="elderId"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
                       <option value="">Select a client</option>
-                      <option value="1">Margaret Johnson</option>
-                      <option value="2">Robert Chen</option>
-                      <option value="3">Dorothy Williams</option>
+                      {clients.map((client) => (
+                        <option key={client.id} value={client.elderId}>
+                          {client.elder?.firstName} {client.elder?.lastName}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -468,13 +404,30 @@ const MentalHealthAssessments = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Assessment Type
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <select
+                      name="assessmentType"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
                       <option value="">Select assessment type</option>
-                      {assessmentTypes.map((type, index) => (
-                        <option key={index} value={type}>
-                          {type}
-                        </option>
-                      ))}
+                      <option value="Initial Mental Health Evaluation">
+                        Initial Mental Health Evaluation
+                      </option>
+                      <option value="Depression Screening (PHQ-9)">
+                        Depression Screening (PHQ-9)
+                      </option>
+                      <option value="Anxiety Assessment (GAD-7)">
+                        Anxiety Assessment (GAD-7)
+                      </option>
+                      <option value="PTSD Assessment (PCL-5)">
+                        PTSD Assessment (PCL-5)
+                      </option>
+                      <option value="Cognitive Assessment (MMSE)">
+                        Cognitive Assessment (MMSE)
+                      </option>
+                      <option value="Suicide Risk Assessment">
+                        Suicide Risk Assessment
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -486,7 +439,9 @@ const MentalHealthAssessments = () => {
                     </label>
                     <input
                       type="date"
+                      name="scheduledDate"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
                     />
                   </div>
 
@@ -494,7 +449,11 @@ const MentalHealthAssessments = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Priority
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <select
+                      name="priority"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
                       <option value="high">High</option>
@@ -503,27 +462,17 @@ const MentalHealthAssessments = () => {
                   </div>
                 </div>
 
-                {/* Score/Results Section */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Score/Results
+                    Duration (minutes)
                   </label>
                   <input
-                    type="text"
+                    type="number"
+                    name="duration"
+                    defaultValue="60"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Enter score or results (e.g., PHQ-9: 8/27)"
+                    required
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notes
-                  </label>
-                  <textarea
-                    rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Additional notes for the assessment..."
-                  ></textarea>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">

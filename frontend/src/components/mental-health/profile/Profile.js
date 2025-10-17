@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// frontend/src/components/mental-health/profile/profile.js
+import React, { useState, useEffect } from "react";
 import {
   User,
   Mail,
@@ -10,25 +11,53 @@ import {
   Save,
   X,
   Camera,
+  Shield,
+  Award,
 } from "lucide-react";
-import RoleLayout from "../../common/RoleLayout"; // Add this import for sidebar layout
+import RoleLayout from "../../common/RoleLayout";
+import mentalHealthService from "../../../services/mentalHealthService";
+import toast from "react-hot-toast";
 
 const MentalHealthProfile = () => {
-  const [profile, setProfile] = useState({
-    name: "Dr. Sarah Mitchell",
-    email: "sarah.mitchell@elderlink.com",
-    phone: "+1 555-123-4567",
-    specialization: "Clinical Psychologist",
-    licenseNumber: "MH-2024-001",
-    bio: "Passionate about supporting elder mental health and well-being. 10+ years of experience in clinical psychology and therapy.",
-    avatar:
-      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
-    hospital: "ElderCare General Hospital",
-    experience: "12 years",
+  const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState({
+    activeClients: 0,
+    sessionsThisMonth: 0,
+    reportsGenerated: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState({});
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState(profile);
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const loadProfileData = async () => {
+    try {
+      setLoading(true);
+
+      // Load profile
+      const profileResponse = await mentalHealthService.getSpecialistProfile();
+      setProfile(profileResponse.profile);
+      setForm(profileResponse.profile);
+
+      // Load statistics
+      const statsResponse = await mentalHealthService.getProfileStatistics();
+      setStats(statsResponse.statistics);
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      toast.error("Failed to load profile data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = () => {
     setForm(profile);
@@ -44,12 +73,102 @@ const MentalHealthProfile = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSave = () => {
-    setProfile(form);
-    setIsEditing(false);
-    // TODO: Send updated data to backend API
-    // await api.updateProfile(form);
+  const handleSave = async () => {
+    try {
+      await mentalHealthService.updateSpecialistProfile({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phone,
+        specialization: form.specialization,
+        experience: form.experience,
+        licenseNumber: form.licenseNumber,
+      });
+
+      toast.success("Profile updated successfully!");
+      setIsEditing(false);
+      loadProfileData(); // Reload to get updated data
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    }
   };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      // In production, upload to cloud storage (S3, Cloudinary, etc.)
+      // For now, we'll create a local URL
+      const imageUrl = URL.createObjectURL(file);
+
+      await mentalHealthService.updateProfileImage(imageUrl);
+      toast.success("Profile image updated!");
+      loadProfileData();
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Failed to upload image");
+    }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      await mentalHealthService.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+
+      toast.success("Password changed successfully!");
+      setShowPasswordModal(false);
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      toast.error(error.response?.data?.message || "Failed to change password");
+    }
+  };
+
+  if (loading) {
+    return (
+      <RoleLayout active="profile">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <User className="w-8 h-8 text-purple-500 animate-pulse mx-auto mb-4" />
+            <p className="text-gray-600">Loading profile...</p>
+          </div>
+        </div>
+      </RoleLayout>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <RoleLayout active="profile">
+        <div className="text-center py-16">
+          <User className="w-24 h-24 text-gray-300 mx-auto mb-6" />
+          <h2 className="text-2xl font-bold text-gray-600 mb-4">
+            Profile Not Found
+          </h2>
+          <p className="text-gray-500">Unable to load profile information</p>
+        </div>
+      </RoleLayout>
+    );
+  }
 
   return (
     <RoleLayout active="profile">
@@ -67,13 +186,22 @@ const MentalHealthProfile = () => {
             </div>
             <div className="flex gap-3">
               {!isEditing ? (
-                <button
-                  onClick={handleEdit}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit Profile
-                </button>
+                <>
+                  <button
+                    onClick={handleEdit}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <Shield className="w-4 h-4" />
+                    Change Password
+                  </button>
+                </>
               ) : (
                 <div className="flex gap-2">
                   <button
@@ -103,9 +231,9 @@ const MentalHealthProfile = () => {
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="relative">
                 <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
-                  {profile.avatar ? (
+                  {profile.profileImage ? (
                     <img
-                      src={profile.avatar}
+                      src={profile.profileImage}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
@@ -114,17 +242,30 @@ const MentalHealthProfile = () => {
                   )}
                 </div>
                 {isEditing && (
-                  <button className="absolute bottom-0 right-0 w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center hover:bg-purple-700 transition-colors">
+                  <label className="absolute bottom-0 right-0 w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center hover:bg-purple-700 transition-colors cursor-pointer">
                     <Camera className="w-4 h-4 text-white" />
-                  </button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </label>
                 )}
               </div>
               <div className="text-center md:text-left">
-                <h2 className="text-2xl font-bold mb-1">{profile.name}</h2>
+                <h2 className="text-2xl font-bold mb-1">
+                  {profile.firstName} {profile.lastName}
+                </h2>
                 <p className="text-purple-100 mb-1">{profile.specialization}</p>
                 <p className="text-purple-200 text-sm">
                   License: {profile.licenseNumber}
                 </p>
+                {profile.experience && (
+                  <p className="text-purple-200 text-sm mt-1">
+                    {profile.experience} years experience
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -136,12 +277,12 @@ const MentalHealthProfile = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name
+                      First Name
                     </label>
                     <input
                       type="text"
-                      name="name"
-                      value={form.name}
+                      name="firstName"
+                      value={form.firstName || ""}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
@@ -149,12 +290,12 @@ const MentalHealthProfile = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Specialization
+                      Last Name
                     </label>
                     <input
                       type="text"
-                      name="specialization"
-                      value={form.specialization}
+                      name="lastName"
+                      value={form.lastName || ""}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
@@ -182,7 +323,7 @@ const MentalHealthProfile = () => {
                     <input
                       type="tel"
                       name="phone"
-                      value={form.phone}
+                      value={form.phone || ""}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
@@ -192,12 +333,12 @@ const MentalHealthProfile = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Currently Working Hospital
+                      Specialization
                     </label>
                     <input
                       type="text"
-                      name="hospital"
-                      value={form.hospital}
+                      name="specialization"
+                      value={form.specialization || ""}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
@@ -205,12 +346,12 @@ const MentalHealthProfile = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Experience in Role
+                      Years of Experience
                     </label>
                     <input
-                      type="text"
+                      type="number"
                       name="experience"
-                      value={form.experience}
+                      value={form.experience || ""}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
@@ -224,23 +365,9 @@ const MentalHealthProfile = () => {
                   <input
                     type="text"
                     name="licenseNumber"
-                    value={form.licenseNumber}
+                    value={form.licenseNumber || ""}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Professional Bio
-                  </label>
-                  <textarea
-                    name="bio"
-                    value={form.bio}
-                    onChange={handleChange}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Tell us about your professional background and expertise..."
                   />
                 </div>
               </div>
@@ -272,7 +399,9 @@ const MentalHealthProfile = () => {
                         <p className="text-sm font-medium text-gray-600">
                           Phone
                         </p>
-                        <p className="text-gray-900">{profile.phone}</p>
+                        <p className="text-gray-900">
+                          {profile.phone || "Not provided"}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -286,13 +415,15 @@ const MentalHealthProfile = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
                       <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <Building className="w-5 h-5 text-green-600" />
+                        <Award className="w-5 h-5 text-green-600" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-600">
-                          Hospital
+                          Specialization
                         </p>
-                        <p className="text-gray-900">{profile.hospital}</p>
+                        <p className="text-gray-900">
+                          {profile.specialization}
+                        </p>
                       </div>
                     </div>
 
@@ -304,25 +435,37 @@ const MentalHealthProfile = () => {
                         <p className="text-sm font-medium text-gray-600">
                           Experience
                         </p>
-                        <p className="text-gray-900">{profile.experience}</p>
+                        <p className="text-gray-900">
+                          {profile.experience}{" "}
+                          {profile.experience === 1 ? "year" : "years"}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Professional Bio */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Professional Bio
-                  </h3>
-                  <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-purple-600" />
+                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">
+                          License Number
+                        </p>
+                        <p className="text-gray-900">{profile.licenseNumber}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-gray-900 leading-relaxed">
-                        {profile.bio}
-                      </p>
+
+                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <User className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">
+                          Member Since
+                        </p>
+                        <p className="text-gray-900">
+                          {new Date(profile.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -342,7 +485,9 @@ const MentalHealthProfile = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Active Clients
                 </p>
-                <p className="text-2xl font-bold text-gray-900">24</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.activeClients}
+                </p>
               </div>
             </div>
           </div>
@@ -356,7 +501,9 @@ const MentalHealthProfile = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Sessions This Month
                 </p>
-                <p className="text-2xl font-bold text-gray-900">45</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.sessionsThisMonth}
+                </p>
               </div>
             </div>
           </div>
@@ -370,11 +517,108 @@ const MentalHealthProfile = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Reports Generated
                 </p>
-                <p className="text-2xl font-bold text-gray-900">12</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.reportsGenerated}
+                </p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Change Password Modal */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md m-4">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Change Password
+                </h2>
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) =>
+                      setPasswordForm({
+                        ...passwordForm,
+                        currentPassword: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) =>
+                      setPasswordForm({
+                        ...passwordForm,
+                        newPassword: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                    minLength="6"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Must be at least 6 characters
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirm New Password
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordForm({
+                        ...passwordForm,
+                        confirmPassword: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Change Password
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </RoleLayout>
   );

@@ -10,6 +10,7 @@ import TabNavigator from './TabNavigator';
 
 // Import screens
 import EmergencyScreen from '../screens/main/EmergencyScreen';
+import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import DriverDashboard from '../screens/DriverDashboard';
 import RideDetails from '../screens/RideDetails';
 
@@ -106,6 +107,25 @@ const AppNavigator = () => {
               },
               headerTintColor: COLORS.emergency.text,
               gestureEnabled: false,
+            }}
+          />
+          <Stack.Screen 
+            name="EditProfile" 
+            component={EditProfileScreen}
+            options={{
+              presentation: 'card',
+              headerShown: true,
+              headerTitle: 'Edit Profile',
+              headerStyle: {
+                backgroundColor: COLORS.white,
+              },
+              headerTitleStyle: {
+                fontSize: 20,
+                fontFamily: 'OpenSans-Bold',
+                color: COLORS.textPrimary,
+              },
+              headerTintColor: COLORS.primary,
+              gestureEnabled: true,
             }}
           />
         </>

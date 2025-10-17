@@ -130,8 +130,8 @@ const EmergencyScreen = ({ navigation, route }) => {
       {/* Emergency Header */}
       <View style={styles.emergencyHeader}>
         <Ionicons 
-          name="warning" 
-          size={64} 
+          name="alert-circle" 
+          size={48} 
           color={COLORS.white} 
           style={styles.emergencyIcon}
         />
@@ -143,10 +143,7 @@ const EmergencyScreen = ({ navigation, route }) => {
       <ScrollView style={styles.scrollContent}>
         {/* Emergency Services Card */}
         <Card style={styles.emergencyServicesCard}>
-          <View style={styles.emergencyServicesHeader}>
-            <Ionicons name="medical" size={32} color={COLORS.error} />
-            <Text style={styles.emergencyServicesTitle}>Need Immediate Help?</Text>
-          </View>
+          <Text style={styles.emergencyServicesTitle}>Emergency Services</Text>
           <Text style={styles.emergencyServicesText}>
             If you need immediate medical attention or are in immediate danger, call 911 now.
           </Text>
@@ -230,55 +227,32 @@ const EmergencyScreen = ({ navigation, route }) => {
 
         {/* Instructions */}
         <Card style={styles.instructionsCard}>
-          <Text style={styles.instructionsTitle}>What happens next?</Text>
+          <Text style={styles.instructionsTitle}>What Happens Next</Text>
           <View style={styles.instructionsList}>
             <View style={styles.instructionItem}>
-              <Text style={styles.instructionNumber}>1</Text>
+              <View style={styles.instructionDot} />
               <Text style={styles.instructionText}>
                 Your emergency contacts and care team have been notified automatically
               </Text>
             </View>
             <View style={styles.instructionItem}>
-              <Text style={styles.instructionNumber}>2</Text>
+              <View style={styles.instructionDot} />
               <Text style={styles.instructionText}>
                 Someone will contact you or come to check on you shortly
               </Text>
             </View>
             <View style={styles.instructionItem}>
-              <Text style={styles.instructionNumber}>3</Text>
+              <View style={styles.instructionDot} />
               <Text style={styles.instructionText}>
                 If you need immediate medical help, call 911 using the button above
               </Text>
             </View>
             <View style={styles.instructionItem}>
-              <Text style={styles.instructionNumber}>4</Text>
+              <View style={styles.instructionDot} />
               <Text style={styles.instructionText}>
                 Stay calm and wait for help to arrive
               </Text>
             </View>
-          </View>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card style={styles.actionsCard}>
-          <Text style={styles.actionsTitle}>Quick Actions</Text>
-          
-          <View style={styles.actionButtons}>
-            <Button
-              title="I'm Okay Now"
-              onPress={handleDismissEmergency}
-              variant="success"
-              size="large"
-              style={styles.actionButton}
-            />
-            
-            <Button
-              title="Call 911"
-              onPress={handleCallEmergencyServices}
-              variant="danger"
-              size="large"
-              style={styles.actionButton}
-            />
           </View>
         </Card>
       </ScrollView>
@@ -289,39 +263,40 @@ const EmergencyScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.emergency?.background || COLORS.background,
+    backgroundColor: COLORS.background,
   },
   
   emergencyHeader: {
-    backgroundColor: COLORS.error,
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
+    paddingTop: 32,
+    paddingBottom: 36,
+    paddingHorizontal: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
   
   emergencyIcon: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   
   emergencyTitle: {
-    fontSize: 28,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontFamily: 'OpenSans-SemiBold',
     color: COLORS.white,
     marginBottom: 8,
     textAlign: 'center',
   },
   
   emergencyTime: {
-    fontSize: 20,
-    fontFamily: 'OpenSans-SemiBold',
-    fontWeight: '600',
+    fontSize: 16,
+    fontFamily: 'OpenSans-Regular',
     color: COLORS.white,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   
   emergencyStatus: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.white,
     textAlign: 'center',
@@ -331,33 +306,26 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 24,
   },
   
   emergencyServicesCard: {
     marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.error,
-  },
-  
-  emergencyServicesHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
   },
   
   emergencyServicesTitle: {
-    fontSize: 22,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
-    color: COLORS.emergency?.text || COLORS.textPrimary,
-    marginLeft: 12,
+    fontSize: 18,
+    fontFamily: 'OpenSans-SemiBold',
+    color: COLORS.textPrimary,
+    marginBottom: 12,
   },
   
   emergencyServicesText: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.emergency?.text || COLORS.textPrimary,
+    color: COLORS.textSecondary,
     marginBottom: 20,
     lineHeight: 22,
   },
@@ -371,9 +339,8 @@ const styles = StyleSheet.create({
   },
   
   statusTitle: {
-    fontSize: 20,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontFamily: 'OpenSans-SemiBold',
     color: COLORS.textPrimary,
     marginBottom: 16,
   },
@@ -385,9 +352,9 @@ const styles = StyleSheet.create({
   },
   
   statusText: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.textPrimary,
+    color: COLORS.textSecondary,
     marginLeft: 12,
   },
   
@@ -396,15 +363,14 @@ const styles = StyleSheet.create({
   },
   
   contactsTitle: {
-    fontSize: 20,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontFamily: 'OpenSans-SemiBold',
     color: COLORS.textPrimary,
     marginBottom: 8,
   },
   
   contactsSubtitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.textSecondary,
     marginBottom: 20,
@@ -418,9 +384,16 @@ const styles = StyleSheet.create({
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.success,
+    backgroundColor: COLORS.white,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   
   contactInfo: {
@@ -428,53 +401,51 @@ const styles = StyleSheet.create({
   },
   
   contactName: {
-    fontSize: 18,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
-    color: COLORS.white,
-    marginBottom: 2,
+    fontSize: 16,
+    fontFamily: 'OpenSans-SemiBold',
+    color: COLORS.textPrimary,
+    marginBottom: 4,
   },
   
   contactPhone: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.white,
+    color: COLORS.textSecondary,
     marginBottom: 2,
   },
   
   contactRelation: {
     fontSize: 14,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.white,
-    opacity: 0.9,
+    color: COLORS.textSecondary,
   },
   
   callButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: COLORS.primary,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   
   noContactsMessage: {
     alignItems: 'center',
-    paddingVertical: 30,
+    paddingVertical: 32,
   },
   
   noContactsText: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'OpenSans-SemiBold',
-    fontWeight: '600',
     color: COLORS.textPrimary,
     marginTop: 16,
     marginBottom: 8,
   },
   
   noContactsSubtext: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
   
   staffCard: {
@@ -482,15 +453,14 @@ const styles = StyleSheet.create({
   },
   
   staffTitle: {
-    fontSize: 20,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontFamily: 'OpenSans-SemiBold',
     color: COLORS.textPrimary,
     marginBottom: 8,
   },
   
   staffSubtitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.textSecondary,
     marginBottom: 20,
@@ -504,9 +474,16 @@ const styles = StyleSheet.create({
   staffItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.info,
+    backgroundColor: COLORS.white,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   
   staffInfo: {
@@ -514,35 +491,32 @@ const styles = StyleSheet.create({
   },
   
   staffName: {
-    fontSize: 18,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
-    color: COLORS.white,
-    marginBottom: 2,
+    fontSize: 16,
+    fontFamily: 'OpenSans-SemiBold',
+    color: COLORS.textPrimary,
+    marginBottom: 4,
   },
   
   staffRole: {
     fontSize: 14,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.white,
-    opacity: 0.9,
+    color: COLORS.textSecondary,
     marginBottom: 2,
   },
   
   staffPhone: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.white,
+    color: COLORS.textSecondary,
   },
   
   instructionsCard: {
-    marginBottom: 20,
+    marginBottom: 30,
   },
   
   instructionsTitle: {
-    fontSize: 20,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontFamily: 'OpenSans-SemiBold',
     color: COLORS.textPrimary,
     marginBottom: 20,
   },
@@ -556,42 +530,21 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   
-  instructionNumber: {
-    fontSize: 18,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    width: 30,
-    textAlign: 'center',
-    marginTop: 2,
+  instructionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+    marginTop: 8,
+    marginRight: 12,
   },
   
   instructionText: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.textPrimary,
+    color: COLORS.textSecondary,
     flex: 1,
     lineHeight: 22,
-  },
-  
-  actionsCard: {
-    marginBottom: 30,
-  },
-  
-  actionsTitle: {
-    fontSize: 20,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-    marginBottom: 20,
-  },
-  
-  actionButtons: {
-    gap: 16,
-  },
-  
-  actionButton: {
-    marginBottom: 0,
   },
 });
 

@@ -57,7 +57,8 @@ export const getRoleMenuItems = (role) => {
       return [
         { path: '/staff/dashboard', icon: Home, label: 'Dashboard' },
         { path: '/staff/care', icon: Heart, label: 'Care Management' },
-         { path: '/staff/mental', icon: Heart, label: 'Mental Specialist Plans' },
+        { path: '/staff/treatment-tasks', icon: ClipboardList, label: 'Treatment Tasks' },
+        { path: '/staff/mental-assessments', icon: Brain, label: 'Mental Health Assessments' },
         { path: '/staff/monitoring', icon: Monitor, label: 'Health Monitoring' },
         { path: '/staff/alerts', icon: AlertTriangle, label: 'Alerts' },
         { path: '/staff/reports', icon: FileText, label: 'Reports' },
