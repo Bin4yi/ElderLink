@@ -173,7 +173,8 @@ const AlertsManagement = () => {
 
   return (
     <RoleLayout title="Alert Management">
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-teal-50 p-6">
+      <>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-teal-50 p-6">
         <div className="max-w-7xl mx-auto">
           {/* Hero Header with Gradient */}
           <div className="relative bg-gradient-to-br from-teal-500 via-cyan-600 to-blue-600 rounded-2xl shadow-2xl p-8 mb-8 overflow-hidden">
@@ -198,12 +199,6 @@ const AlertsManagement = () => {
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold text-white mb-2">Health Alerts</h1>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
-                    <p className="text-white/90 text-lg">
-                      {connected ? 'Real-time monitoring active' : 'Connecting to server...'}
-                    </p>
-                  </div>
                 </div>
               </div>
               
@@ -287,7 +282,7 @@ const AlertsManagement = () => {
               filteredAlerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border-l-4 cursor-pointer transform hover:-translate-y-1"
+                  className="bg-white rounded-2xl shadow-lg p-6 border-l-4 cursor-pointer"
                   style={{
                     borderLeftColor: 
                       alert.severity === 'critical' ? '#dc2626' :
@@ -316,7 +311,7 @@ const AlertsManagement = () => {
                           )}
                         </div>
                         {alert.severity === 'critical' && alert.status === 'active' && (
-                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full animate-ping"></div>
+                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full"></div>
                         )}
                       </div>
 
@@ -369,7 +364,7 @@ const AlertsManagement = () => {
                     <div className="flex-shrink-0">
                       {alert.severity === 'critical' && alert.status === 'active' && (
                         <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                          <BellRing className="w-6 h-6 text-red-600 animate-pulse" />
+                          <BellRing className="w-6 h-6 text-red-600" />
                         </div>
                       )}
                     </div>
@@ -380,15 +375,16 @@ const AlertsManagement = () => {
           </div>
         </div>
       </div>
-      {selectedAlert && (
-        <HealthAlertModal
-          alert={selectedAlert}
-          onClose={() => setSelectedAlert(null)}
-          onAcknowledge={handleAcknowledge}
-          onResolve={handleResolve}
-          onEmergencyContact={handleEmergencyContact}
-        />
-      )}
+        {selectedAlert && (
+          <HealthAlertModal
+            alert={selectedAlert}
+            onClose={() => setSelectedAlert(null)}
+            onAcknowledge={handleAcknowledge}
+            onResolve={handleResolve}
+            onEmergencyContact={handleEmergencyContact}
+          />
+        )}
+      </>
     </RoleLayout>
   );
 };
