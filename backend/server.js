@@ -233,6 +233,10 @@ try {
   app.use("/api/mental-health/profile", mentalHealthProfileRoutes);
   app.use("/api/mental-health/dashboard", dashboardRoutes);
   app.use("/api/staff/assessments", staffAssessmentRoutes);
+
+  // Admin Analytics Routes
+  const adminAnalyticsRoutes = require("./routes/adminAnalyticsRoutes");
+  app.use("/api/admin/analytics", adminAnalyticsRoutes);
 } catch (error) {
   console.error("Error loading routes:", error);
   process.exit(1);
@@ -322,7 +326,7 @@ app.use("*", (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 5000;
 // app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // Database connection and server start
