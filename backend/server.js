@@ -152,6 +152,9 @@ const driverRoutes = require("./routes/drivers");
 // 🚨 ADD: Import health alerts routes
 const healthAlertsRoutes = require("./routes/healthAlerts");
 
+// Import profile routes
+const profileRoutes = require("./routes/profile");
+
 // Mental Health System Routes
 const mentalHealthAssignmentRoutes = require("./routes/mentalHealthAssignmentRoutes");
 const therapySessionRoutes = require("./routes/therapySessionRoutes");
@@ -214,6 +217,9 @@ try {
 
   // 🚨 ADD: Use health alerts routes
   app.use("/api/health-alerts", healthAlertsRoutes);
+
+  // Use profile routes
+  app.use("/api/profile", profileRoutes);
 
   // Register Mental Health Routes
   app.use("/api/mental-health/assignments", mentalHealthAssignmentRoutes);
