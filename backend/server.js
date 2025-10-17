@@ -233,6 +233,10 @@ try {
   app.use("/api/mental-health/profile", mentalHealthProfileRoutes);
   app.use("/api/mental-health/dashboard", dashboardRoutes);
   app.use("/api/staff/assessments", staffAssessmentRoutes);
+
+  // Admin Analytics Routes
+  const adminAnalyticsRoutes = require("./routes/adminAnalyticsRoutes");
+  app.use("/api/admin/analytics", adminAnalyticsRoutes);
 } catch (error) {
   console.error("Error loading routes:", error);
   process.exit(1);
