@@ -170,6 +170,9 @@ const staffAssessmentRoutes = require("./routes/staffAssessmentRoutes");
 // ✅ ADD: Import monthly sessions routes
 const monthlySessionRoutes = require('./routes/monthlySessions');
 
+// ✅ ADD: Import mobile notifications routes
+const mobileNotificationsRoutes = require('./routes/mobileNotifications');
+
 // 🚨 ADD: Webhook routes FIRST (no auth required)
 app.use("/api/webhook", webhookRoutes);
 
@@ -228,6 +231,12 @@ try {
 
   // Use profile routes
   app.use("/api/profile", profileRoutes);
+
+  // ✅ ADD: Use monthly sessions routes
+  app.use('/api/monthly-sessions', monthlySessionRoutes);
+
+  // ✅ ADD: Use mobile notifications routes
+  app.use('/api/mobile', mobileNotificationsRoutes);
 
   // Register Mental Health Routes
   app.use("/api/mental-health/assignments", mentalHealthAssignmentRoutes);

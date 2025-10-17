@@ -145,6 +145,11 @@ const MonthlySession = sequelize.define('MonthlySession', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  zoomStartUrl: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'URL for doctor to start the meeting'
+  },
   zoomPassword: {
     type: DataTypes.STRING,
     allowNull: true

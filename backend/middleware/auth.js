@@ -36,7 +36,7 @@ const auth = async (req, res, next) => {
   }
 };
 
-const checkRole = (...allowedRoles) => {
+const checkRole = (allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -45,11 +45,11 @@ const checkRole = (...allowedRoles) => {
       });
     }
 
-    // Flatten array in case roles are passed as array or individual arguments
-    const roles = Array.isArray(allowedRoles[0]) ? allowedRoles[0] : allowedRoles;
+    // Ensure allowedRoles is always an array
+    const rolesArray = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
 
-    if (!roles.includes(req.user.role)) {
-      console.log(`❌ Access denied - user role: ${req.user.role}, allowed roles: [${roles.join(', ')}]`);
+    if (!rolesArray.includes(req.user.role)) {
+      console.log(`❌ Access denied - user role: ${req.user.role} allowed roles: [${rolesArray.map(r => ` '${r}'`)} ]`);
       return res.status(403).json({
         success: false,
         message: 'You are not authorized to perform this action'
