@@ -397,6 +397,32 @@ const mentalHealthService = {
     const response = await api.get("/mental-health/profile/statistics");
     return response.data;
   },
+
+  // ============= STAFF ASSESSMENT MANAGEMENT =============
+  getStaffAssessments: async (elderId = null, status = null) => {
+    const params = new URLSearchParams();
+    if (elderId) params.append("elderId", elderId);
+    if (status) params.append("status", status);
+    const queryString = params.toString();
+    const url = queryString
+      ? `/staff/assessments?${queryString}`
+      : "/staff/assessments";
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  getStaffAssessmentStats: async () => {
+    const response = await api.get("/staff/assessments/stats");
+    return response.data;
+  },
+
+  updateStaffAssessmentStatus: async (assessmentId, statusData) => {
+    const response = await api.patch(
+      `/staff/assessments/${assessmentId}/status`,
+      statusData
+    );
+    return response.data;
+  },
 };
 
 export default mentalHealthService;

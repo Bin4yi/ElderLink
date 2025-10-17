@@ -142,7 +142,7 @@ const getCaregiverTreatmentPlans = async (req, res) => {
     const assignments = await StaffAssignment.findAll({
       where: {
         staffId: caregiverId,
-        status: "active",
+        isActive: true,
       },
       attributes: ["elderId"],
     });
@@ -183,6 +183,7 @@ const getCaregiverTreatmentPlans = async (req, res) => {
           as: "progressReports",
           where: { caregiverId },
           required: false,
+          separate: true,
           limit: 3,
           order: [["reportDate", "DESC"]],
         },
@@ -321,7 +322,7 @@ const submitProgressReport = async (req, res) => {
       where: {
         elderId: treatmentPlan.elderId,
         staffId: caregiverId,
-        status: "active",
+        isActive: true,
       },
     });
 
@@ -341,24 +342,18 @@ const submitProgressReport = async (req, res) => {
       reportDate: new Date(),
     });
 
-    // Update treatment plan progress (average of all reports)
-    const allReports = await TreatmentPlanProgress.findAll({
-      where: { treatmentPlanId: planId },
-    });
+    // Update treatment plan progress (cumulative - add to existing progress)
+    const currentProgress = treatmentPlan.progress || 0;
+    const newProgress = Math.min(currentProgress + progressPercentage, 100); // Cap at 100%
 
-    const avgProgress = Math.round(
-      allReports.reduce((sum, report) => sum + report.progressPercentage, 0) /
-        allReports.length
-    );
-
-    treatmentPlan.progress = avgProgress;
+    treatmentPlan.progress = newProgress;
     treatmentPlan.lastUpdated = new Date();
     await treatmentPlan.save();
 
     res.status(201).json({
       message: "Progress report submitted successfully",
       progressReport,
-      updatedProgress: avgProgress,
+      updatedProgress: newProgress,
     });
   } catch (error) {
     console.error("Error submitting progress report:", error);

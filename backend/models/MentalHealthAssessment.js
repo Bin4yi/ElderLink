@@ -32,8 +32,16 @@ const MentalHealthAssessment = sequelize.define(
       // e.g., "Initial Mental Health Evaluation", "Depression Screening (PHQ-9)"
     },
     status: {
-      type: DataTypes.ENUM("scheduled", "in_progress", "completed", "urgent"),
+      type: DataTypes.ENUM(
+        "scheduled",
+        "not_started", 
+        "started", 
+        "in_progress", 
+        "completed", 
+        "urgent"
+      ),
       defaultValue: "scheduled",
+      allowNull: false,
     },
     priority: {
       type: DataTypes.ENUM("low", "medium", "high", "critical"),

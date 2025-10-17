@@ -73,6 +73,7 @@ import HealthMonitoring from './components/staff/monitoring/HealthMonitoring';
 import CareManagement from './components/staff/care/CareManagement';
 import Profilestaff from './components/staff/profile/Profilestaff';
 import MentalHealthManagement from './components/staff/mental/Mental';
+import TreatmentTasks from './components/staff/mental/TreatmentTasks';
 import HealthReports from './components/staff/reports/HealthReports';
 
 // Elder
@@ -158,6 +159,8 @@ function App() {
                   <Route path="/staff/reports" element={<HealthReports />} />
                   <Route path="/staff/profile" element={<Profilestaff />} />
                   <Route path="/staff/mental" element={<MentalHealthManagement />} />
+                  <Route path="/staff/mental-assessments" element={<MentalHealthManagement />} />
+                  <Route path="/staff/treatment-tasks" element={<TreatmentTasks />} />
                   
                   {/* Elder routes */}
                   <Route path="/elder/dashboard" element={<ElderDashboard />} />
