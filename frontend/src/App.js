@@ -29,6 +29,8 @@ import PatientList from './components/doctor/patients/PatientList';
 import AppointmentManagement from './components/doctor/appointments/AppointmentManagement';
 import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
 import MedicalRecords from './components/doctor/records/MedicalRecords';
+import PrescriptionList from './components/doctor/prescriptions/PrescriptionList';
+import CreatePrescription from './components/doctor/prescriptions/CreatePrescription';
 
 
 // Family
@@ -51,6 +53,8 @@ import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboa
 import MedicationManagement from './components/pharmacist/medications/MedicationManagement';
 import DeliverySchedule from './components/pharmacist/delivery/DeliverySchedule';
 import PrescriptionManagement from './components/pharmacist/prescriptions/PrescriptionManagement';
+import FillPrescription from './components/pharmacist/prescriptions/FillPrescription';
+import CreateDelivery from './components/pharmacist/prescriptions/CreateDelivery';
 import InventoryManagement from './components/pharmacist/inventory/InventoryManagement';
 import AddNewItem from './components/pharmacist/inventory/AddNewItem';
 import PharmacyProfile from './components/pharmacist/profile/Pharmacyprofile';
@@ -117,6 +121,10 @@ function App() {
                   <Route path="/doctor/appointments" element={<AppointmentManagement />} />
                   <Route path="/doctor/consultations" element={<ConsultationHistory />} />
                   <Route path="/doctor/records" element={<MedicalRecords />} />
+                  <Route path="/doctor/prescriptions" element={<PrescriptionList />} />
+                  <Route path="/doctor/prescriptions/create" element={<CreatePrescription />} />
+                  <Route path="/doctor/prescriptions/create/:elderId" element={<CreatePrescription />} />
+                  <Route path="/doctor/prescriptions/create/:elderId/:appointmentId" element={<CreatePrescription />} />
                   
                   {/* Family routes */}
                   <Route path="/family/dashboard" element={<FamilyDashboard />} />
@@ -136,6 +144,8 @@ function App() {
                   <Route path="/pharmacist/medications" element={<MedicationManagement />} />
                   <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
                   <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
+                  <Route path="/pharmacist/prescriptions/:id/fill" element={<FillPrescription />} />
+                  <Route path="/pharmacist/prescriptions/:prescriptionId/create-delivery" element={<CreateDelivery />} />
                   <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
                   <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
                   <Route path="/pharmacist/profile" element={<PharmacyProfile />} />

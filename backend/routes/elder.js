@@ -107,10 +107,30 @@ router.get('/staff/all', authenticate, authorize('staff'), getAllEldersForStaff)
 router.get('/staff/assigned', authenticate, authorize('staff'), getAssignedEldersForStaff);
 
 // Update the GET /elders route
-router.get('/', authenticate, authorize('family_member'), async (req, res) => {
+router.get('/', authenticate, authorize('family_member', 'doctor', 'mental-health'), async (req, res) => {
   try {
-    console.log('🔍 Getting elders for family member:', req.user.id);
+    console.log('🔍 Getting elders for user:', req.user.id, 'role:', req.user.role);
     
+    // If doctor or mental-health, return all elders (for prescription/consultation)
+    if (req.user.role === 'doctor' || req.user.role === 'mental-health') {
+      const elders = await Elder.findAll({
+        attributes: [
+          'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
+          'address', 'phone', 'emergencyContact', 'photo', 'createdAt', 'updatedAt'
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      console.log('✅ Found elders for doctor:', elders.length);
+
+      return res.json({
+        success: true,
+        elders: elders,
+        count: elders.length
+      });
+    }
+    
+    // For family members, only return their own elders
     const elders = await Elder.findAll({
       include: [{
         model: Subscription,
@@ -150,11 +170,39 @@ router.get('/', authenticate, authorize('family_member'), async (req, res) => {
 });
 
 // Get elder by ID
-router.get('/:id', authenticate, authorize('family_member'), async (req, res) => {
+router.get('/:id', authenticate, authorize('family_member', 'doctor', 'mental-health'), async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('🔍 Getting elder by ID:', id, 'for user:', req.user.id);
+    console.log('🔍 Getting elder by ID:', id, 'for user:', req.user.id, 'role:', req.user.role);
 
+    // If doctor or mental-health, allow access to any elder
+    if (req.user.role === 'doctor' || req.user.role === 'mental-health') {
+      const elder = await Elder.findByPk(id, {
+        attributes: [
+          'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
+          'address', 'phone', 'emergencyContact', 'bloodType',
+          'medicalHistory', 'currentMedications', 'allergies', 'chronicConditions',
+          'doctorName', 'doctorPhone', 'photo', 'createdAt', 'updatedAt'
+        ]
+      });
+
+      if (!elder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Elder not found'
+        });
+      }
+
+      console.log('✅ Found elder for doctor:', elder.firstName, elder.lastName);
+
+      return res.json({
+        success: true,
+        elder: elder,
+        message: 'Elder retrieved successfully'
+      });
+    }
+
+    // For family members, only their own elders
     const elder = await Elder.findOne({
       where: { 
         id: id,
@@ -162,8 +210,9 @@ router.get('/:id', authenticate, authorize('family_member'), async (req, res) =>
       },
       attributes: [
         'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
-        'address', 'phone', 'emergencyContact', 'medicalConditions', 
-        'medications', 'allergies', 'photo', 'createdAt', 'updatedAt'
+        'address', 'phone', 'emergencyContact', 'bloodType',
+        'medicalHistory', 'currentMedications', 'allergies', 'chronicConditions',
+        'doctorName', 'doctorPhone', 'photo', 'createdAt', 'updatedAt'
       ]
     });
 

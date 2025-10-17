@@ -21,6 +21,7 @@ const Inventory = require("./Inventory");
 const InventoryTransaction = require("./InventoryTransaction");
 const Prescription = require("./Prescription");
 const PrescriptionItem = require("./PrescriptionItem");
+const Delivery = require("./Delivery");
 
 // Import ambulance and emergency models
 const Ambulance = require("./Ambulance");
@@ -281,6 +282,22 @@ Prescription.hasMany(PrescriptionItem, {
   foreignKey: "prescriptionId",
   as: "items",
 });
+Prescription.hasOne(Delivery, {
+  foreignKey: "prescriptionId",
+  as: "delivery",
+});
+
+// Delivery associations
+Delivery.belongsTo(Prescription, {
+  foreignKey: "prescriptionId",
+  as: "prescription",
+});
+Delivery.belongsTo(Elder, { foreignKey: "elderId", as: "elder" });
+Delivery.belongsTo(User, { foreignKey: "pharmacistId", as: "pharmacist" });
+
+// Reverse associations
+User.hasMany(Delivery, { foreignKey: "pharmacistId", as: "deliveries" });
+Elder.hasMany(Delivery, { foreignKey: "elderId", as: "deliveries" });
 
 // PrescriptionItem associations
 PrescriptionItem.belongsTo(Prescription, {
@@ -535,6 +552,7 @@ module.exports = {
   InventoryTransaction,
   Prescription,
   PrescriptionItem,
+  Delivery,
   Ambulance,
   EmergencyAlert,
   AmbulanceDispatch,
