@@ -35,6 +35,7 @@ import MedicalRecords from './components/doctor/records/MedicalRecords';
 import FamilyDashboard from './components/family/dashboard/FamilyDashboard';
 import AppointmentList from './components/family/appointments/AppointmentList';
 import MonthlySessions from './components/family/sessions/MonthlySessions';
+import AutoScheduleMonthly from './components/family/sessions/AutoScheduleMonthly';
 import Doctors from './components/family/doctors/Doctors';
 import DoctorAssignment from './components/family/doctors/DoctorAssignment'; // NEW IMPORT
 import AppointmentBooking from './components/family/appointments/AppointmentBooking';
@@ -121,6 +122,7 @@ function App() {
                   <Route path="/family/dashboard" element={<FamilyDashboard />} />
                   <Route path="/family/appointments" element={<AppointmentList />} />
                   <Route path="/family/sessions" element={<MonthlySessions />} />
+                  <Route path="/family/sessions/auto-schedule" element={<AutoScheduleMonthly />} />
                   <Route path="/family/doctors" element={<Doctors />} />
                   <Route path="/family/doctor-assignment" element={<DoctorAssignment />} /> {/* NEW ROUTE */}
                   <Route path="/family/settings" element={<FamilySettings />} />

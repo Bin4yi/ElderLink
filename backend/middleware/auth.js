@@ -45,8 +45,11 @@ const checkRole = (allowedRoles) => {
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
-      console.log(`❌ Access denied - user role: ${req.user.role} allowed roles: [${allowedRoles.map(r => ` '${r}'`)} ]`);
+    // Ensure allowedRoles is always an array
+    const rolesArray = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+
+    if (!rolesArray.includes(req.user.role)) {
+      console.log(`❌ Access denied - user role: ${req.user.role} allowed roles: [${rolesArray.map(r => ` '${r}'`)} ]`);
       return res.status(403).json({
         success: false,
         message: 'You are not authorized to perform this action'
@@ -60,10 +63,12 @@ const checkRole = (allowedRoles) => {
 // Alternative function names for backwards compatibility
 const authenticate = auth;
 const authorize = checkRole;
+const protect = auth; // Add protect as an alias for auth
 
 module.exports = { 
   auth, 
   checkRole, 
   authenticate, 
-  authorize 
+  authorize,
+  protect // Export protect for consistency with other routes
 };

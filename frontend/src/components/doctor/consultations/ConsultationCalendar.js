@@ -27,16 +27,21 @@ const ConsultationCalendar = ({ appointments = [], monthlySessions = [] }) => {
 
   // Get events for a specific date
   const getEventsForDate = (date) => {
-    const dateStr = new Date(year, month, date).toISOString().split('T')[0];
+    // Create date string in YYYY-MM-DD format without timezone conversion
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
     
     const dayAppointments = appointments.filter(apt => {
-      const aptDate = new Date(apt.appointmentDate).toISOString().split('T')[0];
-      return aptDate === dateStr;
+      // Extract date part from appointmentDate without timezone conversion
+      const aptDateStr = apt.appointmentDate.split('T')[0];
+      return aptDateStr === dateStr;
     });
 
     const daySessions = monthlySessions.filter(session => {
-      const sessionDate = new Date(session.sessionDate).toISOString().split('T')[0];
-      return sessionDate === dateStr;
+      // Extract date part from sessionDate without timezone conversion
+      const sessionDateStr = session.sessionDate.split('T')[0];
+      return sessionDateStr === dateStr;
     });
 
     return { appointments: dayAppointments, sessions: daySessions };

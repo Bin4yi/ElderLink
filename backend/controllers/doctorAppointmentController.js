@@ -20,7 +20,7 @@ class DoctorAppointmentController {
     try {
       console.log('🔄 Getting doctor appointments for user:', req.user.id);
       
-      const { status, date, page = 1, limit = 10 } = req.query;
+      const { status, date, page = 1, limit = 100 } = req.query; // Increased default limit to 100
       const offset = (page - 1) * limit;
 
       // Get doctor profile

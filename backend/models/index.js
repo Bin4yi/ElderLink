@@ -15,6 +15,7 @@ const Doctor = require('./Doctor');
 const Appointment = require('./Appointment');
 const ConsultationRecord = require('./ConsultationRecord'); // ✅ Add this
 const DoctorSchedule = require('./DoctorSchedule');
+const MonthlySession = require('./MonthlySession'); // ✅ Add MonthlySession
 
 // Import new inventory models
 const Inventory = require('./Inventory');
@@ -41,7 +42,7 @@ const clearAssociations = (model) => {
 // Clear associations for all models
 [User, Elder, Subscription, HealthMonitoring, HealthAlert, Notification, StaffAssignment, DoctorAssignment, 
  Inventory, InventoryTransaction, Prescription, PrescriptionItem, Ambulance, EmergencyAlert, 
- AmbulanceDispatch, EmergencyLocation].forEach(clearAssociations);
+ AmbulanceDispatch, EmergencyLocation, MonthlySession].forEach(clearAssociations);
 
 // User associations
 User.hasMany(Elder, { foreignKey: 'userId', as: 'elders' });
@@ -175,6 +176,61 @@ Elder.hasMany(ConsultationRecord, {
   as: 'consultationRecords'
 });
 
+// ========== MONTHLY SESSION ASSOCIATIONS ==========
+
+// MonthlySession associations
+MonthlySession.belongsTo(Elder, {
+  foreignKey: 'elderId',
+  as: 'elder'
+});
+
+MonthlySession.belongsTo(User, {
+  foreignKey: 'familyMemberId',
+  as: 'familyMember'
+});
+
+MonthlySession.belongsTo(Doctor, {
+  foreignKey: 'doctorId',
+  as: 'doctor'
+});
+
+MonthlySession.belongsTo(DoctorSchedule, {
+  foreignKey: 'scheduleId',
+  as: 'schedule'
+});
+
+// Self-referencing for rescheduled sessions
+MonthlySession.belongsTo(MonthlySession, {
+  foreignKey: 'rescheduledFrom',
+  as: 'originalSession'
+});
+
+MonthlySession.hasOne(MonthlySession, {
+  foreignKey: 'rescheduledFrom',
+  as: 'rescheduledSession'
+});
+
+// Reverse associations
+Elder.hasMany(MonthlySession, {
+  foreignKey: 'elderId',
+  as: 'monthlySessions'
+});
+
+User.hasMany(MonthlySession, {
+  foreignKey: 'familyMemberId',
+  as: 'scheduledMonthlySessions'
+});
+
+Doctor.hasMany(MonthlySession, {
+  foreignKey: 'doctorId',
+  as: 'monthlySessions'
+});
+
+DoctorSchedule.hasMany(MonthlySession, {
+  foreignKey: 'scheduleId',
+  as: 'monthlySessions'
+});
+
 
 // === NEW INVENTORY ASSOCIATIONS ===
 
@@ -260,6 +316,7 @@ module.exports = {
   ConsultationRecord,
   Doctor,
   DoctorSchedule, // ✅ Add this
+  MonthlySession, // ✅ Add this
   Inventory,
   InventoryTransaction,
   Prescription,

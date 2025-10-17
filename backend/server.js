@@ -123,6 +123,9 @@ const driverRoutes = require('./routes/drivers');
 // 🚨 ADD: Import health alerts routes
 const healthAlertsRoutes = require('./routes/healthAlerts');
 
+// ✅ ADD: Import monthly sessions routes
+const monthlySessionRoutes = require('./routes/monthlySessions');
+
 // 🚨 ADD: Webhook routes FIRST (no auth required)
 app.use('/api/webhook', webhookRoutes);
 
@@ -159,6 +162,10 @@ try {
   const doctorScheduleRoutes = require('./routes/doctorSchedule');
   app.use('/api/doctor/schedules', doctorScheduleRoutes);
 
+  // Use doctor patients routes
+  const doctorPatientsRoutes = require('./routes/doctorPatients');
+  app.use('/api/doctor/patients', doctorPatientsRoutes);
+
   // Use new inventory routes
   app.use('/api/inventory', inventoryRoutes);
   app.use('/api/prescriptions', prescriptionRoutes);
@@ -174,6 +181,9 @@ try {
 
   // 🚨 ADD: Use health alerts routes
   app.use('/api/health-alerts', healthAlertsRoutes);
+
+  // ✅ ADD: Use monthly sessions routes
+  app.use('/api/monthly-sessions', monthlySessionRoutes);
 
 } catch (error) {
   console.error('Error loading routes:', error);

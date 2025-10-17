@@ -27,7 +27,14 @@ import {
   CalendarCheck,
   Sparkles,
   UserCircle,
-  Stethoscope
+  Stethoscope,
+  Search,
+  Filter,
+  X,
+  RefreshCw,
+  PlayCircle,
+  CheckCircle2,
+  TrendingUp
 } from 'lucide-react';
 
 const ConsultationHistory = () => {
@@ -43,6 +50,13 @@ const ConsultationHistory = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [monthlySessions, setMonthlySessions] = useState([]);
   const [loadingMonthlySessions, setLoadingMonthlySessions] = useState(true);
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedPriority, setSelectedPriority] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -130,16 +144,49 @@ const ConsultationHistory = () => {
     return age;
   };
 
-  // Filter consultations by date
-  const todayConsultations = consultations.filter(
-    c => isToday(c.appointmentDate)
-  );
+  // Apply filters to consultations
+  const applyFilters = (consultationList) => {
+    return consultationList.filter(consultation => {
+      const elder = consultation.elder || {};
+      const elderName = `${elder.firstName || ''} ${elder.lastName || ''}`.toLowerCase();
+      const searchLower = searchQuery.toLowerCase();
 
-  const completedConsultations = consultations.filter(
-    c => isPast(c.appointmentDate)
-  );
+      // Search filter
+      const matchesSearch = searchQuery === '' || 
+        elderName.includes(searchLower) ||
+        (consultation.reason || '').toLowerCase().includes(searchLower) ||
+        (consultation.symptoms || '').toLowerCase().includes(searchLower) ||
+        (consultation.type || '').toLowerCase().includes(searchLower);
 
-  // Filter upcoming consultations (current month + next 2 months = 3 months total from today)
+      // Status filter
+      const matchesStatus = selectedStatus === 'all' || consultation.status === selectedStatus;
+
+      // Priority filter
+      const matchesPriority = selectedPriority === 'all' || consultation.priority === selectedPriority;
+
+      // Type filter
+      const matchesType = selectedType === 'all' || consultation.type === selectedType;
+
+      // Date range filter
+      const appointmentDate = new Date(consultation.appointmentDate);
+      const matchesDateRange = 
+        (!dateRange.start || appointmentDate >= new Date(dateRange.start)) &&
+        (!dateRange.end || appointmentDate <= new Date(dateRange.end));
+
+      return matchesSearch && matchesStatus && matchesPriority && matchesType && matchesDateRange;
+    });
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedStatus('all');
+    setSelectedPriority('all');
+    setSelectedType('all');
+    setDateRange({ start: '', end: '' });
+  };
+
+  // Filter consultations by date and apply filters
   const todayDate = new Date();
   todayDate.setHours(0, 0, 0, 0); // Reset time to start of day
   
@@ -147,17 +194,28 @@ const ConsultationHistory = () => {
   threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
   threeMonthsFromNow.setHours(23, 59, 59, 999); // End of day
   
-  const upcomingConsultations = consultations.filter(c => {
-    const appointmentDate = new Date(c.appointmentDate);
-    
-    // Include appointments from today onwards up to 3 months (current month + 2 future months)
-    return appointmentDate >= todayDate && appointmentDate <= threeMonthsFromNow;
-  }).sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate));
+  // Upcoming consultations (current month + next 2 months = 3 months total from today)
+  const upcomingConsultations = applyFilters(
+    consultations.filter(c => {
+      const appointmentDate = new Date(c.appointmentDate);
+      return appointmentDate >= todayDate && appointmentDate <= threeMonthsFromNow;
+    })
+  ).sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate));
+
+  // In progress consultations (today's appointments)
+  const inProgressConsultations = applyFilters(
+    consultations.filter(c => isToday(c.appointmentDate))
+  ).sort((a, b) => new Date(`${a.appointmentDate} ${a.appointmentTime}`) - new Date(`${b.appointmentDate} ${b.appointmentTime}`));
+
+  // Completed consultations (past appointments)
+  const completedConsultations = applyFilters(
+    consultations.filter(c => isPast(c.appointmentDate))
+  ).sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate)); // Most recent first
 
   // Log filtering results for debugging
   console.log('📊 Consultation Filtering:', {
     total: consultations.length,
-    todayOnly: todayConsultations.length,
+    inProgress: inProgressConsultations.length,
     upcomingNext3Months: upcomingConsultations.length,
     completed: completedConsultations.length,
     dateRange: {
@@ -394,7 +452,7 @@ const ConsultationHistory = () => {
     <RoleLayout>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
               Consultation History
@@ -407,10 +465,235 @@ const ConsultationHistory = () => {
           </div>
         </div>
 
+        {/* Today's Consultation Reminder Banner */}
+        {!loading && inProgressConsultations.length > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-2xl shadow-2xl overflow-hidden animate-pulse">
+            <div className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 backdrop-blur-sm p-4 rounded-full">
+                  <Calendar className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+                    🔔 Reminder: You have {inProgressConsultations.length} consultation{inProgressConsultations.length > 1 ? 's' : ''} today!
+                  </h3>
+                  <p className="text-white/90 text-base">
+                    {inProgressConsultations.length === 1 ? (
+                      <>
+                        Consultation with <span className="font-semibold">{inProgressConsultations[0].elder?.firstName} {inProgressConsultations[0].elder?.lastName}</span> at {inProgressConsultations[0].appointmentTime}
+                      </>
+                    ) : (
+                      <>View the "In Progress Consultations" section below for all today's appointments</>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="hidden md:flex items-center gap-3">
+                <div className="text-right mr-2">
+                  <p className="text-white/80 text-sm">Ready to start?</p>
+                  <p className="text-white font-bold text-lg">Today's Schedule</p>
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full">
+                  <PlayCircle className="w-10 h-10 text-white" />
+                </div>
+              </div>
+            </div>
+            {/* Bottom Info Bar */}
+            <div className="bg-black/10 px-6 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-6 text-white/90 text-sm">
+                <span className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  {inProgressConsultations.length} appointments scheduled
+                </span>
+                <span className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  {inProgressConsultations.length} patient{inProgressConsultations.length > 1 ? 's' : ''} waiting
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  const inProgressSection = document.getElementById('in-progress-section');
+                  if (inProgressSection) {
+                    inProgressSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+                className="px-4 py-2 bg-white text-green-600 rounded-lg hover:bg-white/90 transition-all duration-200 flex items-center gap-2 font-semibold text-sm shadow-lg"
+              >
+                <Eye className="w-4 h-4" />
+                View Today's Schedule
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Main Grid Layout: Content Left, Calendar Right */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Consultations List (2/3 width) */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Filter Section */}
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg">
+                    <Filter className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Filters</h3>
+                </div>
+                <button
+                  onClick={clearFilters}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+                >
+                  <X className="w-4 h-4" />
+                  Clear All
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Search */}
+                <div className="lg:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Search
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by patient name, reason, symptoms..."
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                    />
+                  </div>
+                </div>
+
+                {/* Status Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="approved">Approved</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                {/* Priority Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Priority
+                  </label>
+                  <select
+                    value={selectedPriority}
+                    onChange={(e) => setSelectedPriority(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                  >
+                    <option value="all">All Priorities</option>
+                    <option value="urgent">Urgent</option>
+                    <option value="high">High</option>
+                    <option value="normal">Normal</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+
+                {/* Type Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Type
+                  </label>
+                  <select
+                    value={selectedType}
+                    onChange={(e) => setSelectedType(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="general">General</option>
+                    <option value="follow-up">Follow-up</option>
+                    <option value="emergency">Emergency</option>
+                    <option value="routine">Routine</option>
+                  </select>
+                </div>
+
+                {/* Date Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    onClick={loadConsultations}
+                    className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium text-base shadow-md hover:shadow-lg"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    Refresh
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Filters Display */}
+              {(searchQuery || selectedStatus !== 'all' || selectedPriority !== 'all' || selectedType !== 'all' || dateRange.start || dateRange.end) && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="text-sm font-medium text-gray-600">Active Filters:</span>
+                  {searchQuery && (
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                      Search: {searchQuery}
+                    </span>
+                  )}
+                  {selectedStatus !== 'all' && (
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                      Status: {selectedStatus}
+                    </span>
+                  )}
+                  {selectedPriority !== 'all' && (
+                    <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
+                      Priority: {selectedPriority}
+                    </span>
+                  )}
+                  {selectedType !== 'all' && (
+                    <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                      Type: {selectedType}
+                    </span>
+                  )}
+                  {dateRange.start && (
+                    <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
+                      From: {new Date(dateRange.start).toLocaleDateString()}
+                    </span>
+                  )}
+                  {dateRange.end && (
+                    <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
+                      To: {new Date(dateRange.end).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Loading State */}
             {loading ? (
               <div className="flex justify-center items-center h-64">
@@ -456,92 +739,225 @@ const ConsultationHistory = () => {
                     <p className="text-sm text-gray-500 mt-1">Sessions will appear here once scheduled</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {monthlySessions.map((session, index) => (
-                      <div
-                        key={session.id || index}
-                        className="group bg-gradient-to-br from-white to-purple-50 rounded-2xl p-5 border border-purple-200 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
-                      >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-                              <User className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-gray-900">
-                                {session.elder?.firstName} {session.elder?.lastName}
-                              </h4>
-                              <p className="text-xs text-gray-500">Elder Patient</p>
-                            </div>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            session.status === 'scheduled' 
-                              ? 'bg-gradient-to-r from-green-400 to-emerald-400 text-white shadow-lg shadow-green-500/50'
-                              : session.status === 'completed'
-                              ? 'bg-gradient-to-r from-blue-400 to-indigo-400 text-white shadow-lg shadow-blue-500/50'
-                              : 'bg-gradient-to-r from-gray-300 to-gray-400 text-gray-700'
-                          }`}>
-                            {session.status}
-                          </span>
-                        </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {monthlySessions.map((session, index) => {
+                      const elder = session.elder || {};
+                      const familyMember = session.familyMember || {};
+                      
+                      return (
+                        <div
+                          key={session.id || index}
+                          className="bg-white rounded-xl shadow-md border-l-4 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                          style={{
+                            borderLeftColor: 
+                              session.status === 'scheduled' ? '#10B981' :
+                              session.status === 'completed' ? '#3B82F6' :
+                              '#F59E0B'
+                          }}
+                        >
+                          {/* Header Section with Patient Info and Status */}
+                          <div className="bg-gradient-to-r from-gray-50 to-white p-5 border-b border-gray-100">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-4">
+                                {elder.photo ? (
+                                  <img 
+                                    src={elder.photo} 
+                                    alt={`${elder.firstName} ${elder.lastName}`}
+                                    className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-600 flex items-center justify-center shadow-lg border-4 border-white">
+                                    <User className="w-8 h-8 text-white" />
+                                  </div>
+                                )}
+                                <div>
+                                  <h3 className="font-bold text-2xl text-gray-900 mb-1">
+                                    {elder.firstName || 'Unknown'} {elder.lastName || 'Patient'}
+                                  </h3>
+                                  <div className="flex items-center gap-3 text-base text-gray-600">
+                                    {elder.gender && (
+                                      <span className="flex items-center gap-1">
+                                        <User className="w-4 h-4" />
+                                        {elder.gender.charAt(0).toUpperCase()}{elder.gender.slice(1)}
+                                      </span>
+                                    )}
+                                    {elder.dateOfBirth && (
+                                      <span className="flex items-center gap-1">
+                                        📅 {new Date().getFullYear() - new Date(elder.dateOfBirth).getFullYear()} years
+                                      </span>
+                                    )}
+                                    {elder.bloodType && (
+                                      <span className="px-2 py-0.5 bg-red-50 text-red-700 rounded-full text-sm font-semibold">
+                                        🩸 {elder.bloodType}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
 
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <Calendar className="w-4 h-4 text-purple-500" />
-                            <span className="text-sm font-medium">
-                              {new Date(session.sessionDate).toLocaleDateString('en-US', {
-                                weekday: 'short',
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                              })}
-                            </span>
+                              {/* Status Badge */}
+                              <div className="flex flex-col items-end gap-2">
+                                <span className={`px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide shadow-sm ${
+                                  session.status === 'scheduled' 
+                                    ? 'bg-green-100 text-green-800 border-green-200'
+                                    : session.status === 'completed'
+                                    ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                    : 'bg-gray-100 text-gray-800 border-gray-200'
+                                }`}>
+                                  {session.status || 'Pending'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <Clock className="w-4 h-4 text-purple-500" />
-                            <span className="text-sm font-medium">{session.sessionTime}</span>
-                            {session.duration && (
-                              <span className="text-xs text-gray-500">({session.duration} min)</span>
+
+                          {/* Main Content Section */}
+                          <div className="p-6">
+                            {/* Session Date & Time - Highlighted */}
+                            <div className="mb-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-100">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-purple-500 p-2 rounded-lg">
+                                    <Calendar className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Date</p>
+                                    <p className="text-base font-semibold text-gray-900">
+                                      {new Date(session.sessionDate).toLocaleDateString('en-US', {
+                                        weekday: 'short',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-pink-500 p-2 rounded-lg">
+                                    <Clock className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Time</p>
+                                    <p className="text-base font-semibold text-gray-900">{session.sessionTime}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-indigo-500 p-2 rounded-lg">
+                                    <Activity className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Duration</p>
+                                    <p className="text-base font-semibold text-gray-900">{session.duration || 30} min</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Contact Information */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                              <div className="space-y-3">
+                                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">Contact Information</h4>
+                                {elder.phone && (
+                                  <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                                    <Phone className="w-5 h-5 text-purple-600" />
+                                    <div>
+                                      <p className="text-sm text-gray-500">Primary Phone</p>
+                                      <p className="text-base font-medium text-gray-900">{elder.phone}</p>
+                                    </div>
+                                  </div>
+                                )}
+                                {elder.emergencyContact && (
+                                  <div className="flex items-center gap-3 bg-red-50 p-3 rounded-lg border border-red-100">
+                                    <AlertCircle className="w-5 h-5 text-red-600" />
+                                    <div>
+                                      <p className="text-sm text-red-600 font-medium">Emergency Contact</p>
+                                      <p className="text-base font-semibold text-red-900">{elder.emergencyContact}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-3">
+                                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">Family Member</h4>
+                                {familyMember.firstName ? (
+                                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-100">
+                                    <div className="flex items-center gap-3">
+                                      <div className="bg-green-500 p-2 rounded-full">
+                                        <User className="w-5 h-5 text-white" />
+                                      </div>
+                                      <div>
+                                        <p className="text-base font-semibold text-gray-900">
+                                          {familyMember.firstName} {familyMember.lastName}
+                                        </p>
+                                        {familyMember.email && (
+                                          <p className="text-sm text-gray-600">{familyMember.email}</p>
+                                        )}
+                                        {familyMember.phone && (
+                                          <p className="text-sm text-gray-600">{familyMember.phone}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <p className="text-base text-gray-500">No family member information</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Medical Conditions */}
+                            {(elder.allergies || elder.chronicConditions || elder.currentMedications) && (
+                              <div className="mb-6 bg-red-50 rounded-lg p-4 border border-red-200">
+                                <h4 className="text-base font-bold text-red-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                  <AlertCircle className="w-5 h-5" />
+                                  Important Medical Information
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                  {elder.allergies && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-red-600 mb-1">⚠️ Allergies</p>
+                                      <p className="text-base text-gray-900">{elder.allergies}</p>
+                                    </div>
+                                  )}
+                                  {elder.chronicConditions && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-orange-600 mb-1">🏥 Chronic Conditions</p>
+                                      <p className="text-base text-gray-900">{elder.chronicConditions}</p>
+                                    </div>
+                                  )}
+                                  {elder.currentMedications && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-blue-600 mb-1">💊 Current Medications</p>
+                                      <p className="text-base text-gray-900">{elder.currentMedications}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             )}
-                          </div>
-                          {session.elder?.phone && (
-                            <div className="flex items-center gap-2 text-gray-700">
-                              <Phone className="w-4 h-4 text-purple-500" />
-                              <span className="text-sm">{session.elder.phone}</span>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                              <button
+                                onClick={() => handleViewElderDetails({ elder: session.elder })}
+                                className="flex-1 min-w-[140px] px-5 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
+                              >
+                                <UserCircle className="w-5 h-5" />
+                                Elder Details
+                              </button>
+                              {session.zoomJoinUrl && (
+                                <button
+                                  onClick={() => handleStartZoomMeeting(session)}
+                                  className="flex-1 min-w-[140px] px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
+                                >
+                                  <Video className="w-5 h-5" />
+                                  Start Call
+                                </button>
+                              )}
                             </div>
-                          )}
-                        </div>
-
-                        {session.familyMember && (
-                          <div className="mt-4 pt-4 border-t border-purple-100">
-                            <p className="text-xs text-gray-500 mb-1">Scheduled by</p>
-                            <p className="text-sm font-medium text-gray-700">
-                              {session.familyMember.firstName} {session.familyMember.lastName}
-                            </p>
                           </div>
-                        )}
-
-                        {/* Action Buttons */}
-                        <div className="mt-4 pt-4 border-t border-purple-100 flex gap-2">
-                          <button
-                            onClick={() => handleViewElderDetails({ elder: session.elder })}
-                            className="flex-1 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 text-xs font-semibold"
-                          >
-                            <UserCircle className="w-4 h-4" />
-                            Elder Details
-                          </button>
-                          {session.zoomJoinUrl && (
-                            <button
-                              onClick={() => handleStartZoomMeeting(session)}
-                              className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 text-xs font-semibold"
-                            >
-                              <Video className="w-4 h-4" />
-                              Start Call
-                            </button>
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -580,107 +996,825 @@ const ConsultationHistory = () => {
                     <p className="text-sm text-gray-500 mt-1">Appointments will appear here once booked</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {upcomingConsultations.map((appointment, index) => (
-                      <div
-                        key={appointment.id || index}
-                        className="group bg-gradient-to-br from-white to-indigo-50 rounded-2xl p-5 border border-indigo-200 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
-                      >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                              <User className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-gray-900">
-                                {appointment.elder?.firstName} {appointment.elder?.lastName}
-                              </h4>
-                              <p className="text-xs text-gray-500">
-                                {appointment.elder?.dateOfBirth && `${calculateAge(appointment.elder.dateOfBirth)} years old`}
-                              </p>
-                            </div>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            isToday(appointment.appointmentDate)
-                              ? 'bg-gradient-to-r from-green-400 to-emerald-400 text-white shadow-lg shadow-green-500/50 animate-pulse'
-                              : isFuture(appointment.appointmentDate)
-                              ? 'bg-gradient-to-r from-blue-400 to-indigo-400 text-white shadow-lg shadow-blue-500/50'
-                              : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
-                          }`}>
-                            {isToday(appointment.appointmentDate) ? '🔴 Today' : 
-                             isFuture(appointment.appointmentDate) ? 'Upcoming' : 'Completed'}
-                          </span>
-                        </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {upcomingConsultations.map((appointment, index) => {
+                      const elder = appointment.elder || {};
+                      const familyMember = appointment.familyMember || {};
+                      const { date, time } = formatDateTime(appointment.appointmentDate);
+                      const appointmentAge = calculateAge(elder.dateOfBirth);
+                      
+                      return (
+                        <div
+                          key={appointment.id || index}
+                          className="bg-white rounded-xl shadow-md border-l-4 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                          style={{
+                            borderLeftColor: 
+                              isToday(appointment.appointmentDate) ? '#10B981' :
+                              appointment.priority === 'urgent' ? '#EF4444' :
+                              appointment.priority === 'high' ? '#F59E0B' :
+                              '#3B82F6'
+                          }}
+                        >
+                          {/* Header Section with Patient Info and Status */}
+                          <div className="bg-gradient-to-r from-gray-50 to-white p-5 border-b border-gray-100">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-4">
+                                {elder.photo ? (
+                                  <img 
+                                    src={elder.photo} 
+                                    alt={`${elder.firstName} ${elder.lastName}`}
+                                    className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shadow-lg border-4 border-white">
+                                    <User className="w-8 h-8 text-white" />
+                                  </div>
+                                )}
+                                <div>
+                                  <h3 className="font-bold text-2xl text-gray-900 mb-1">
+                                    {elder.firstName || 'Unknown'} {elder.lastName || 'Patient'}
+                                  </h3>
+                                  <div className="flex items-center gap-3 text-base text-gray-600">
+                                    {elder.gender && (
+                                      <span className="flex items-center gap-1">
+                                        <User className="w-4 h-4" />
+                                        {elder.gender.charAt(0).toUpperCase()}{elder.gender.slice(1)}
+                                      </span>
+                                    )}
+                                    {appointmentAge && (
+                                      <span className="flex items-center gap-1">
+                                        📅 {appointmentAge} years
+                                      </span>
+                                    )}
+                                    {elder.bloodType && (
+                                      <span className="px-2 py-0.5 bg-red-50 text-red-700 rounded-full text-sm font-semibold">
+                                        🩸 {elder.bloodType}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
 
-                        <div className="space-y-2 mb-4">
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <Calendar className="w-4 h-4 text-indigo-500" />
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">
-                                {new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
-                                  weekday: 'short',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric'
-                                })}
-                              </span>
-                              <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold">
-                                {new Date(appointment.appointmentDate).toLocaleDateString('en-US', { month: 'short' })}
-                              </span>
+                              {/* Status Badge */}
+                              <div className="flex flex-col items-end gap-2">
+                                <span className={`px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide shadow-sm ${
+                                  isToday(appointment.appointmentDate)
+                                    ? 'bg-green-100 text-green-800 border-green-200 animate-pulse'
+                                    : 'bg-blue-100 text-blue-800 border-blue-200'
+                                }`}>
+                                  {isToday(appointment.appointmentDate) ? '🔴 Today' : 'Upcoming'}
+                                </span>
+                                {appointment.priority && (
+                                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                                    appointment.priority === 'urgent' 
+                                      ? 'bg-red-100 text-red-800'
+                                      : appointment.priority === 'high'
+                                      ? 'bg-orange-100 text-orange-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {appointment.priority}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <Clock className="w-4 h-4 text-indigo-500" />
-                            <span className="text-sm font-medium">{appointment.appointmentTime}</span>
-                          </div>
-                          {appointment.reason && (
-                            <div className="flex items-start gap-2 text-gray-700">
-                              <FileText className="w-4 h-4 text-indigo-500 mt-0.5" />
-                              <span className="text-sm">{appointment.reason}</span>
-                            </div>
-                          )}
-                        </div>
 
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleViewElderDetails(appointment)}
-                            className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 text-sm font-semibold"
-                          >
-                            <UserCircle className="w-4 h-4" />
-                            Elder Details
-                          </button>
-                          <button
-                            onClick={() => handleStartZoomMeeting(appointment)}
-                            className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 text-sm font-semibold"
-                          >
-                            <Video className="w-4 h-4" />
-                            {isToday(appointment.appointmentDate) ? 'Start Call' : 'View'}
-                          </button>
+                          {/* Main Content Section */}
+                          <div className="p-6">
+                            {/* Appointment Date & Time - Highlighted */}
+                            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-blue-500 p-2 rounded-lg">
+                                    <Calendar className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Date</p>
+                                    <p className="text-base font-semibold text-gray-900">
+                                      {new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
+                                        weekday: 'short',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-indigo-500 p-2 rounded-lg">
+                                    <Clock className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Time</p>
+                                    <p className="text-base font-semibold text-gray-900">{appointment.appointmentTime}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-purple-500 p-2 rounded-lg">
+                                    <Activity className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Duration</p>
+                                    <p className="text-base font-semibold text-gray-900">{appointment.duration || 30} min</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Reason & Type */}
+                            {(appointment.reason || appointment.type) && (
+                              <div className="mb-6 bg-amber-50 rounded-lg p-4 border border-amber-100">
+                                <div className="grid grid-cols-1 gap-3">
+                                  {appointment.type && (
+                                    <div className="flex items-center gap-3">
+                                      <Stethoscope className="w-5 h-5 text-amber-600" />
+                                      <div>
+                                        <p className="text-sm text-gray-500 font-medium uppercase">Type</p>
+                                        <p className="text-base font-semibold text-gray-900 capitalize">{appointment.type}</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {appointment.reason && (
+                                    <div className="flex items-start gap-3">
+                                      <FileText className="w-5 h-5 text-amber-600 mt-0.5" />
+                                      <div className="flex-1">
+                                        <p className="text-sm text-gray-500 font-medium uppercase mb-1">Reason</p>
+                                        <p className="text-base text-gray-900">{appointment.reason}</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Contact Information */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                              <div className="space-y-3">
+                                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">Contact Information</h4>
+                                {elder.phone && (
+                                  <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                                    <Phone className="w-5 h-5 text-blue-600" />
+                                    <div>
+                                      <p className="text-sm text-gray-500">Primary Phone</p>
+                                      <p className="text-base font-medium text-gray-900">{elder.phone}</p>
+                                    </div>
+                                  </div>
+                                )}
+                                {elder.emergencyContact && (
+                                  <div className="flex items-center gap-3 bg-red-50 p-3 rounded-lg border border-red-100">
+                                    <AlertCircle className="w-5 h-5 text-red-600" />
+                                    <div>
+                                      <p className="text-sm text-red-600 font-medium">Emergency Contact</p>
+                                      <p className="text-base font-semibold text-red-900">{elder.emergencyContact}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-3">
+                                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">Family Member</h4>
+                                {familyMember.firstName ? (
+                                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-100">
+                                    <div className="flex items-center gap-3">
+                                      <div className="bg-green-500 p-2 rounded-full">
+                                        <User className="w-5 h-5 text-white" />
+                                      </div>
+                                      <div>
+                                        <p className="text-base font-semibold text-gray-900">
+                                          {familyMember.firstName} {familyMember.lastName}
+                                        </p>
+                                        {familyMember.email && (
+                                          <p className="text-sm text-gray-600">{familyMember.email}</p>
+                                        )}
+                                        {familyMember.phone && (
+                                          <p className="text-sm text-gray-600">{familyMember.phone}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <p className="text-base text-gray-500">No family member information</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Medical Conditions */}
+                            {(elder.allergies || elder.chronicConditions || elder.currentMedications) && (
+                              <div className="mb-6 bg-red-50 rounded-lg p-4 border border-red-200">
+                                <h4 className="text-base font-bold text-red-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                  <AlertCircle className="w-5 h-5" />
+                                  Important Medical Information
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                  {elder.allergies && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-red-600 mb-1">⚠️ Allergies</p>
+                                      <p className="text-base text-gray-900">{elder.allergies}</p>
+                                    </div>
+                                  )}
+                                  {elder.chronicConditions && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-orange-600 mb-1">🏥 Chronic Conditions</p>
+                                      <p className="text-base text-gray-900">{elder.chronicConditions}</p>
+                                    </div>
+                                  )}
+                                  {elder.currentMedications && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-blue-600 mb-1">💊 Current Medications</p>
+                                      <p className="text-base text-gray-900">{elder.currentMedications}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                              <button
+                                onClick={() => handleViewElderDetails(appointment)}
+                                className="flex-1 min-w-[140px] px-5 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
+                              >
+                                <UserCircle className="w-5 h-5" />
+                                Elder Details
+                              </button>
+                              <button
+                                onClick={() => handleStartZoomMeeting(appointment)}
+                                className={`flex-1 min-w-[140px] px-5 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base ${
+                                  isToday(appointment.appointmentDate)
+                                    ? 'bg-green-600 text-white hover:bg-green-700 animate-pulse'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
+                              >
+                                <Video className="w-5 h-5" />
+                                {isToday(appointment.appointmentDate) ? 'Start Call Now' : 'View Details'}
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
             </section>
 
-            {/* Completed Consultations */}
-            <section>
-              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                ✅ Completed Consultations ({completedConsultations.length})
-              </h3>
-              {completedConsultations.length === 0 ? (
-                <div className="text-center py-8 bg-gray-50 rounded-lg">
-                  <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-500">No completed consultations found.</p>
+            {/* In Progress Consultations Section (Today's Appointments) */}
+            <section id="in-progress-section" className="mb-8 scroll-mt-6">
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-green-100">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl shadow-lg shadow-green-500/50">
+                      <PlayCircle className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                        In Progress Consultations
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Today's active consultations
+                      </p>
+                    </div>
+                  </div>
+                  <div className="px-4 py-2 bg-gradient-to-r from-green-100 to-emerald-100 rounded-full">
+                    <span className="text-sm font-semibold text-green-700">
+                      {inProgressConsultations.length} Today
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {completedConsultations.map(consultation => 
-                    renderConsultationCard(consultation, false)
-                  )}
+
+                {inProgressConsultations.length === 0 ? (
+                  <div className="text-center py-12 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border-2 border-dashed border-green-200">
+                    <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <PlayCircle className="w-8 h-8 text-green-600" />
+                    </div>
+                    <p className="text-gray-600 font-medium">No consultations in progress today</p>
+                    <p className="text-sm text-gray-500 mt-1">Today's appointments will appear here</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {inProgressConsultations.map((appointment, index) => {
+                      const elder = appointment.elder || {};
+                      const familyMember = appointment.familyMember || {};
+                      const { date, time } = formatDateTime(appointment.appointmentDate);
+                      const appointmentAge = calculateAge(elder.dateOfBirth);
+                      
+                      return (
+                        <div
+                          key={appointment.id || index}
+                          className="bg-white rounded-xl shadow-md border-l-4 border-l-green-500 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                        >
+                          {/* Header Section with Patient Info and Status */}
+                          <div className="bg-gradient-to-r from-gray-50 to-white p-5 border-b border-gray-100">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-4">
+                                {elder.photo ? (
+                                  <img 
+                                    src={elder.photo} 
+                                    alt={`${elder.firstName} ${elder.lastName}`}
+                                    className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg border-4 border-white">
+                                    <User className="w-8 h-8 text-white" />
+                                  </div>
+                                )}
+                                <div>
+                                  <h3 className="font-bold text-2xl text-gray-900 mb-1">
+                                    {elder.firstName || 'Unknown'} {elder.lastName || 'Patient'}
+                                  </h3>
+                                  <div className="flex items-center gap-3 text-base text-gray-600">
+                                    {elder.gender && (
+                                      <span className="flex items-center gap-1">
+                                        <User className="w-4 h-4" />
+                                        {elder.gender.charAt(0).toUpperCase()}{elder.gender.slice(1)}
+                                      </span>
+                                    )}
+                                    {appointmentAge && (
+                                      <span className="flex items-center gap-1">
+                                        📅 {appointmentAge} years
+                                      </span>
+                                    )}
+                                    {elder.bloodType && (
+                                      <span className="px-2 py-0.5 bg-red-50 text-red-700 rounded-full text-sm font-semibold">
+                                        🩸 {elder.bloodType}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Status Badge */}
+                              <div className="flex flex-col items-end gap-2">
+                                <span className="px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide shadow-sm bg-green-100 text-green-800 border-green-200 animate-pulse">
+                                  🔴 In Progress
+                                </span>
+                                {appointment.priority && (
+                                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                                    appointment.priority === 'urgent' 
+                                      ? 'bg-red-100 text-red-800'
+                                      : appointment.priority === 'high'
+                                      ? 'bg-orange-100 text-orange-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {appointment.priority}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Main Content Section */}
+                          <div className="p-6">
+                            {/* Appointment Date & Time - Highlighted */}
+                            <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-green-500 p-2 rounded-lg">
+                                    <Calendar className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Date</p>
+                                    <p className="text-base font-semibold text-gray-900">Today</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-emerald-500 p-2 rounded-lg">
+                                    <Clock className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Time</p>
+                                    <p className="text-base font-semibold text-gray-900">{appointment.appointmentTime}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-teal-500 p-2 rounded-lg">
+                                    <Activity className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Duration</p>
+                                    <p className="text-base font-semibold text-gray-900">{appointment.duration || 30} min</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Reason & Type */}
+                            {(appointment.reason || appointment.type) && (
+                              <div className="mb-6 bg-amber-50 rounded-lg p-4 border border-amber-100">
+                                <div className="grid grid-cols-1 gap-3">
+                                  {appointment.type && (
+                                    <div className="flex items-center gap-3">
+                                      <Stethoscope className="w-5 h-5 text-amber-600" />
+                                      <div>
+                                        <p className="text-sm text-gray-500 font-medium uppercase">Type</p>
+                                        <p className="text-base font-semibold text-gray-900 capitalize">{appointment.type}</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {appointment.reason && (
+                                    <div className="flex items-start gap-3">
+                                      <FileText className="w-5 h-5 text-amber-600 mt-0.5" />
+                                      <div className="flex-1">
+                                        <p className="text-sm text-gray-500 font-medium uppercase mb-1">Reason</p>
+                                        <p className="text-base text-gray-900">{appointment.reason}</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Contact Information */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                              <div className="space-y-3">
+                                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">Contact Information</h4>
+                                {elder.phone && (
+                                  <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                                    <Phone className="w-5 h-5 text-green-600" />
+                                    <div>
+                                      <p className="text-sm text-gray-500">Primary Phone</p>
+                                      <p className="text-base font-medium text-gray-900">{elder.phone}</p>
+                                    </div>
+                                  </div>
+                                )}
+                                {elder.emergencyContact && (
+                                  <div className="flex items-center gap-3 bg-red-50 p-3 rounded-lg border border-red-100">
+                                    <AlertCircle className="w-5 h-5 text-red-600" />
+                                    <div>
+                                      <p className="text-sm text-red-600 font-medium">Emergency Contact</p>
+                                      <p className="text-base font-semibold text-red-900">{elder.emergencyContact}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-3">
+                                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">Family Member</h4>
+                                {familyMember.firstName ? (
+                                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-100">
+                                    <div className="flex items-center gap-3">
+                                      <div className="bg-green-500 p-2 rounded-full">
+                                        <User className="w-5 h-5 text-white" />
+                                      </div>
+                                      <div>
+                                        <p className="text-base font-semibold text-gray-900">
+                                          {familyMember.firstName} {familyMember.lastName}
+                                        </p>
+                                        {familyMember.email && (
+                                          <p className="text-sm text-gray-600">{familyMember.email}</p>
+                                        )}
+                                        {familyMember.phone && (
+                                          <p className="text-sm text-gray-600">{familyMember.phone}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <p className="text-base text-gray-500">No family member information</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Medical Conditions */}
+                            {(elder.allergies || elder.chronicConditions || elder.currentMedications) && (
+                              <div className="mb-6 bg-red-50 rounded-lg p-4 border border-red-200">
+                                <h4 className="text-base font-bold text-red-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                  <AlertCircle className="w-5 h-5" />
+                                  Important Medical Information
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                  {elder.allergies && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-red-600 mb-1">⚠️ Allergies</p>
+                                      <p className="text-base text-gray-900">{elder.allergies}</p>
+                                    </div>
+                                  )}
+                                  {elder.chronicConditions && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-orange-600 mb-1">🏥 Chronic Conditions</p>
+                                      <p className="text-base text-gray-900">{elder.chronicConditions}</p>
+                                    </div>
+                                  )}
+                                  {elder.currentMedications && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-blue-600 mb-1">💊 Current Medications</p>
+                                      <p className="text-base text-gray-900">{elder.currentMedications}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                              <button
+                                onClick={() => handleViewElderDetails(appointment)}
+                                className="flex-1 min-w-[140px] px-5 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
+                              >
+                                <UserCircle className="w-5 h-5" />
+                                Elder Details
+                              </button>
+                              <button
+                                onClick={() => handleStartZoomMeeting(appointment)}
+                                className="flex-1 min-w-[140px] px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base animate-pulse"
+                              >
+                                <Video className="w-5 h-5" />
+                                Start Call Now
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Completed Consultations Section */}
+            <section className="mb-8">
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-gray-100">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-gradient-to-br from-gray-500 to-gray-700 rounded-2xl shadow-lg shadow-gray-500/50">
+                      <CheckCircle2 className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent">
+                        Completed Consultations
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Past consultation records
+                      </p>
+                    </div>
+                  </div>
+                  <div className="px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full">
+                    <span className="text-sm font-semibold text-gray-700">
+                      {completedConsultations.length} Completed
+                    </span>
+                  </div>
                 </div>
-              )}
+
+                {completedConsultations.length === 0 ? (
+                  <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-200">
+                    <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle2 className="w-8 h-8 text-gray-600" />
+                    </div>
+                    <p className="text-gray-600 font-medium">No completed consultations</p>
+                    <p className="text-sm text-gray-500 mt-1">Completed appointments will appear here</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {completedConsultations.map((appointment, index) => {
+                      const elder = appointment.elder || {};
+                      const familyMember = appointment.familyMember || {};
+                      const { date, time } = formatDateTime(appointment.appointmentDate);
+                      const appointmentAge = calculateAge(elder.dateOfBirth);
+                      
+                      return (
+                        <div
+                          key={appointment.id || index}
+                          className="bg-white rounded-xl shadow-md border-l-4 border-l-gray-500 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                        >
+                          {/* Header Section with Patient Info and Status */}
+                          <div className="bg-gradient-to-r from-gray-50 to-white p-5 border-b border-gray-100">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-4">
+                                {elder.photo ? (
+                                  <img 
+                                    src={elder.photo} 
+                                    alt={`${elder.firstName} ${elder.lastName}`}
+                                    className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg grayscale-[30%]"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center shadow-lg border-4 border-white">
+                                    <User className="w-8 h-8 text-white" />
+                                  </div>
+                                )}
+                                <div>
+                                  <h3 className="font-bold text-2xl text-gray-900 mb-1">
+                                    {elder.firstName || 'Unknown'} {elder.lastName || 'Patient'}
+                                  </h3>
+                                  <div className="flex items-center gap-3 text-base text-gray-600">
+                                    {elder.gender && (
+                                      <span className="flex items-center gap-1">
+                                        <User className="w-4 h-4" />
+                                        {elder.gender.charAt(0).toUpperCase()}{elder.gender.slice(1)}
+                                      </span>
+                                    )}
+                                    {appointmentAge && (
+                                      <span className="flex items-center gap-1">
+                                        📅 {appointmentAge} years
+                                      </span>
+                                    )}
+                                    {elder.bloodType && (
+                                      <span className="px-2 py-0.5 bg-red-50 text-red-700 rounded-full text-sm font-semibold">
+                                        🩸 {elder.bloodType}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Status Badge */}
+                              <div className="flex flex-col items-end gap-2">
+                                <span className="px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide shadow-sm bg-gray-100 text-gray-800 border-gray-200">
+                                  ✅ Completed
+                                </span>
+                                {appointment.priority && (
+                                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                                    appointment.priority === 'urgent' 
+                                      ? 'bg-red-100 text-red-800'
+                                      : appointment.priority === 'high'
+                                      ? 'bg-orange-100 text-orange-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {appointment.priority}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Main Content Section */}
+                          <div className="p-6">
+                            {/* Appointment Date & Time - Highlighted */}
+                            <div className="mb-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-gray-500 p-2 rounded-lg">
+                                    <Calendar className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Date</p>
+                                    <p className="text-base font-semibold text-gray-900">
+                                      {new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
+                                        weekday: 'short',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-gray-600 p-2 rounded-lg">
+                                    <Clock className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Time</p>
+                                    <p className="text-base font-semibold text-gray-900">{appointment.appointmentTime}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-gray-700 p-2 rounded-lg">
+                                    <Activity className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500 font-medium uppercase">Duration</p>
+                                    <p className="text-base font-semibold text-gray-900">{appointment.duration || 30} min</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Reason & Type */}
+                            {(appointment.reason || appointment.type) && (
+                              <div className="mb-6 bg-amber-50 rounded-lg p-4 border border-amber-100">
+                                <div className="grid grid-cols-1 gap-3">
+                                  {appointment.type && (
+                                    <div className="flex items-center gap-3">
+                                      <Stethoscope className="w-5 h-5 text-amber-600" />
+                                      <div>
+                                        <p className="text-sm text-gray-500 font-medium uppercase">Type</p>
+                                        <p className="text-base font-semibold text-gray-900 capitalize">{appointment.type}</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {appointment.reason && (
+                                    <div className="flex items-start gap-3">
+                                      <FileText className="w-5 h-5 text-amber-600 mt-0.5" />
+                                      <div className="flex-1">
+                                        <p className="text-sm text-gray-500 font-medium uppercase mb-1">Reason</p>
+                                        <p className="text-base text-gray-900">{appointment.reason}</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Contact Information */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                              <div className="space-y-3">
+                                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">Contact Information</h4>
+                                {elder.phone && (
+                                  <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                                    <Phone className="w-5 h-5 text-gray-600" />
+                                    <div>
+                                      <p className="text-sm text-gray-500">Primary Phone</p>
+                                      <p className="text-base font-medium text-gray-900">{elder.phone}</p>
+                                    </div>
+                                  </div>
+                                )}
+                                {elder.emergencyContact && (
+                                  <div className="flex items-center gap-3 bg-red-50 p-3 rounded-lg border border-red-100">
+                                    <AlertCircle className="w-5 h-5 text-red-600" />
+                                    <div>
+                                      <p className="text-sm text-red-600 font-medium">Emergency Contact</p>
+                                      <p className="text-base font-semibold text-red-900">{elder.emergencyContact}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-3">
+                                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">Family Member</h4>
+                                {familyMember.firstName ? (
+                                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-100">
+                                    <div className="flex items-center gap-3">
+                                      <div className="bg-green-500 p-2 rounded-full">
+                                        <User className="w-5 h-5 text-white" />
+                                      </div>
+                                      <div>
+                                        <p className="text-base font-semibold text-gray-900">
+                                          {familyMember.firstName} {familyMember.lastName}
+                                        </p>
+                                        {familyMember.email && (
+                                          <p className="text-sm text-gray-600">{familyMember.email}</p>
+                                        )}
+                                        {familyMember.phone && (
+                                          <p className="text-sm text-gray-600">{familyMember.phone}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <p className="text-base text-gray-500">No family member information</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Medical Conditions */}
+                            {(elder.allergies || elder.chronicConditions || elder.currentMedications) && (
+                              <div className="mb-6 bg-red-50 rounded-lg p-4 border border-red-200">
+                                <h4 className="text-base font-bold text-red-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                  <AlertCircle className="w-5 h-5" />
+                                  Important Medical Information
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                  {elder.allergies && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-red-600 mb-1">⚠️ Allergies</p>
+                                      <p className="text-base text-gray-900">{elder.allergies}</p>
+                                    </div>
+                                  )}
+                                  {elder.chronicConditions && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-orange-600 mb-1">🏥 Chronic Conditions</p>
+                                      <p className="text-base text-gray-900">{elder.chronicConditions}</p>
+                                    </div>
+                                  )}
+                                  {elder.currentMedications && (
+                                    <div className="bg-white p-3 rounded-lg">
+                                      <p className="text-sm font-semibold text-blue-600 mb-1">💊 Current Medications</p>
+                                      <p className="text-base text-gray-900">{elder.currentMedications}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                              <button
+                                onClick={() => handleViewElderDetails(appointment)}
+                                className="flex-1 min-w-[140px] px-5 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
+                              >
+                                <UserCircle className="w-5 h-5" />
+                                Elder Details
+                              </button>
+                              <button
+                                onClick={() => handleViewDetails(appointment)}
+                                className="flex-1 min-w-[140px] px-5 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
+                              >
+                                <Eye className="w-5 h-5" />
+                                View Record
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </section>
 
             {/* No Consultations Message */}
