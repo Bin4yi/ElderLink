@@ -270,23 +270,45 @@ router.post('/', authenticate, authorize('family_member'), upload.single('photo'
 });
 
 // Update elder
-router.put('/:id', authenticate, authorize('family_member'), upload.single('photo'), async (req, res) => {
+router.put('/:id', authenticate, authorize('family_member', 'elder'), upload.single('photo'), async (req, res) => {
   try {
     const { id } = req.params;
     console.log('🔄 Updating elder:', id);
+    console.log('👤 User role:', req.user.role);
+    console.log('🆔 User ID:', req.user.id);
 
-    const elder = await Elder.findOne({
-      where: { 
-        id: id,
-        userId: req.user.id
-      }
-    });
-
-    if (!elder) {
-      return res.status(404).json({
-        success: false,
-        message: 'Elder not found or you do not have permission to update this elder'
+    let elder;
+    
+    // If user is an elder, they can only update their own profile
+    if (req.user.role === 'elder') {
+      elder = await Elder.findOne({
+        where: { 
+          id: id,
+          userId: req.user.id // Must match their own userId
+        }
       });
+      
+      if (!elder) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only update your own profile'
+        });
+      }
+    } else {
+      // Family members can update elders they own
+      elder = await Elder.findOne({
+        where: { 
+          id: id,
+          userId: req.user.id
+        }
+      });
+      
+      if (!elder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Elder not found or you do not have permission to update this elder'
+        });
+      }
     }
 
     // Update data
@@ -299,9 +321,20 @@ router.put('/:id', authenticate, authorize('family_member'), upload.single('phot
 
     console.log('✅ Elder updated:', elder.id);
 
+    // Fetch updated elder with associations
+    const updatedElder = await Elder.findByPk(elder.id, {
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'isActive']
+        }
+      ]
+    });
+
     res.json({
       success: true,
-      elder: elder,
+      elder: updatedElder,
       message: 'Elder updated successfully'
     });
   } catch (error) {
