@@ -286,12 +286,8 @@ export const elderService = {
       console.error('❌ ElderService: Error response:', error.response?.data);
       console.error('❌ ElderService: Error status:', error.response?.status);
       
-      return {
-        success: false,
-        elders: [],
-        count: 0,
-        error: error.response?.data?.message || error.message
-      };
+      // Throw the error so the component can catch it
+      throw error;
     }
   },
 

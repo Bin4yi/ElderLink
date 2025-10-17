@@ -167,6 +167,9 @@ const mentalHealthProfileRoutes = require("./routes/mentalHealthProfileRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const staffAssessmentRoutes = require("./routes/staffAssessmentRoutes");
 
+// ✅ ADD: Import monthly sessions routes
+const monthlySessionRoutes = require('./routes/monthlySessions');
+
 // 🚨 ADD: Webhook routes FIRST (no auth required)
 app.use("/api/webhook", webhookRoutes);
 
@@ -202,6 +205,10 @@ try {
   // Use doctor schedule routes
   const doctorScheduleRoutes = require("./routes/doctorSchedule");
   app.use("/api/doctor/schedules", doctorScheduleRoutes);
+
+  // Use doctor patients routes
+  const doctorPatientsRoutes = require('./routes/doctorPatients');
+  app.use('/api/doctor/patients', doctorPatientsRoutes);
 
   // Use new inventory routes
   app.use("/api/inventory", inventoryRoutes);

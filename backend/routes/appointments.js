@@ -21,11 +21,11 @@ router.get('/doctors/:doctorId/available-dates', authenticate, AppointmentContro
 router.get('/doctor/:doctorId/available-dates', AppointmentController.getDoctorAvailableDates);
 
 // Reservation endpoints
-router.post('/reserve-slot', authenticate, authorize(['family_member', 'elder']), AppointmentController.reserveTimeSlot);
-router.post('/reservations/:reservationId/complete', authenticate, authorize(['family_member', 'elder']), AppointmentController.completeReservation);
-router.delete('/reservations/:reservationId', authenticate, authorize(['family_member', 'elder']), AppointmentController.cancelReservation);
+router.post('/reserve-slot', authenticate, authorize(['family_member', 'elder', 'coordinator', 'admin']), AppointmentController.reserveTimeSlot);
+router.post('/reservations/:reservationId/complete', authenticate, authorize(['family_member', 'elder', 'coordinator', 'admin']), AppointmentController.completeReservation);
+router.delete('/reservations/:reservationId', authenticate, authorize(['family_member', 'elder', 'coordinator', 'admin']), AppointmentController.cancelReservation);
 
-router.post('/', authenticate, authorize(['family_member', 'elder']), AppointmentController.bookAppointment);
+router.post('/', authenticate, authorize(['family_member', 'elder', 'coordinator', 'admin']), AppointmentController.bookAppointment);
 router.get('/', authenticate, AppointmentController.getAppointments);
 router.get('/:id', authenticate, AppointmentController.getAppointmentById);
 router.put('/:id/cancel', authenticate, AppointmentController.cancelAppointment);
