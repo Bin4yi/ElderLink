@@ -86,9 +86,19 @@ const getAllResources = async (req, res) => {
       ],
     });
 
+    // Convert rating from string to number
+    const formattedResources = resources.map((resource) => {
+      const resourceData = resource.toJSON();
+      return {
+        ...resourceData,
+        rating: parseFloat(resourceData.rating) || 0,
+        downloadCount: parseInt(resourceData.downloadCount) || 0,
+      };
+    });
+
     res.status(200).json({
-      count: resources.length,
-      resources,
+      count: formattedResources.length,
+      resources: formattedResources,
     });
   } catch (error) {
     console.error("Error fetching resources:", error);
@@ -118,7 +128,14 @@ const getResourceById = async (req, res) => {
       return res.status(404).json({ message: "Resource not found" });
     }
 
-    res.status(200).json({ resource });
+    const resourceData = resource.toJSON();
+    const formattedResource = {
+      ...resourceData,
+      rating: parseFloat(resourceData.rating) || 0,
+      downloadCount: parseInt(resourceData.downloadCount) || 0,
+    };
+
+    res.status(200).json({ resource: formattedResource });
   } catch (error) {
     console.error("Error fetching resource:", error);
     res.status(500).json({

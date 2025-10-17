@@ -215,8 +215,10 @@ const MentalHealthResources = () => {
                 <p className="text-2xl font-bold text-gray-900">
                   {resources.length > 0
                     ? (
-                        resources.reduce((sum, r) => sum + (r.rating || 0), 0) /
-                        resources.length
+                        resources.reduce(
+                          (sum, r) => sum + (Number(r.rating) || 0),
+                          0
+                        ) / resources.length
                       ).toFixed(1)
                     : "0.0"}
                 </p>
@@ -347,14 +349,14 @@ const MentalHealthResources = () => {
                       <Star
                         key={i}
                         className={`w-4 h-4 ${
-                          i < Math.floor(resource.rating)
+                          i < Math.floor(Number(resource.rating) || 0)
                             ? "fill-yellow-400 text-yellow-400"
                             : "text-gray-300"
                         }`}
                       />
                     ))}
                     <span className="text-sm text-gray-600 ml-2">
-                      {resource.rating.toFixed(1)}
+                      {(Number(resource.rating) || 0).toFixed(1)}
                     </span>
                   </div>
 
