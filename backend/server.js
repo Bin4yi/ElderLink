@@ -167,6 +167,9 @@ const mentalHealthProfileRoutes = require("./routes/mentalHealthProfileRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const staffAssessmentRoutes = require("./routes/staffAssessmentRoutes");
 
+// ✅ ADD: Import monthly sessions routes
+const monthlySessionRoutes = require('./routes/monthlySessions');
+
 // 🚨 ADD: Webhook routes FIRST (no auth required)
 app.use("/api/webhook", webhookRoutes);
 
@@ -203,6 +206,10 @@ try {
   const doctorScheduleRoutes = require("./routes/doctorSchedule");
   app.use("/api/doctor/schedules", doctorScheduleRoutes);
 
+  // Use doctor patients routes
+  const doctorPatientsRoutes = require('./routes/doctorPatients');
+  app.use('/api/doctor/patients', doctorPatientsRoutes);
+
   // Use new inventory routes
   app.use("/api/inventory", inventoryRoutes);
   app.use("/api/prescriptions", prescriptionRoutes);
@@ -233,6 +240,10 @@ try {
   app.use("/api/mental-health/profile", mentalHealthProfileRoutes);
   app.use("/api/mental-health/dashboard", dashboardRoutes);
   app.use("/api/staff/assessments", staffAssessmentRoutes);
+
+  // Admin Analytics Routes
+  const adminAnalyticsRoutes = require("./routes/adminAnalyticsRoutes");
+  app.use("/api/admin/analytics", adminAnalyticsRoutes);
 } catch (error) {
   console.error("Error loading routes:", error);
   process.exit(1);

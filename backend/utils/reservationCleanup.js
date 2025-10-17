@@ -16,7 +16,9 @@ async function cleanupExpiredReservations() {
         createdAt: {
           [Op.lt]: tenMinutesAgo
         }
-      }
+      },
+      // Add timeout to prevent long-running queries
+      timeout: 30000
     });
 
     if (result > 0) {
@@ -25,7 +27,12 @@ async function cleanupExpiredReservations() {
 
     return result;
   } catch (error) {
-    console.error('❌ Error cleaning up expired reservations:', error);
+    // Log error but don't crash - the cleanup will retry on next interval
+    if (error.name === 'SequelizeConnectionAcquireTimeoutError') {
+      console.warn('⚠️  Database busy - skipping cleanup cycle');
+    } else {
+      console.error('❌ Error cleaning up expired reservations:', error.message);
+    }
     return 0;
   }
 }

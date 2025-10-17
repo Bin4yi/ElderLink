@@ -63,10 +63,12 @@ const checkRole = (...allowedRoles) => {
 // Alternative function names for backwards compatibility
 const authenticate = auth;
 const authorize = checkRole;
+const protect = auth; // Add protect as an alias for auth
 
 module.exports = { 
   auth, 
   checkRole, 
   authenticate, 
-  authorize 
+  authorize,
+  protect // Export protect for consistency with other routes
 };
