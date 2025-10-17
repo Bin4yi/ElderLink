@@ -165,6 +165,7 @@ const groupSessionRoutes = require("./routes/groupSessionRoutes");
 const resourceRoutes = require("./routes/resourceRoutes");
 const mentalHealthProfileRoutes = require("./routes/mentalHealthProfileRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const staffAssessmentRoutes = require("./routes/staffAssessmentRoutes");
 
 // 🚨 ADD: Webhook routes FIRST (no auth required)
 app.use("/api/webhook", webhookRoutes);
@@ -231,6 +232,7 @@ try {
   app.use("/api/mental-health/resources", resourceRoutes);
   app.use("/api/mental-health/profile", mentalHealthProfileRoutes);
   app.use("/api/mental-health/dashboard", dashboardRoutes);
+  app.use("/api/staff/assessments", staffAssessmentRoutes);
 } catch (error) {
   console.error("Error loading routes:", error);
   process.exit(1);
@@ -320,7 +322,7 @@ app.use("*", (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 // app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // Database connection and server start
