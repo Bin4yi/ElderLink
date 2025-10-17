@@ -112,8 +112,11 @@ const getElders = async (req, res) => {
       },
       attributes: [
         'id', 
-        'status'
-        // ✅ Removed planType - it doesn't exist in database
+        'status',
+        'plan',
+        'duration',
+        'startDate',
+        'endDate'
       ],
       include: [
         {
@@ -137,7 +140,11 @@ const getElders = async (req, res) => {
         ...sub.elder.toJSON(),
         subscription: {
           id: sub.id,
-          status: sub.status
+          status: sub.status,
+          plan: sub.plan,
+          duration: sub.duration,
+          startDate: sub.startDate,
+          endDate: sub.endDate
         }
       }));
 
