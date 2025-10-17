@@ -1,286 +1,440 @@
 // src/components/staff/mental/MentalHealthManagement.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import RoleLayout from '../../common/RoleLayout';
-import { CheckCircle2, BarChart3, ClipboardList, FileText } from 'lucide-react';
-
-
+import {
+  CheckCircle2,
+  ClipboardList,
+  FileText,
+  Brain,
+  User,
+  Calendar,
+  Clock,
+  Play,
+  Loader,
+  AlertCircle,
+  Activity
+} from 'lucide-react';
+import mentalHealthService from '../../../services/mentalHealthService';
+import toast from 'react-hot-toast';
 
 const MentalHealthManagement = () => {
-  const [activeTab, setActiveTab] = useState('plans'); // 'plans' or 'assessments'
+  // Staff Mental Health Assessment Management - API Integration
+  const [loading, setLoading] = useState(true);
+  const [assessments, setAssessments] = useState([]);
+  const [stats, setStats] = useState({
+    totalAssessments: 0,
+    scheduled: 0,
+    notStarted: 0,
+    started: 0,
+    inProgress: 0,
+    completed: 0,
+    urgent: 0
+  });
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedAssessment, setSelectedAssessment] = useState(null);
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [completionNotes, setCompletionNotes] = useState('');
+  const [updating, setUpdating] = useState(false);
 
-  // Mental Specialist Plans state
-  const [mentalPlans, setMentalPlans] = useState([
-    {
-      id: 1,
-      activity: 'Cognitive Stimulation Program',
-      date: '2024-06-10',
-      status: 'pending',
-    },
-    {
-      id: 2,
-      activity: 'Emotional Support Session',
-      date: '2024-06-10',
-      status: 'pending',
-    },
-    {
-      id: 3,
-      activity: 'Mindfulness & Relaxation',
-      date: '2024-06-10',
-      status: 'pending',
-    },
-    {
-      id: 4,
-      activity: 'Family Engagement Activity',
-      date: '2024-06-10',
-      status: 'pending',
-    },
-    {
-      id: 5,
-      activity: 'Behavioral Monitoring',
-      date: '2024-06-10',
-      status: 'pending',
-    },
-  ]);
+  // Fetch assessments and stats on component mount and filter change
+  useEffect(() => {
+    fetchAssessments();
+    fetchStats();
+  }, [statusFilter]);
 
-  // Assessment Plans state
-  const [assessmentPlans, setAssessmentPlans] = useState([
-    {
-      id: 1,
-      assessment: 'Cognitive Function Assessment',
-      elderName: 'Margaret Thompson',
-      date: '2024-06-12',
-      type: 'cognitive',
-      status: 'pending',
-      priority: 'high',
-    },
-    {
-      id: 2,
-      assessment: 'Depression Screening (PHQ-9)',
-      elderName: 'Margaret Thompson',
-      date: '2024-06-13',
-      type: 'mood',
-      status: 'pending',
-      priority: 'medium',
-    },
-    {
-      id: 3,
-      assessment: 'Anxiety Assessment (GAD-7)',
-      elderName: 'Margaret Thompson',
-      date: '2024-06-14',
-      type: 'anxiety',
-      status: 'pending',
-      priority: 'medium',
-    },
-    {
-      id: 4,
-      assessment: 'Memory and Recall Evaluation',
-      elderName: 'Margaret Thompson',
-      date: '2024-06-15',
-      type: 'memory',
-      status: 'in-progress',
-      priority: 'high',
-    },
-    {
-      id: 5,
-      assessment: 'Social Interaction Assessment',
-      elderName: 'Margaret Thompson',
-      date: '2024-06-16',
-      type: 'social',
-      status: 'pending',
-      priority: 'low',
-    },
-  ]);
+  const fetchAssessments = async () => {
+    try {
+      setLoading(true);
+      const filterStatus = statusFilter !== 'all' ? statusFilter : null;
+      const response = await mentalHealthService.getStaffAssessments(null, filterStatus);
+      setAssessments(response.assessments || []);
+    } catch (error) {
+      console.error('Error fetching assessments:', error);
+      toast.error('Failed to load assessments');
+      setAssessments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleMentalPlanAction = (planId) => {
-    setMentalPlans(prev =>
-      prev.map(plan =>
-        plan.id === planId ? { ...plan, status: 'completed' } : plan
-      )
+  const fetchStats = async () => {
+    try {
+      const response = await mentalHealthService.getStaffAssessmentStats();
+      if (response.stats) {
+        setStats(response.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const handleStatusUpdate = async (assessmentId, newStatus, notes = '') => {
+    try {
+      setUpdating(true);
+      await mentalHealthService.updateStaffAssessmentStatus(assessmentId, {
+        status: newStatus,
+        notes: notes
+      });
+      toast.success(`Assessment status updated to ${newStatus.replace('_', ' ')}`);
+      await fetchAssessments();
+      await fetchStats();
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error(error.response?.data?.message || 'Failed to update status');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const getNextStatus = (currentStatus) => {
+    const statusFlow = {
+      'scheduled': 'not_started',
+      'not_started': 'started',
+      'started': 'in_progress',
+      'in_progress': 'completed'
+    };
+    return statusFlow[currentStatus];
+  };
+
+  const getStatusButton = (assessment) => {
+    const nextStatus = getNextStatus(assessment.status);
+    
+    if (!nextStatus || assessment.status === 'completed') return null;
+
+    const buttonLabels = {
+      'not_started': 'Mark Not Started',
+      'started': 'Start Assessment',
+      'in_progress': 'Mark In Progress',
+      'completed': 'Complete'
+    };
+
+    const handleClick = () => {
+      if (nextStatus === 'completed') {
+        setSelectedAssessment(assessment);
+        setShowNotesModal(true);
+      } else {
+        handleStatusUpdate(assessment.id, nextStatus);
+      }
+    };
+
+    return (
+      <button
+        onClick={handleClick}
+        disabled={updating}
+        className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      >
+        {updating ? (
+          <>
+            <Loader className="animate-spin" size={16} />
+            Updating...
+          </>
+        ) : (
+          <>
+            <Play size={16} />
+            {buttonLabels[nextStatus]}
+          </>
+        )}
+      </button>
     );
   };
 
-  const handleAssessmentAction = (assessmentId) => {
-    setAssessmentPlans(prev =>
-      prev.map(assessment =>
-        assessment.id === assessmentId ? { ...assessment, status: 'completed' } : assessment
-      )
-    );
+  const handleCompleteWithNotes = async () => {
+    if (selectedAssessment) {
+      await handleStatusUpdate(selectedAssessment.id, 'completed', completionNotes);
+      setShowNotesModal(false);
+      setCompletionNotes('');
+      setSelectedAssessment(null);
+    }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low':
+  const getStatusBadgeColor = (status) => {
+    switch (status) {
+      case 'completed':
         return 'bg-green-100 text-green-800 border-green-200';
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'started':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'not_started':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'scheduled':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'urgent':
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const getAssessmentDescription = (type) => {
-    switch (type) {
+  const getAssessmentTypeIcon = (type) => {
+    switch (type?.toLowerCase()) {
       case 'cognitive':
-        return 'Comprehensive evaluation of cognitive abilities including memory, attention, and problem-solving skills.';
+        return <Brain size={18} className="text-purple-600" />;
       case 'mood':
-        return 'Standardized depression screening to assess mood changes and emotional well-being.';
+      case 'depression':
+        return <Activity size={18} className="text-blue-600" />;
       case 'anxiety':
-        return 'Assessment of anxiety levels and identification of anxiety-related symptoms and triggers.';
-      case 'memory':
-        return 'Detailed evaluation of short-term and long-term memory function and recall abilities.';
-      case 'social':
-        return 'Assessment of social engagement, communication skills, and interpersonal relationships.';
+        return <AlertCircle size={18} className="text-orange-600" />;
       default:
-        return 'Mental health assessment to evaluate overall psychological well-being.';
+        return <ClipboardList size={18} className="text-gray-600" />;
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not scheduled';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
   };
 
   return (
     <RoleLayout title="Mental Health Management">
       <div className="min-h-screen bg-gray-100 p-6">
-        <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-8 space-y-6">
-          {/* Tab Navigation */}
-          <div className="flex border-b border-gray-200 mb-6">
-            <button
-              onClick={() => setActiveTab('plans')}
-              className={`px-6 py-3 font-medium text-sm ${
-                activeTab === 'plans'
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <BarChart3 className="inline mr-2" size={16} />
-              Mental Specialist Plans
-            </button>
-            <button
-              onClick={() => setActiveTab('assessments')}
-              className={`px-6 py-3 font-medium text-sm ${
-                activeTab === 'assessments'
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <ClipboardList className="inline mr-2" size={16} />
-              Assessment Plans
-            </button>
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="text-2xl font-bold text-gray-800">{stats.totalAssessments}</div>
+              <div className="text-sm text-gray-600">Total</div>
+            </div>
+            <div className="bg-purple-50 rounded-lg shadow p-4 border border-purple-200">
+              <div className="text-2xl font-bold text-purple-800">{stats.scheduled}</div>
+              <div className="text-sm text-purple-600">Scheduled</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg shadow p-4 border border-gray-200">
+              <div className="text-2xl font-bold text-gray-800">{stats.notStarted}</div>
+              <div className="text-sm text-gray-600">Not Started</div>
+            </div>
+            <div className="bg-yellow-50 rounded-lg shadow p-4 border border-yellow-200">
+              <div className="text-2xl font-bold text-yellow-800">{stats.started}</div>
+              <div className="text-sm text-yellow-600">Started</div>
+            </div>
+            <div className="bg-blue-50 rounded-lg shadow p-4 border border-blue-200">
+              <div className="text-2xl font-bold text-blue-800">{stats.inProgress}</div>
+              <div className="text-sm text-blue-600">In Progress</div>
+            </div>
+            <div className="bg-green-50 rounded-lg shadow p-4 border border-green-200">
+              <div className="text-2xl font-bold text-green-800">{stats.completed}</div>
+              <div className="text-sm text-green-600">Completed</div>
+            </div>
+            <div className="bg-red-50 rounded-lg shadow p-4 border border-red-200">
+              <div className="text-2xl font-bold text-red-800">{stats.urgent}</div>
+              <div className="text-sm text-red-600">Urgent</div>
+            </div>
           </div>
 
-          {/* Mental Specialist Plans Tab */}
-          {activeTab === 'plans' && (
-            <div className="space-y-8">
-              <div className="mt-4">
-                <h3 className="text-xl font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                  <BarChart3 size={20} className="text-blue-600" />
-                  Mental Specialist Plans
-                </h3>
-                <div className="space-y-3">
-                  {mentalPlans.map(plan => (
-                    <div
-                      key={plan.id}
-                      className={`flex flex-col md:flex-row md:items-center md:justify-between p-3 border rounded-md ${
-                        plan.status === 'completed'
-                          ? 'bg-green-50 border-green-200'
-                          : plan.status === 'in-progress'
-                          ? 'bg-yellow-50 border-yellow-200'
-                          : 'bg-gray-50 border-gray-200'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-medium text-blue-700">{plan.activity}</div>
-                        <div className="text-gray-600 text-sm">
-                          {plan.id === 1 && 'Daily memory games, puzzles, and group discussions to enhance cognitive function.'}
-                          {plan.id === 2 && 'Weekly one-on-one counseling with a mental health specialist to address anxiety, depression, or loneliness.'}
-                          {plan.id === 3 && 'Guided meditation and breathing exercises every morning to reduce stress and promote calmness.'}
-                          {plan.id === 4 && 'Monthly family video calls and shared activities to strengthen social bonds and reduce isolation.'}
-                          {plan.id === 5 && 'Regular check-ins and behavioral assessments to identify early signs of mental health concerns.'}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">{plan.date}</div>
-                        <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-opacity-30 font-medium capitalize">
-                          {plan.status}
-                        </span>
-                      </div>
-                      {plan.status !== 'completed' && (
-                        <button
-                          onClick={() => handleMentalPlanAction(plan.id)}
-                          className="mt-2 md:mt-0 bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-semibold shadow flex items-center gap-1"
-                        >
-                          <CheckCircle2 size={25} />
-                          Mark as Done
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  {mentalPlans.length === 0 && (
-                    <p className="text-gray-500">No mental specialist plans assigned for today.</p>
-                  )}
-                </div>
-              </div>
+          {/* Filter Buttons */}
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setStatusFilter('all')}
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  statusFilter === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All Assessments
+              </button>
+              <button
+                onClick={() => setStatusFilter('scheduled')}
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  statusFilter === 'scheduled'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Scheduled
+              </button>
+              <button
+                onClick={() => setStatusFilter('not_started')}
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  statusFilter === 'not_started'
+                    ? 'bg-gray-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Not Started
+              </button>
+              <button
+                onClick={() => setStatusFilter('started')}
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  statusFilter === 'started'
+                    ? 'bg-yellow-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Started
+              </button>
+              <button
+                onClick={() => setStatusFilter('in_progress')}
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  statusFilter === 'in_progress'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                In Progress
+              </button>
+              <button
+                onClick={() => setStatusFilter('urgent')}
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  statusFilter === 'urgent'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Urgent
+              </button>
             </div>
-          )}
+          </div>
 
-          {/* Assessment Plans Tab */}
-          {activeTab === 'assessments' && (
-            <div className="space-y-8">
-              <div className="mt-4">
-                <h3 className="text-xl font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                  <ClipboardList size={20} className="text-blue-600" />
-                  Mental Health Assessment Plans
-                </h3>
-                <div className="space-y-3">
-                  {assessmentPlans.map(assessment => (
-                    <div
-                      key={assessment.id}
-                      className={`flex flex-col md:flex-row md:items-center md:justify-between p-4 border rounded-md ${
-                        assessment.status === 'completed'
-                          ? 'bg-green-50 border-green-200'
-                          : assessment.status === 'in-progress'
-                          ? 'bg-yellow-50 border-yellow-200'
-                          : 'bg-gray-50 border-gray-200'
-                      }`}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="font-medium text-blue-700">{assessment.assessment}</div>
-                          <span className={`px-2 py-1 text-xs rounded-full font-medium ${getPriorityColor(assessment.priority)}`}>
-                            {assessment.priority} priority
-                          </span>
-                        </div>
-                        <div className="text-gray-600 text-sm mb-2">
-                          {getAssessmentDescription(assessment.type)}
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <FileText size={14} />
-                            Elder: {assessment.elderName}
-                          </div>
-                          <div>Scheduled: {assessment.date}</div>
-                          <span className="inline-block px-2 py-0.5 rounded bg-opacity-30 font-medium capitalize">
-                            {assessment.status}
-                          </span>
-                        </div>
-                      </div>
-                      {assessment.status !== 'completed' && (
-                        <button
-                          onClick={() => handleAssessmentAction(assessment.id)}
-                          className="mt-3 md:mt-0 md:ml-4 bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded text-xs font-semibold shadow flex items-center gap-2"
-                        >
-                          <CheckCircle2 size={16} />
-                          {assessment.status === 'in-progress' ? 'Complete Assessment' : 'Start Assessment'}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  {assessmentPlans.length === 0 && (
-                    <p className="text-gray-500">No mental health assessments scheduled.</p>
-                  )}
-                </div>
-              </div>
+          {/* Assessments List */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                <ClipboardList size={24} className="text-blue-600" />
+                Mental Health Assessments
+              </h2>
             </div>
-          )}
+
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader className="animate-spin text-blue-600" size={48} />
+              </div>
+            ) : assessments.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <ClipboardList size={48} className="mx-auto mb-4 text-gray-300" />
+                <p>No assessments found for the selected filter.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {assessments.map((assessment) => (
+                  <div
+                    key={assessment.id}
+                    className="p-6 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                      {/* Assessment Info */}
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-start gap-3">
+                          {getAssessmentTypeIcon(assessment.assessmentType)}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-lg font-semibold text-gray-800">
+                                {assessment.assessmentType || 'Mental Health Assessment'}
+                              </h3>
+                              <span className={`px-2 py-1 text-xs rounded-full border font-medium ${getStatusBadgeColor(assessment.status)}`}>
+                                {assessment.status?.replace('_', ' ').toUpperCase()}
+                              </span>
+                              {assessment.priority === 'urgent' && (
+                                <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 border border-red-200 font-medium">
+                                  URGENT
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">
+                              {assessment.recommendations || 'Comprehensive mental health evaluation'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Elder and Specialist Info */}
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <User size={16} />
+                            <span>Elder: {assessment.Elder?.firstName} {assessment.Elder?.lastName}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Brain size={16} />
+                            <span>Specialist: {assessment.Specialist?.firstName} {assessment.Specialist?.lastName}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar size={16} />
+                            <span>Scheduled: {formatDate(assessment.scheduledDate)}</span>
+                          </div>
+                          {assessment.completedDate && (
+                            <div className="flex items-center gap-1">
+                              <CheckCircle2 size={16} className="text-green-600" />
+                              <span>Completed: {formatDate(assessment.completedDate)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Findings/Notes */}
+                        {assessment.findings && (
+                          <div className="mt-2 p-3 bg-gray-50 rounded border border-gray-200">
+                            <div className="text-xs font-medium text-gray-700 mb-1">Notes:</div>
+                            <div className="text-sm text-gray-600 whitespace-pre-wrap">
+                              {assessment.findings}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="lg:ml-4">
+                        {getStatusButton(assessment)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Completion Notes Modal */}
+      {showNotesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Complete Assessment
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Add any final notes or observations before completing this assessment:
+            </p>
+            <textarea
+              value={completionNotes}
+              onChange={(e) => setCompletionNotes(e.target.value)}
+              className="w-full border border-gray-300 rounded p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="5"
+              placeholder="Enter completion notes (optional)..."
+            />
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowNotesModal(false);
+                  setCompletionNotes('');
+                  setSelectedAssessment(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                disabled={updating}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCompleteWithNotes}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={updating}
+              >
+                {updating ? (
+                  <>
+                    <Loader className="animate-spin inline mr-2" size={16} />
+                    Completing...
+                  </>
+                ) : (
+                  'Complete Assessment'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </RoleLayout>
   );
 };

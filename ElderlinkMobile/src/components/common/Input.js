@@ -116,9 +116,9 @@ const styles = StyleSheet.create({
   },
   
   label: {
-    fontSize: 18,
+    fontSize: 14,
     fontFamily: 'OpenSans-SemiBold',
-    color: COLORS.text,
+    color: COLORS.textPrimary,
     marginBottom: 8,
   },
   
@@ -130,23 +130,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: COLORS.gray300,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    minHeight: 56,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    minHeight: 48,
   },
   
   focused: {
     borderColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: COLORS.white,
   },
   
   error: {
@@ -154,22 +147,22 @@ const styles = StyleSheet.create({
   },
   
   disabled: {
-    backgroundColor: COLORS.gray100,
+    backgroundColor: COLORS.gray50,
     borderColor: COLORS.gray200,
   },
   
   input: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
-    color: COLORS.text,
-    paddingVertical: 16,
+    color: COLORS.textPrimary,
+    paddingVertical: 12,
   },
   
   multilineInput: {
-    minHeight: 120,
+    minHeight: 100,
     textAlignVertical: 'top',
-    paddingTop: 16,
+    paddingTop: 14,
   },
   
   disabledInput: {
@@ -177,23 +170,23 @@ const styles = StyleSheet.create({
   },
   
   leftIcon: {
-    marginRight: 12,
+    marginRight: 10,
   },
   
   rightIcon: {
-    marginLeft: 12,
+    marginLeft: 10,
   },
   
   passwordToggle: {
-    marginLeft: 12,
+    marginLeft: 10,
     padding: 4,
   },
   
   errorText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.error,
-    marginTop: 8,
+    marginTop: 6,
   },
 });
 

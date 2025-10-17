@@ -1,5 +1,5 @@
 // backend/controllers/authController.js (Make sure exports are correct)
-const { User } = require('../models');
+const { User, Elder, Subscription } = require('../models');
 const { generateToken } = require('../config/jwt');
 
 const register = async (req, res) => {
@@ -100,7 +100,8 @@ const login = async (req, res) => {
 
     console.log('✅ Login successful for:', user.email, '- Role:', user.role);
 
-    res.json({
+    // Prepare response data
+    const responseData = {
       success: true,
       message: 'Login successful',
       user: {
@@ -112,7 +113,37 @@ const login = async (req, res) => {
         role: user.role
       },
       token
-    });
+    };
+
+    // If user is an elder, fetch their elder profile
+    if (user.role === 'elder') {
+      console.log('👴 User is an elder, fetching elder profile...');
+      
+      const elder = await Elder.findOne({
+        where: { userId: user.id },
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'isActive']
+          },
+          {
+            model: Subscription,
+            as: 'subscription',
+            attributes: ['id', 'plan', 'status', 'startDate', 'endDate']
+          }
+        ]
+      });
+
+      if (elder) {
+        console.log('✅ Elder profile found:', elder.id);
+        responseData.elder = elder;
+      } else {
+        console.log('⚠️ No elder profile found for elder user');
+      }
+    }
+
+    res.json(responseData);
   } catch (error) {
     console.error('❌ Login error:', error);
     res.status(500).json({ 

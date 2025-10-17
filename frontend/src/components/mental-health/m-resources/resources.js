@@ -1,205 +1,117 @@
+// frontend/src/components/mental-health/resources/resources.js
 import React, { useState, useEffect } from "react";
 import {
-  Heart,
-  Book,
-  Video,
-  Download,
+  BookOpen,
+  Plus,
   Search,
   Filter,
-  Plus,
+  Download,
+  Star,
   Eye,
-  BookOpen,
-  Play,
   FileText,
-  Link,
-  Globe,
-  Phone,
-  Upload,
+  Video,
+  Headphones,
+  Image as ImageIcon,
 } from "lucide-react";
-import RoleLayout from "../../common/RoleLayout"; // Add this import for sidebar layout
+import RoleLayout from "../../common/RoleLayout";
+import mentalHealthService from "../../../services/mentalHealthService";
+import toast from "react-hot-toast";
 
 const MentalHealthResources = () => {
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [showAddResourceModal, setShowAddResourceModal] = useState(false);
-
-  // Mock data
-  const mockResources = [
-    {
-      id: 1,
-      title: "Cognitive Behavioral Therapy Workbook",
-      category: "workbook",
-      description:
-        "Comprehensive workbook for CBT techniques and exercises for anxiety and depression management.",
-      type: "PDF Document",
-      size: "2.5 MB",
-      downloadCount: 245,
-      lastUpdated: "2025-01-08",
-      tags: ["CBT", "Anxiety", "Depression", "Self-help"],
-      targetAudience: "Clients with anxiety and depression",
-      difficulty: "Beginner",
-      estimatedTime: "2-3 weeks",
-      author: "Dr. Sarah Mitchell",
-      rating: 4.8,
-      featured: true,
-    },
-    {
-      id: 2,
-      title: "Mindfulness Meditation for Seniors",
-      category: "video",
-      description:
-        "Guided meditation sessions specifically designed for elderly clients to reduce stress and improve mental wellbeing.",
-      type: "Video Series",
-      duration: "45 minutes",
-      downloadCount: 189,
-      lastUpdated: "2025-01-05",
-      tags: ["Mindfulness", "Meditation", "Stress Relief", "Seniors"],
-      targetAudience: "Elderly clients",
-      difficulty: "Beginner",
-      estimatedTime: "Daily practice",
-      author: "Mindfulness Institute",
-      rating: 4.9,
-      featured: true,
-    },
-    {
-      id: 3,
-      title: "Crisis Intervention Guidelines",
-      category: "guideline",
-      description:
-        "Professional guidelines for handling mental health crises and emergency interventions.",
-      type: "Professional Guide",
-      size: "1.8 MB",
-      downloadCount: 156,
-      lastUpdated: "2025-01-10",
-      tags: ["Crisis", "Emergency", "Professional", "Safety"],
-      targetAudience: "Mental health professionals",
-      difficulty: "Advanced",
-      estimatedTime: "2 hours",
-      author: "Mental Health Association",
-      rating: 4.7,
-      featured: false,
-    },
-    {
-      id: 4,
-      title: "Social Isolation Recovery Program",
-      category: "program",
-      description:
-        "Structured program to help elderly clients overcome social isolation and build meaningful connections.",
-      type: "Program Guide",
-      size: "3.2 MB",
-      downloadCount: 98,
-      lastUpdated: "2025-01-03",
-      tags: ["Social Isolation", "Community", "Elderly", "Support"],
-      targetAudience: "Isolated elderly clients",
-      difficulty: "Intermediate",
-      estimatedTime: "8-12 weeks",
-      author: "Elder Care Network",
-      rating: 4.6,
-      featured: false,
-    },
-    {
-      id: 5,
-      title: "Family Support Toolkit",
-      category: "toolkit",
-      description:
-        "Resources and tools for family members to better support their elderly relatives with mental health challenges.",
-      type: "Toolkit",
-      size: "4.1 MB",
-      downloadCount: 213,
-      lastUpdated: "2024-12-28",
-      tags: ["Family", "Support", "Education", "Caregiving"],
-      targetAudience: "Family members and caregivers",
-      difficulty: "Beginner",
-      estimatedTime: "1-2 weeks",
-      author: "Family Care Institute",
-      rating: 4.5,
-      featured: true,
-    },
-    {
-      id: 6,
-      title: "PTSD Treatment Resources",
-      category: "clinical",
-      description:
-        "Evidence-based treatment resources and protocols for PTSD in elderly populations.",
-      type: "Clinical Guide",
-      size: "2.9 MB",
-      downloadCount: 134,
-      lastUpdated: "2025-01-07",
-      tags: ["PTSD", "Trauma", "Treatment", "Evidence-based"],
-      targetAudience: "Mental health professionals",
-      difficulty: "Advanced",
-      estimatedTime: "4-6 hours",
-      author: "PTSD Research Center",
-      rating: 4.8,
-      featured: false,
-    },
-  ];
-
-  const categories = [
-    { value: "all", label: "All Resources", icon: Heart },
-    { value: "workbook", label: "Workbooks", icon: Book },
-    { value: "video", label: "Videos", icon: Video },
-    { value: "guideline", label: "Guidelines", icon: FileText },
-    { value: "program", label: "Programs", icon: BookOpen },
-    { value: "toolkit", label: "Toolkits", icon: Download },
-    { value: "clinical", label: "Clinical Resources", icon: Heart },
-  ];
-
-  const emergencyContacts = [
-    {
-      name: "National Suicide Prevention Lifeline",
-      phone: "988",
-      description: "24/7 crisis support",
-      type: "Crisis Hotline",
-    },
-    {
-      name: "Crisis Text Line",
-      phone: "Text HOME to 741741",
-      description: "Text-based crisis support",
-      type: "Text Support",
-    },
-    {
-      name: "Elder Abuse Hotline",
-      phone: "1-800-677-1116",
-      description: "Elder abuse reporting and support",
-      type: "Elder Support",
-    },
-    {
-      name: "SAMHSA National Helpline",
-      phone: "1-800-662-4357",
-      description: "Mental health and substance abuse",
-      type: "General Support",
-    },
-  ];
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => {
-      setResources(mockResources);
+    loadResources();
+  }, [selectedCategory]);
+
+  const loadResources = async () => {
+    try {
+      setLoading(true);
+      const filters =
+        selectedCategory !== "all" ? { category: selectedCategory } : {};
+      const response = await mentalHealthService.getAllResources(filters);
+      setResources(response.resources || []);
+    } catch (error) {
+      console.error("Error loading resources:", error);
+      toast.error("Failed to load resources");
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
+
+  const handleUploadResource = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    try {
+      await mentalHealthService.createResource({
+        title: formData.get("title"),
+        category: formData.get("category"),
+        description: formData.get("description"),
+        resourceType: formData.get("resourceType"),
+        fileSize: "2.5 MB", // In production, calculate from actual file
+        tags: formData
+          .get("tags")
+          .split(",")
+          .map((tag) => tag.trim()),
+        targetAudience: formData.get("targetAudience"),
+        difficulty: formData.get("difficulty"),
+        estimatedTime: formData.get("estimatedTime"),
+        author: formData.get("author"),
+        featured: false,
+      });
+
+      toast.success("Resource uploaded successfully!");
+      setShowUploadModal(false);
+      loadResources();
+    } catch (error) {
+      console.error("Error uploading resource:", error);
+      toast.error("Failed to upload resource");
+    }
+  };
+
+  const handleDownload = async (resourceId) => {
+    try {
+      await mentalHealthService.incrementDownloadCount(resourceId);
+      toast.success("Download started");
+      loadResources();
+    } catch (error) {
+      console.error("Error downloading resource:", error);
+      toast.error("Failed to download resource");
+    }
+  };
 
   const filteredResources = resources.filter((resource) => {
-    const matchesSearch =
-      resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      resource.tags.some((tag) =>
-        tag.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    const title = resource.title.toLowerCase();
+    const description = resource.description?.toLowerCase() || "";
+    const tags = resource.tags?.join(" ").toLowerCase() || "";
 
-    const matchesCategory =
-      selectedCategory === "all" || resource.category === selectedCategory;
-
-    return matchesSearch && matchesCategory;
+    return (
+      title.includes(searchTerm.toLowerCase()) ||
+      description.includes(searchTerm.toLowerCase()) ||
+      tags.includes(searchTerm.toLowerCase())
+    );
   });
 
-  const featuredResources = resources.filter((resource) => resource.featured);
-
   const getCategoryIcon = (category) => {
-    const categoryObj = categories.find((cat) => cat.value === category);
-    return categoryObj ? categoryObj.icon : FileText;
+    switch (category) {
+      case "workbook":
+        return <FileText className="w-5 h-5" />;
+      case "video":
+        return <Video className="w-5 h-5" />;
+      case "audio":
+        return <Headphones className="w-5 h-5" />;
+      case "guide":
+        return <BookOpen className="w-5 h-5" />;
+      case "image":
+        return <ImageIcon className="w-5 h-5" />;
+      default:
+        return <FileText className="w-5 h-5" />;
+    }
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -209,6 +121,8 @@ const MentalHealthResources = () => {
       case "Intermediate":
         return "bg-yellow-100 text-yellow-800";
       case "Advanced":
+        return "bg-orange-100 text-orange-800";
+      case "Expert":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -220,7 +134,7 @@ const MentalHealthResources = () => {
       <RoleLayout active="resources">
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
-            <Heart className="w-8 h-8 text-purple-500 animate-pulse mx-auto mb-4" />
+            <BookOpen className="w-8 h-8 text-purple-500 animate-pulse mx-auto mb-4" />
             <p className="text-gray-600">Loading resources...</p>
           </div>
         </div>
@@ -239,51 +153,18 @@ const MentalHealthResources = () => {
                 Mental Health Resources
               </h1>
               <p className="text-gray-600">
-                Access educational materials, tools, and support resources
+                Educational materials and tools for mental wellness
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <button
-                onClick={() => setShowAddResourceModal(true)}
+                onClick={() => setShowUploadModal(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Add Resource
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <Download className="w-4 h-4" />
-                Download All
+                Upload Resource
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* Emergency Contacts */}
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Phone className="w-6 h-6 text-red-600" />
-            <h2 className="text-lg font-semibold text-red-900">
-              Emergency Contacts
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {emergencyContacts.map((contact, index) => (
-              <div
-                key={index}
-                className="bg-white p-4 rounded-lg border border-red-200"
-              >
-                <h3 className="font-semibold text-gray-900 mb-1">
-                  {contact.name}
-                </h3>
-                <p className="text-red-600 font-bold mb-1">{contact.phone}</p>
-                <p className="text-sm text-gray-600 mb-1">
-                  {contact.description}
-                </p>
-                <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                  {contact.type}
-                </span>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -292,7 +173,7 @@ const MentalHealthResources = () => {
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Heart className="w-6 h-6 text-purple-600" />
+                <BookOpen className="w-6 h-6 text-purple-600" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">
@@ -304,6 +185,7 @@ const MentalHealthResources = () => {
               </div>
             </div>
           </div>
+
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -314,40 +196,52 @@ const MentalHealthResources = () => {
                   Total Downloads
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {resources.reduce((sum, r) => sum + r.downloadCount, 0)}
+                  {resources.reduce(
+                    (sum, r) => sum + (r.downloadCount || 0),
+                    0
+                  )}
                 </p>
               </div>
             </div>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Featured</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {featuredResources.length}
-                </p>
-              </div>
-            </div>
-          </div>
+
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <FileText className="w-6 h-6 text-yellow-600" />
+                <Star className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Avg Rating</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {resources.length > 0
+                    ? (
+                        resources.reduce(
+                          (sum, r) => sum + (Number(r.rating) || 0),
+                          0
+                        ) / resources.length
+                      ).toFixed(1)
+                    : "0.0"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <FileText className="w-6 h-6 text-green-600" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Categories</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {categories.length - 1}
+                  {new Set(resources.map((r) => r.category)).size}
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Search and Filters */}
+        {/* Filters and Search */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
@@ -368,11 +262,12 @@ const MentalHealthResources = () => {
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
-                {categories.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
+                <option value="all">All Categories</option>
+                <option value="workbook">Workbooks</option>
+                <option value="video">Videos</option>
+                <option value="audio">Audio</option>
+                <option value="guide">Guides</option>
+                <option value="worksheet">Worksheets</option>
               </select>
               <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                 <Filter className="w-4 h-4" />
@@ -382,38 +277,50 @@ const MentalHealthResources = () => {
           </div>
         </div>
 
-        {/* Featured Resources */}
-        {featuredResources.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Featured Resources
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredResources.map((resource) => {
-                const IconComponent = getCategoryIcon(resource.category);
-                return (
-                  <div
-                    key={resource.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <IconComponent className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-1">
-                          {resource.title}
-                        </h3>
-                        <p className="text-sm text-gray-600">{resource.type}</p>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-yellow-600">
-                        ⭐ {resource.rating}
-                      </div>
+        {/* Resources Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredResources.length > 0 ? (
+            filteredResources.map((resource) => (
+              <div
+                key={resource.id}
+                className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+              >
+                {/* Resource Header */}
+                <div className="bg-gradient-to-br from-purple-500 to-blue-600 p-6 text-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                      {getCategoryIcon(resource.category)}
                     </div>
-                    <p className="text-sm text-gray-700 mb-3 line-clamp-2">
-                      {resource.description}
-                    </p>
-                    <div className="flex items-center justify-between">
+                    {resource.featured && (
+                      <span className="px-2 py-1 bg-yellow-400 text-yellow-900 text-xs font-medium rounded-full">
+                        Featured
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    {resource.title}
+                  </h3>
+                  <p className="text-sm text-purple-100 capitalize">
+                    {resource.category}
+                  </p>
+                </div>
+
+                {/* Resource Body */}
+                <div className="p-6">
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                    {resource.description}
+                  </p>
+
+                  {/* Meta Info */}
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Type:</span>
+                      <span className="text-gray-900 font-medium">
+                        {resource.resourceType}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Difficulty:</span>
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(
                           resource.difficulty
@@ -421,148 +328,141 @@ const MentalHealthResources = () => {
                       >
                         {resource.difficulty}
                       </span>
-                      <div className="flex gap-2">
-                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="p-1 text-green-600 hover:bg-green-50 rounded">
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Time:</span>
+                      <span className="text-gray-900">
+                        {resource.estimatedTime}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Downloads:</span>
+                      <span className="text-gray-900">
+                        {resource.downloadCount || 0}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
-        {/* All Resources */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">
-              All Resources
-            </h2>
-          </div>
-          <div className="divide-y divide-gray-200">
-            {filteredResources.map((resource) => {
-              const IconComponent = getCategoryIcon(resource.category);
-              return (
-                <div
-                  key={resource.id}
-                  className="p-6 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <IconComponent className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                            {resource.title}
-                          </h3>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                            <span>{resource.type}</span>
-                            <span>{resource.size || resource.duration}</span>
-                            <span>{resource.downloadCount} downloads</span>
-                            <div className="flex items-center gap-1 text-yellow-600">
-                              ⭐ {resource.rating}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                            <Eye className="w-5 h-5" />
-                          </button>
-                          <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                            <Download className="w-5 h-5" />
-                          </button>
-                          <button className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                            <Link className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-gray-700 mb-3">
-                        {resource.description}
-                      </p>
-                      <div className="flex items-center gap-4 mb-3">
+                  {/* Rating */}
+                  <div className="flex items-center gap-1 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i < Math.floor(Number(resource.rating) || 0)
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    ))}
+                    <span className="text-sm text-gray-600 ml-2">
+                      {(Number(resource.rating) || 0).toFixed(1)}
+                    </span>
+                  </div>
+
+                  {/* Tags */}
+                  {resource.tags && resource.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {resource.tags.slice(0, 3).map((tag, index) => (
                         <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(
-                            resource.difficulty
-                          )}`}
+                          key={index}
+                          className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
                         >
-                          {resource.difficulty}
+                          {tag}
                         </span>
-                        <span className="text-sm text-gray-600">
-                          Target: {resource.targetAudience}
-                        </span>
-                        <span className="text-sm text-gray-600">
-                          Duration: {resource.estimatedTime}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {resource.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex items-center justify-between text-sm text-gray-500">
-                        <span>By {resource.author}</span>
-                        <span>Updated: {resource.lastUpdated}</span>
-                      </div>
+                      ))}
                     </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleDownload(resource.id)}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download
+                    </button>
+                    <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                      <Eye className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full bg-white rounded-lg shadow-sm p-16 text-center">
+              <BookOpen className="w-24 h-24 text-gray-300 mx-auto mb-6" />
+              <h2 className="text-2xl font-bold text-gray-600 mb-4">
+                No Resources Found
+              </h2>
+              <p className="text-gray-500 mb-8">
+                Try adjusting your search or filters.
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Add Resource Modal */}
-        {showAddResourceModal && (
+        {/* Upload Modal */}
+        {showUploadModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900">
-                  Add New Resource
+                  Upload New Resource
                 </h2>
                 <button
-                  onClick={() => setShowAddResourceModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowUploadModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
                 >
                   ×
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Resource Title
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="Enter resource title"
-                    />
-                  </div>
+              <form onSubmit={handleUploadResource} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    placeholder="e.g., Cognitive Behavioral Therapy Workbook"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  />
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Category
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                      {categories.slice(1).map((category) => (
-                        <option key={category.value} value={category.value}>
-                          {category.label}
-                        </option>
-                      ))}
+                    <select
+                      name="category"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Select category</option>
+                      <option value="workbook">Workbook</option>
+                      <option value="video">Video</option>
+                      <option value="audio">Audio</option>
+                      <option value="guide">Guide</option>
+                      <option value="worksheet">Worksheet</option>
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Resource Type
+                    </label>
+                    <input
+                      type="text"
+                      name="resourceType"
+                      placeholder="e.g., PDF Document"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    />
                   </div>
                 </div>
 
@@ -571,35 +471,28 @@ const MentalHealthResources = () => {
                     Description
                   </label>
                   <textarea
+                    name="description"
                     rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Describe the resource and its purpose..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
                   ></textarea>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Resource Type
+                      Difficulty
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                      <option value="pdf">PDF Document</option>
-                      <option value="video">Video</option>
-                      <option value="audio">Audio</option>
-                      <option value="guide">Guide</option>
-                      <option value="toolkit">Toolkit</option>
-                      <option value="workbook">Workbook</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Difficulty Level
-                    </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <select
+                      name="difficulty"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
                       <option value="Beginner">Beginner</option>
                       <option value="Intermediate">Intermediate</option>
                       <option value="Advanced">Advanced</option>
+                      <option value="Expert">Expert</option>
                     </select>
                   </div>
 
@@ -609,8 +502,23 @@ const MentalHealthResources = () => {
                     </label>
                     <input
                       type="text"
+                      name="estimatedTime"
+                      placeholder="e.g., 2-3 weeks"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="e.g., 2 weeks, 30 minutes"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Author
+                    </label>
+                    <input
+                      type="text"
+                      name="author"
+                      placeholder="Author name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
                     />
                   </div>
                 </div>
@@ -622,72 +530,43 @@ const MentalHealthResources = () => {
                     </label>
                     <input
                       type="text"
+                      name="targetAudience"
+                      placeholder="e.g., Clients with anxiety"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="e.g., Elderly clients, Professionals"
+                      required
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Author
+                      Tags (comma-separated)
                     </label>
                     <input
                       type="text"
+                      name="tags"
+                      placeholder="e.g., CBT, Anxiety, Depression"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="Resource author or organization"
+                      required
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tags (comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="e.g., CBT, Anxiety, Depression, Self-help"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload File
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">
-                      Click to upload or drag and drop your file here
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      PDF, DOC, MP4, MP3 files up to 10MB
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="featured"
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                  />
-                  <label htmlFor="featured" className="text-sm text-gray-700">
-                    Mark as featured resource
-                  </label>
-                </div>
-
                 <div className="flex justify-end gap-3 pt-4">
                   <button
-                    onClick={() => setShowAddResourceModal(false)}
+                    type="button"
+                    onClick={() => setShowUploadModal(false)}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     Cancel
                   </button>
-                  <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                    Add Resource
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Upload Resource
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         )}

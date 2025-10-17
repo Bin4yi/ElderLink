@@ -82,23 +82,22 @@ const LoginScreen = ({ navigation }) => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>ElderCare</Text>
-            <Text style={styles.tagline}>Your health, our priority</Text>
+            <Image
+              source={require('../../../assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.logoText}>ElderLink</Text>
           </View>
         </View>
 
         {/* Form Container */}
         <View style={styles.formContainer}>
-          <Text style={styles.welcomeText}>Welcome Back</Text>
-          <Text style={styles.subtitleText}>
-            Sign in to access your health dashboard and stay connected with your care team.
-          </Text>
-
           {errorMessage && (
             <Alert
               type="error"
@@ -136,6 +135,15 @@ const LoginScreen = ({ navigation }) => {
             required
           />
 
+          {/* Forgot Password Link */}
+          <Button
+            title="Forgot password?"
+            onPress={navigateToForgotPassword}
+            variant="ghost"
+            size="medium"
+            style={styles.forgotButton}
+          />
+
           {/* Login Button */}
           <Button
             title="Sign In"
@@ -146,23 +154,6 @@ const LoginScreen = ({ navigation }) => {
             disabled={isLoading}
             style={styles.loginButton}
           />
-
-          {/* Forgot Password Link */}
-          <Button
-            title="Forgot your password?"
-            onPress={navigateToForgotPassword}
-            variant="ghost"
-            size="medium"
-            style={styles.forgotButton}
-          />
-        </View>
-
-        {/* Help Section */}
-        <View style={styles.helpSection}>
-          <Text style={styles.helpTitle}>Need Help?</Text>
-          <Text style={styles.helpText}>
-            If you're having trouble signing in, please contact your family member or care coordinator for assistance.
-          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -177,96 +168,51 @@ const styles = StyleSheet.create({
   
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 40,
   },
   
   header: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 60,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    paddingTop: 80,
+    paddingBottom: 64,
+    paddingHorizontal: 24,
   },
   
   logoContainer: {
     alignItems: 'center',
   },
   
-  logoText: {
-    fontSize: 48,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
-    color: COLORS.white,
-    marginBottom: 8,
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
   },
   
-  tagline: {
-    fontSize: 18,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.white,
-    opacity: 0.9,
+  logoText: {
+    fontSize: 32,
+    fontFamily: 'OpenSans-Bold',
+    color: COLORS.textPrimary,
+    letterSpacing: -0.5,
   },
   
   formContainer: {
     flex: 1,
-    paddingHorizontal: 30,
-    paddingTop: 40,
-  },
-  
-  welcomeText: {
-    fontSize: 32,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  
-  subtitleText: {
-    fontSize: 18,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: 40,
-    lineHeight: 24,
+    paddingHorizontal: 24,
+    paddingTop: 48,
   },
   
   errorAlert: {
-    marginBottom: 20,
-  },
-  
-  loginButton: {
-    marginTop: 20,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   
   forgotButton: {
+    alignSelf: 'flex-end',
     marginTop: 8,
+    marginBottom: 32,
   },
   
-  helpSection: {
-    backgroundColor: COLORS.gray50,
-    margin: 20,
-    padding: 20,
-    borderRadius: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.info,
-  },
-  
-  helpTitle: {
-    fontSize: 20,
-    fontFamily: 'OpenSans-SemiBold',
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  
-  helpText: {
-    fontSize: 16,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-    lineHeight: 22,
+  loginButton: {
+    marginBottom: 24,
   },
 });
 
