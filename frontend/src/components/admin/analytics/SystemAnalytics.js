@@ -12,6 +12,8 @@ import {
   BarChart3,
   PieChart,
   RefreshCw,
+  Download,
+  FileText,
 } from "lucide-react";
 import {
   BarChart,
@@ -28,6 +30,7 @@ import {
 } from "recharts";
 import adminAnalyticsService from "../../../services/adminAnalyticsService";
 import toast from "react-hot-toast";
+import generateAnalyticsPDF from "../../../utils/generateAnalyticsPDF";
 
 const SystemAnalytics = () => {
   const [loading, setLoading] = useState(true);
@@ -131,6 +134,36 @@ const SystemAnalytics = () => {
     toast.success("Analytics data refreshed");
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      // Check if we have data
+      if (!overview && !userStats && !subscriptionStats && !revenueStats) {
+        toast.error(
+          "No data available to generate report. Please wait for data to load."
+        );
+        return;
+      }
+
+      toast.loading("Generating PDF report...", { id: "pdf-generation" });
+
+      // Prepare data for PDF
+      const pdfData = {
+        overview,
+        userStats,
+        subscriptionStats,
+        revenueStats,
+      };
+
+      // Generate PDF
+      const filename = generateAnalyticsPDF(pdfData);
+
+      toast.success(`Report downloaded: ${filename}`, { id: "pdf-generation" });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF report", { id: "pdf-generation" });
+    }
+  };
+
   if (loading) {
     return (
       <RoleLayout title="System Analytics">
@@ -152,16 +185,27 @@ const SystemAnalytics = () => {
           <h2 className="text-2xl font-bold text-gray-800">
             System Analytics & Reports
           </h2>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={handleDownloadPDF}
+              disabled={refreshing || loading}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+              title="Download PDF Report"
+            >
+              <Download className="w-4 h-4" />
+              Export PDF
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}
