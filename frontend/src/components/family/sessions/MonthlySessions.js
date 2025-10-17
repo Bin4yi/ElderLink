@@ -36,6 +36,14 @@ const MonthlySessions = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [sessionTimer, setSessionTimer] = useState({});
   const [activeTimers, setActiveTimers] = useState({});
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    month: '',
+    doctor: '',
+    status: '',
+    elder: ''
+  });
 
   useEffect(() => {
     fetchSessions();
@@ -176,6 +184,76 @@ const MonthlySessions = () => {
   const getTypeColor = (type) => {
     // All sessions are health type now, so return green
     return 'text-green-600 bg-green-100';
+  };
+
+  // Get unique values for filters
+  const getUniqueMonths = () => {
+    const months = new Set();
+    sessions.forEach(session => {
+      const date = new Date(session.date);
+      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      months.add(monthYear);
+    });
+    return Array.from(months).sort().reverse();
+  };
+
+  const getUniqueDoctors = () => {
+    const doctors = new Map();
+    sessions.forEach(session => {
+      if (session.doctor) {
+        doctors.set(session.doctor.id, session.doctor.name);
+      }
+    });
+    return Array.from(doctors.entries());
+  };
+
+  const getUniqueElders = () => {
+    const elders = new Set();
+    sessions.forEach(session => {
+      if (session.elder && session.elder.name !== 'Unknown') {
+        elders.add(session.elder.name);
+      }
+    });
+    return Array.from(elders).sort();
+  };
+
+  // Filter sessions based on selected filters
+  const getFilteredSessions = () => {
+    return sessions.filter(session => {
+      // Month filter
+      if (filters.month) {
+        const sessionDate = new Date(session.date);
+        const sessionMonth = `${sessionDate.getFullYear()}-${String(sessionDate.getMonth() + 1).padStart(2, '0')}`;
+        if (sessionMonth !== filters.month) return false;
+      }
+
+      // Doctor filter
+      if (filters.doctor && session.doctor) {
+        if (session.doctor.id !== filters.doctor) return false;
+      }
+
+      // Status filter
+      if (filters.status && session.status !== filters.status) {
+        return false;
+      }
+
+      // Elder filter
+      if (filters.elder && session.elder) {
+        if (session.elder.name !== filters.elder) return false;
+      }
+
+      return true;
+    });
+  };
+
+  // Reset filters
+  const resetFilters = () => {
+    setFilters({
+      month: '',
+      doctor: '',
+      status: '',
+      elder: ''
+    });
   };
 
   // Calendar functionality
@@ -436,13 +514,146 @@ const MonthlySessions = () => {
               className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
               <Plus className="w-5 h-5" />
-              Auto-Schedule Sessions
+              Schedule New Session
             </button>
           </div>
         </div>
 
+        {/* Filters Section */}
+        {sessions.length > 0 && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                Filter Sessions
+              </h3>
+              <button
+                onClick={resetFilters}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reset Filters
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Month Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Month
+                </label>
+                <select
+                  value={filters.month}
+                  onChange={(e) => setFilters({ ...filters, month: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="">All Months</option>
+                  {getUniqueMonths().map(month => {
+                    const [year, monthNum] = month.split('-');
+                    const monthName = new Date(year, parseInt(monthNum) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                    return (
+                      <option key={month} value={month}>{monthName}</option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Doctor Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Doctor
+                </label>
+                <select
+                  value={filters.doctor}
+                  onChange={(e) => setFilters({ ...filters, doctor: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="">All Doctors</option>
+                  {getUniqueDoctors().map(([id, name]) => (
+                    <option key={id} value={id}>{name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Status
+                </label>
+                <select
+                  value={filters.status}
+                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="scheduled">Scheduled</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              {/* Elder Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Elder
+                </label>
+                <select
+                  value={filters.elder}
+                  onChange={(e) => setFilters({ ...filters, elder: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="">All Elders</option>
+                  {getUniqueElders().map(elder => (
+                    <option key={elder} value={elder}>{elder}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Active Filters Display */}
+            {(filters.month || filters.doctor || filters.status || filters.elder) && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+                  {filters.month && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(filters.month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      <button onClick={() => setFilters({ ...filters, month: '' })} className="ml-1 hover:text-blue-900">✕</button>
+                    </span>
+                  )}
+                  {filters.doctor && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                      <User className="w-3 h-3" />
+                      {getUniqueDoctors().find(([id]) => id === filters.doctor)?.[1]}
+                      <button onClick={() => setFilters({ ...filters, doctor: '' })} className="ml-1 hover:text-green-900">✕</button>
+                    </span>
+                  )}
+                  {filters.status && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm capitalize">
+                      <Activity className="w-3 h-3" />
+                      {filters.status.replace('-', ' ')}
+                      <button onClick={() => setFilters({ ...filters, status: '' })} className="ml-1 hover:text-purple-900">✕</button>
+                    </span>
+                  )}
+                  {filters.elder && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
+                      <User className="w-3 h-3" />
+                      {filters.elder}
+                      <button onClick={() => setFilters({ ...filters, elder: '' })} className="ml-1 hover:text-amber-900">✕</button>
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">`
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
               <div className="p-3 bg-green-100 rounded-lg">
@@ -451,7 +662,7 @@ const MonthlySessions = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Completed</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {sessions.filter(s => s.status === 'completed').length}
+                  {getFilteredSessions().filter(s => s.status === 'completed').length}
                 </p>
               </div>
             </div>
@@ -465,7 +676,7 @@ const MonthlySessions = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Scheduled</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {sessions.filter(s => s.status === 'scheduled').length}
+                  {getFilteredSessions().filter(s => s.status === 'scheduled').length}
                 </p>
               </div>
             </div>
@@ -510,7 +721,14 @@ const MonthlySessions = () => {
           {/* Sessions List */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900">Recent Sessions</h2>
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  {(filters.month || filters.doctor || filters.status || filters.elder) ? 'Filtered' : 'Recent'} Sessions
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Showing {getFilteredSessions().length} of {sessions.length} sessions
+                </p>
+              </div>
               <div className="flex space-x-3">
                 <button 
                   onClick={fetchSessions}
@@ -524,7 +742,26 @@ const MonthlySessions = () => {
             </div>
 
             <div className="space-y-6">
-              {sessions.length === 0 ? (
+              {getFilteredSessions().length === 0 && sessions.length > 0 ? (
+                <div className="bg-white rounded-lg shadow-lg p-12 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-4">
+                    <AlertCircle className="w-8 h-8 text-yellow-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    No Sessions Match Filters
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Try adjusting your filters to see more sessions.
+                  </p>
+                  <button
+                    onClick={resetFilters}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    Reset Filters
+                  </button>
+                </div>
+              ) : sessions.length === 0 ? (
                 <div className="bg-white rounded-lg shadow-lg p-12 text-center">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
                     <Calendar className="w-8 h-8 text-blue-600" />
@@ -544,7 +781,7 @@ const MonthlySessions = () => {
                   </button>
                 </div>
               ) : (
-                sessions.map(session => renderSessionCard(session))
+                getFilteredSessions().map(session => renderSessionCard(session))
               )}
             </div>
           </div>
