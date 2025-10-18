@@ -8,7 +8,7 @@ import {
   Plus, Trash2, Package, Save, X, FileText, User
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5002/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
 const CreatePrescription = () => {
   const navigate = useNavigate();
@@ -53,10 +53,10 @@ const CreatePrescription = () => {
   const fetchElders = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/elders`, {
+      const response = await axios.get(`${API_BASE_URL}/doctor-assignments/doctor/assigned-elders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      console.log('Elders API Response:', response.data);
+      console.log('Assigned Elders API Response:', response.data);
       
       // Handle different response formats
       if (response.data.success && response.data.elders) {
@@ -67,8 +67,8 @@ const CreatePrescription = () => {
         setElders([]);
       }
     } catch (error) {
-      console.error('Error fetching elders:', error);
-      toast.error('Failed to load elders list: ' + (error.response?.data?.message || error.message));
+      console.error('Error fetching assigned elders:', error);
+      toast.error('Failed to load assigned elders: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -77,7 +77,8 @@ const CreatePrescription = () => {
       const token = localStorage.getItem('token');
       console.log('Fetching elder details for ID:', id);
       
-      const response = await axios.get(`${API_BASE_URL}/elders/${id}`, {
+      // Use the doctor-specific endpoint to avoid authorization issues
+      const response = await axios.get(`${API_BASE_URL}/elders/doctor/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -298,7 +299,7 @@ const CreatePrescription = () => {
               <select
                 value={selectedPharmacyId}
                 onChange={(e) => setSelectedPharmacyId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
                 <option value="">-- Select a Pharmacy --</option>
