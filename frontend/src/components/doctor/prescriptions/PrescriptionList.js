@@ -8,7 +8,7 @@ import {
   Plus, FileText, Calendar, User, Package, Eye, Filter, Download
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5002/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
 const PrescriptionList = () => {
   const navigate = useNavigate();

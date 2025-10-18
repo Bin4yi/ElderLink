@@ -106,6 +106,45 @@ router.get('/staff/all', authenticate, authorize('staff'), getAllEldersForStaff)
 // Staff routes - Get only assigned elders for care management
 router.get('/staff/assigned', authenticate, authorize('staff'), getAssignedEldersForStaff);
 
+// Doctor-specific route for getting elder details (must come before /:id to avoid conflicts)
+router.get('/doctor/:id', authenticate, authorize('doctor'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('🔍 [DOCTOR ROUTE] Getting elder by ID:', id, 'for doctor:', req.user.id);
+
+    const elder = await Elder.findByPk(id, {
+      attributes: [
+        'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
+        'address', 'phone', 'emergencyContact', 'bloodType',
+        'medicalHistory', 'currentMedications', 'allergies', 'chronicConditions',
+        'doctorName', 'doctorPhone', 'photo', 'createdAt', 'updatedAt'
+      ]
+    });
+
+    if (!elder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Elder not found'
+      });
+    }
+
+    console.log('✅ [DOCTOR ROUTE] Found elder for doctor:', elder.firstName, elder.lastName);
+
+    return res.json({
+      success: true,
+      elder: elder,
+      message: 'Elder retrieved successfully'
+    });
+  } catch (error) {
+    console.error('❌ [DOCTOR ROUTE] Get elder error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve elder',
+      error: error.message
+    });
+  }
+});
+
 // Update the GET /elders route
 router.get('/', authenticate, authorize('family_member', 'doctor', 'mental-health'), async (req, res) => {
   try {
