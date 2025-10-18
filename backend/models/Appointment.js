@@ -49,8 +49,8 @@ const Appointment = sequelize.define('Appointment', {
     defaultValue: 'medium'
   },
   status: {
-    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'completed', 'cancelled', 'no-show', 'reserved'),
-    defaultValue: 'pending'
+    type: DataTypes.ENUM('upcoming', 'today', 'in-progress', 'completed', 'cancelled', 'no-show', 'reserved'),
+    defaultValue: 'upcoming'
   },
   reason: {
     type: DataTypes.TEXT,
