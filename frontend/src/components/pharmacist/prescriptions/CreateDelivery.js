@@ -8,7 +8,7 @@ import {
   Truck, User, Calendar, MapPin, Phone, FileText, Package, Save, X, ArrowLeft
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5002/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
 const CreateDelivery = () => {
   const navigate = useNavigate();
@@ -39,13 +39,13 @@ const CreateDelivery = () => {
       );
 
       if (response.data.success) {
-        const prescriptionData = response.data.data.prescription;
+        const prescriptionData = response.data.data; // Backend returns data: prescription
         setPrescription(prescriptionData);
         
         // Pre-fill form with prescription data
         setFormData({
           deliveryAddress: prescriptionData.deliveryAddress || prescriptionData.elder?.address || '',
-          contactPhone: prescriptionData.elder?.contactNumber || '',
+          contactPhone: prescriptionData.elder?.phone || '',
           scheduledDate: new Date().toISOString().split('T')[0],
           notes: ''
         });
@@ -77,7 +77,7 @@ const CreateDelivery = () => {
       const token = localStorage.getItem('token');
       
       const deliveryData = {
-        prescriptionId,
+        prescriptionId: prescriptionId, // Keep as UUID string, don't parse to int
         elderId: prescription.elderId,
         deliveryAddress: formData.deliveryAddress,
         contactPhone: formData.contactPhone,
@@ -93,7 +93,7 @@ const CreateDelivery = () => {
 
       if (response.data.success) {
         toast.success('Delivery created successfully!');
-        navigate('/pharmacist/deliveries');
+        navigate('/pharmacist/delivery'); // Fixed: use singular 'delivery'
       }
     } catch (error) {
       console.error('Error creating delivery:', error);
@@ -189,13 +189,13 @@ const CreateDelivery = () => {
                     <div>
                       <div className="font-medium text-gray-900">{item.medicationName}</div>
                       <div className="text-sm text-gray-600">
-                        {item.dosage} - {item.frequency} for {item.duration}
+                        {item.dosage} - {item.frequency} {item.duration && `for ${item.duration}`}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium text-gray-900">Qty: {item.quantity}</div>
+                      <div className="font-medium text-gray-900">Qty: {item.quantityDispensed || item.quantityPrescribed}</div>
                       <div className="text-sm text-gray-600">
-                        LKR {parseFloat(item.unitPrice * item.quantity).toFixed(2)}
+                        LKR {parseFloat((item.unitPrice || 0) * (item.quantityDispensed || item.quantityPrescribed || 0)).toFixed(2)}
                       </div>
                     </div>
                   </div>

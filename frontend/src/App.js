@@ -32,12 +32,14 @@ import ConsultationHistory from './components/doctor/consultations/ConsultationH
 import MedicalRecords from './components/doctor/records/MedicalRecords';
 import PrescriptionList from './components/doctor/prescriptions/PrescriptionList';
 import CreatePrescription from './components/doctor/prescriptions/CreatePrescription';
+import ZoomMeetingManager from './components/doctor/sessions/ZoomMeetingManager';
 
 
 // Family
 import FamilyDashboard from "./components/family/dashboard/FamilyDashboard";
 import AppointmentList from "./components/family/appointments/AppointmentList";
 import MonthlySessions from "./components/family/sessions/MonthlySessions";
+import AutoScheduleMonthly from "./components/family/sessions/AutoScheduleMonthly";
 import Doctors from "./components/family/doctors/Doctors";
 import DoctorAssignment from "./components/family/doctors/DoctorAssignment"; // NEW IMPORT
 import AppointmentBooking from "./components/family/appointments/AppointmentBooking";
@@ -51,7 +53,7 @@ import DoctorCalendarModal from "./components/family/appointments/DoctorCalendar
 
 // Pharmacy
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
-import MedicationManagement from './components/pharmacist/medications/MedicationManagement';
+import PharmacistAnalysis from './components/pharmacist/analysis/PharmacistAnalysis';
 import DeliverySchedule from './components/pharmacist/delivery/DeliverySchedule';
 import PrescriptionManagement from './components/pharmacist/prescriptions/PrescriptionManagement';
 import FillPrescription from './components/pharmacist/prescriptions/FillPrescription';
@@ -139,6 +141,7 @@ function App() {
                   <Route path="/doctor/prescriptions/create" element={<CreatePrescription />} />
                   <Route path="/doctor/prescriptions/create/:elderId" element={<CreatePrescription />} />
                   <Route path="/doctor/prescriptions/create/:elderId/:appointmentId" element={<CreatePrescription />} />
+                  <Route path="/doctor/zoom-meetings" element={<ZoomMeetingManager />} />
                   
                   {/* Family routes */}
                   <Route
@@ -153,6 +156,7 @@ function App() {
                     path="/family/sessions"
                     element={<MonthlySessions />}
                   />
+                  <Route path="/family/sessions/auto-schedule" element={<AutoScheduleMonthly />} />
                   <Route path="/family/doctors" element={<Doctors />} />
                   <Route
                     path="/family/doctor-assignment"
@@ -176,7 +180,7 @@ function App() {
                   />
                   {/* Pharmacy routes */}
                   <Route path="/pharmacist/dashboard" element={<PharmacyDashboard />} />
-                  <Route path="/pharmacist/medications" element={<MedicationManagement />} />
+                  <Route path="/pharmacist/analysis" element={<PharmacistAnalysis />} />
                   <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
                   <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
                   <Route path="/pharmacist/prescriptions/:id/fill" element={<FillPrescription />} />

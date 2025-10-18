@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const monthlySessionController = require('../controllers/monthlySessionController');
+const monthlySessionZoomController = require('../controllers/monthlySessionZoomController');
 const { auth, authorize } = require('../middleware/auth');
 
 // IMPORTANT: Specific routes must come BEFORE parameterized routes
@@ -89,6 +90,48 @@ router.post(
   auth,
   authorize(['doctor']),
   monthlySessionController.completeMonthlySession
+);
+
+// ========== ZOOM MEETING ROUTES ==========
+
+// Get pharmacies list (for prescription upload)
+router.get(
+  '/pharmacies/list',
+  auth,
+  authorize(['doctor']),
+  monthlySessionZoomController.getPharmacies
+);
+
+// Create Zoom meeting for a session
+router.post(
+  '/:sessionId/create-zoom',
+  auth,
+  authorize(['doctor']),
+  monthlySessionZoomController.createZoomMeeting
+);
+
+// Send Zoom meeting links to family and elder
+router.post(
+  '/:sessionId/send-links',
+  auth,
+  authorize(['doctor']),
+  monthlySessionZoomController.sendMeetingLinks
+);
+
+// Start a Zoom meeting (get start URL)
+router.post(
+  '/:sessionId/start-meeting',
+  auth,
+  authorize(['doctor']),
+  monthlySessionZoomController.startMeeting
+);
+
+// Complete session with prescription upload
+router.post(
+  '/:sessionId/complete-with-prescription',
+  auth,
+  authorize(['doctor']),
+  monthlySessionZoomController.completeSession
 );
 
 module.exports = router;

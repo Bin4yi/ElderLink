@@ -323,6 +323,64 @@ class DoctorAssignmentController {
       });
     }
   }
+
+  // Get assigned elders for doctor
+  static async getAssignedEldersForDoctor(req, res) {
+    try {
+      const doctorId = req.user.id;
+      const { status = 'active' } = req.query;
+
+      console.log('🔍 Getting assigned elders for doctor:', doctorId);
+
+      const assignments = await DoctorAssignment.findAll({
+        where: {
+          doctorId,
+          ...(status !== 'all' ? { status } : {})
+        },
+        include: [
+          {
+            model: Elder,
+            as: 'elder',
+            attributes: ['id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 'photo', 'address', 'phone', 'medicalHistory']
+          },
+          {
+            model: User,
+            as: 'familyMember',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+          }
+        ],
+        order: [['assignmentDate', 'DESC']]
+      });
+
+      console.log('✅ Found assignments:', assignments.length);
+
+      // Format the response to return elders with assignment info
+      const elders = assignments.map(assignment => ({
+        ...assignment.elder.toJSON(),
+        assignmentInfo: {
+          id: assignment.id,
+          assignmentType: assignment.assignmentType,
+          assignmentDate: assignment.assignmentDate,
+          status: assignment.status,
+          notes: assignment.notes
+        },
+        familyMember: assignment.familyMember
+      }));
+
+      res.json({
+        success: true,
+        elders: elders,
+        message: 'Assigned elders retrieved successfully'
+      });
+    } catch (error) {
+      console.error('❌ Get assigned elders for doctor error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve assigned elders',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = DoctorAssignmentController;

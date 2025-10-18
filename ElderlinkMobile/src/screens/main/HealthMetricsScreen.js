@@ -5,216 +5,68 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  TouchableOpacity,
-  Modal
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { useHealthData } from '../../hooks/useHealthData';
-import { ValidationUtils } from '../../utils/validation';
 import { COLORS } from '../../utils/colors';
+import apiService from '../../services/api';
 
 import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Alert from '../../components/common/Alert';
-import Loading from '../../components/common/Loading';
-import HealthMetricCard from '../../components/HealthMetricCard';
 
 const HealthMetricsScreen = ({ navigation }) => {
-  const { user } = useAuth();
-  const {
-    healthRecords,
-    latestVitalSigns,
-    loading,
-    error,
-    loadHealthData,
-    addHealthRecord
-  } = useHealthData();
-
+  const { user, elder } = useAuth();
+  const [healthVitals, setHealthVitals] = useState(null);
+  const [loadingVitals, setLoadingVitals] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [healthData, setHealthData] = useState({
-    heartRate: '',
-    systolic: '',
-    diastolic: '',
-    temperature: '',
-    weight: '',
-    oxygenSaturation: '',
-    sleepHours: '',
-    notes: ''
-  });
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    loadHealthData();
-  }, []);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadHealthData();
-    setRefreshing(false);
-  };
-
-  const validateHealthData = () => {
-    const newErrors = {};
-
-    if (healthData.heartRate && !ValidationUtils.validateHeartRate(parseFloat(healthData.heartRate))) {
-      newErrors.heartRate = 'Please enter a valid heart rate (40-200 bpm)';
+    if (elder) {
+      fetchHealthVitals();
     }
+  }, [elder]);
 
-    if (healthData.systolic && !ValidationUtils.validateBloodPressure(parseFloat(healthData.systolic), 'systolic')) {
-      newErrors.systolic = 'Please enter a valid systolic pressure (70-250 mmHg)';
-    }
-
-    if (healthData.diastolic && !ValidationUtils.validateBloodPressure(parseFloat(healthData.diastolic), 'diastolic')) {
-      newErrors.diastolic = 'Please enter a valid diastolic pressure (40-150 mmHg)';
-    }
-
-    if (healthData.temperature && !ValidationUtils.validateTemperature(parseFloat(healthData.temperature))) {
-      newErrors.temperature = 'Please enter a valid temperature (30-45°C)';
-    }
-
-    if (healthData.weight && !ValidationUtils.validateWeight(parseFloat(healthData.weight))) {
-      newErrors.weight = 'Please enter a valid weight (20-300 kg)';
-    }
-
-    if (healthData.oxygenSaturation && !ValidationUtils.validateOxygenSaturation(parseFloat(healthData.oxygenSaturation))) {
-      newErrors.oxygenSaturation = 'Please enter a valid oxygen saturation (70-100%)';
-    }
-
-    if (healthData.sleepHours && !ValidationUtils.validateSleepHours(parseFloat(healthData.sleepHours))) {
-      newErrors.sleepHours = 'Please enter valid sleep hours (0-24)';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    if (!validateHealthData()) return;
-
-    // Check if at least one field is filled
-    const hasData = Object.values(healthData).some(value => value.trim() !== '');
-    if (!hasData) {
-      setErrors({ general: 'Please enter at least one health measurement' });
-      return;
-    }
-
-    setIsSubmitting(true);
-
+  const fetchHealthVitals = async () => {
     try {
-      const recordData = {
-        elderId: user.id,
-        heartRate: healthData.heartRate ? parseFloat(healthData.heartRate) : null,
-        bloodPressureSystolic: healthData.systolic ? parseFloat(healthData.systolic) : null,
-        bloodPressureDiastolic: healthData.diastolic ? parseFloat(healthData.diastolic) : null,
-        temperature: healthData.temperature ? parseFloat(healthData.temperature) : null,
-        weight: healthData.weight ? parseFloat(healthData.weight) : null,
-        oxygenSaturation: healthData.oxygenSaturation ? parseFloat(healthData.oxygenSaturation) : null,
-        sleepHours: healthData.sleepHours ? parseFloat(healthData.sleepHours) : null,
-        notes: healthData.notes.trim() || null,
-        monitoringDate: new Date().toISOString()
-      };
-
-      await addHealthRecord(recordData);
+      console.log('🏥 Fetching health vitals for elder...');
+      setLoadingVitals(true);
       
-      // Reset form and close modal
-      setHealthData({
-        heartRate: '',
-        systolic: '',
-        diastolic: '',
-        temperature: '',
-        weight: '',
-        oxygenSaturation: '',
-        sleepHours: '',
-        notes: ''
-      });
-      setErrors({});
-      setShowAddModal(false);
+      // Call the API endpoint that staff use to record health data
+      const response = await apiService.get('/api/health-monitoring/today');
       
-      // Refresh data
-      await loadHealthData();
+      console.log('🏥 Health vitals response:', response);
+      
+      if (response && response.success && response.data) {
+        // Handle array response (take the latest record)
+        const vitalsData = Array.isArray(response.data) 
+          ? (response.data.length > 0 ? response.data[0] : null)
+          : response.data;
+        
+        setHealthVitals(vitalsData);
+        console.log('✅ Health vitals loaded:', vitalsData);
+      } else {
+        setHealthVitals(null);
+        console.log('ℹ️ No health vitals found for today');
+      }
     } catch (error) {
-      setErrors({ general: error.message || 'Failed to save health data' });
+      console.error('❌ Error fetching health vitals:', error);
+      setHealthVitals(null);
     } finally {
-      setIsSubmitting(false);
+      setLoadingVitals(false);
+      setRefreshing(false);
     }
   };
 
-  const renderMetricCard = (metricName) => {
-    if (!latestVitalSigns) return null;
-
-    let value, unit, status, icon;
-
-    switch (metricName) {
-      case 'Heart Rate':
-        value = latestVitalSigns.heartRate;
-        unit = 'bpm';
-        icon = 'heart';
-        status = ValidationUtils.validateHeartRate(value) ? 'normal' : 'warning';
-        break;
-      case 'Blood Pressure':
-        if (latestVitalSigns.bloodPressureSystolic && latestVitalSigns.bloodPressureDiastolic) {
-          value = `${latestVitalSigns.bloodPressureSystolic}/${latestVitalSigns.bloodPressureDiastolic}`;
-          unit = 'mmHg';
-          icon = 'fitness';
-          status = 'normal'; // You can implement BP validation logic
-        }
-        break;
-      case 'Temperature':
-        value = latestVitalSigns.temperature;
-        unit = '°C';
-        icon = 'thermometer';
-        status = ValidationUtils.validateTemperature(value) ? 'normal' : 'warning';
-        break;
-      case 'Weight':
-        value = latestVitalSigns.weight;
-        unit = 'kg';
-        icon = 'scale';
-        status = ValidationUtils.validateWeight(value) ? 'normal' : 'warning';
-        break;
-      case 'Oxygen Saturation':
-        value = latestVitalSigns.oxygenSaturation;
-        unit = '%';
-        icon = 'water';
-        status = ValidationUtils.validateOxygenSaturation(value) ? 'normal' : 'warning';
-        break;
-      case 'Sleep Hours':
-        value = latestVitalSigns.sleepHours;
-        unit = 'hours';
-        icon = 'moon';
-        status = ValidationUtils.validateSleepHours(value) ? 'normal' : 'warning';
-        break;
-      default:
-        return null;
-    }
-
-    if (!value) return null;
-
-    return (
-      <HealthMetricCard
-        key={metricName}
-        metric={metricName}
-        value={value}
-        unit={unit}
-        status={status}
-        icon={icon}
-        lastUpdated={latestVitalSigns.recordedAt}
-        style={styles.metricCard}
-      />
-    );
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchHealthVitals();
   };
 
-  if (loading) {
-    return <Loading message="Loading health data..." />;
-  }
-
-  // Check if today's data was recorded
-  const today = new Date().toDateString();
-  const recordedToday = latestVitalSigns && 
-    new Date(latestVitalSigns.recordedAt).toDateString() === today;
+  // Convert Fahrenheit to Celsius
+  const fahrenheitToCelsius = (fahrenheit) => {
+    if (!fahrenheit) return null;
+    return ((fahrenheit - 32) * 5 / 9).toFixed(1);
+  };
 
   return (
     <View style={styles.container}>
@@ -225,404 +77,359 @@ const HealthMetricsScreen = ({ navigation }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[COLORS.primary]}
             tintColor={COLORS.primary}
           />
         }
       >
-        {error && (
-          <Alert
-            type="error"
-            message={error}
-            closable
-            onClose={() => {/* Clear error */}}
-            style={styles.errorAlert}
-          />
-        )}
-
-        {/* Status Card */}
-        <Card style={styles.statusCard}>
-          <View style={styles.statusHeader}>
-            <Ionicons 
-              name={recordedToday ? "checkmark-circle" : "time"} 
-              size={32} 
-              color={recordedToday ? COLORS.success : COLORS.warning} 
-            />
-            <View style={styles.statusTextContainer}>
-              <Text style={styles.statusTitle}>
-                {recordedToday ? "Today's Data Recorded" : "No Data Today"}
-              </Text>
-              <Text style={styles.statusSubtitle}>
-                {recordedToday 
-                  ? "Great job! Your health data has been recorded."
-                  : "Don't forget to record your vital signs today."
-                }
-              </Text>
+        {/* Header Card */}
+        <Card style={styles.headerCard}>
+          <View style={styles.headerContent}>
+            <Ionicons name="heart-circle" size={48} color="#FF6B6B" />
+            <View style={styles.headerText}>
+              <Text style={styles.headerTitle}>Today's Health Vitals</Text>
+              <Text style={styles.headerSubtitle}>Recorded by your care team</Text>
             </View>
           </View>
-          
-          <Button
-            title={recordedToday ? "Add More Data" : "Record Vitals"}
-            onPress={() => setShowAddModal(true)}
-            variant="primary"
-            size="large"
-            style={styles.recordButton}
-          />
         </Card>
 
-        {/* Latest Metrics */}
-        {latestVitalSigns && (
-          <View style={styles.metricsSection}>
-            <Text style={styles.sectionTitle}>Latest Measurements</Text>
-            
-            <View style={styles.metricsGrid}>
-              {['Heart Rate', 'Blood Pressure', 'Temperature', 'Weight', 'Oxygen Saturation', 'Sleep Hours']
-                .map(metric => renderMetricCard(metric))
-                .filter(Boolean)}
-            </View>
-
-            {latestVitalSigns.recordedAt && (
-              <Text style={styles.lastUpdated}>
-                Last updated: {new Date(latestVitalSigns.recordedAt).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </Text>
+        {/* Health Vitals Card */}
+        <Card style={styles.vitalsCard}>
+          <View style={styles.healthHeader}>
+            <Text style={styles.sectionTitle}>Your Health Metrics</Text>
+            {loadingVitals && (
+              <ActivityIndicator size="small" color="#FF6B6B" />
             )}
           </View>
-        )}
 
-        {/* Recent History */}
-        {healthRecords.length > 0 && (
-          <Card style={styles.historyCard}>
-            <View style={styles.historyHeader}>
-              <Text style={styles.sectionTitle}>Recent History</Text>
-              <TouchableOpacity
-                style={styles.viewAllButton}
-              >
-                <Text style={styles.viewAllText}>View All</Text>
-                <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
-              </TouchableOpacity>
-            </View>
+          {!loadingVitals && healthVitals ? (
+            <>
+              {/* Heart Rate */}
+              {healthVitals.heartRate && (
+                <View style={styles.vitalRow}>
+                  <View style={styles.vitalIconContainer}>
+                    <Ionicons name="heart" size={28} color="#FF6B6B" />
+                  </View>
+                  <View style={styles.vitalContent}>
+                    <Text style={styles.vitalLabel}>Heart Rate</Text>
+                    <Text style={styles.vitalValue}>{healthVitals.heartRate} bpm</Text>
+                  </View>
+                </View>
+              )}
 
-            <View style={styles.historyList}>
-              {healthRecords.slice(0, 5).map((record, index) => (
-                <View key={record.id || index} style={styles.historyItem}>
-                  <View style={styles.historyDate}>
-                    <Text style={styles.historyDateText}>
-                      {new Date(record.monitoringDate).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric'
-                      })}
+              {/* Blood Pressure */}
+              {(healthVitals.bloodPressureSystolic || healthVitals.bloodPressureDiastolic) && (
+                <View style={styles.vitalRow}>
+                  <View style={styles.vitalIconContainer}>
+                    <Ionicons name="fitness" size={28} color="#FF6B6B" />
+                  </View>
+                  <View style={styles.vitalContent}>
+                    <Text style={styles.vitalLabel}>Blood Pressure</Text>
+                    <Text style={styles.vitalValue}>
+                      {healthVitals.bloodPressureSystolic || '--'}/{healthVitals.bloodPressureDiastolic || '--'} mmHg
                     </Text>
                   </View>
-                  
-                  <View style={styles.historyMetrics}>
-                    {record.heartRate && (
-                      <Text style={styles.historyMetric}>HR: {record.heartRate} bpm</Text>
-                    )}
-                    {record.bloodPressureSystolic && record.bloodPressureDiastolic && (
-                      <Text style={styles.historyMetric}>
-                        BP: {record.bloodPressureSystolic}/{record.bloodPressureDiastolic}
-                      </Text>
-                    )}
-                    {record.temperature && (
-                      <Text style={styles.historyMetric}>Temp: {record.temperature}°C</Text>
-                    )}
+                </View>
+              )}
+
+              {/* Temperature */}
+              {healthVitals.temperature && (
+                <View style={styles.vitalRow}>
+                  <View style={styles.vitalIconContainer}>
+                    <Ionicons name="thermometer" size={28} color="#FF6B6B" />
+                  </View>
+                  <View style={styles.vitalContent}>
+                    <Text style={styles.vitalLabel}>Temperature</Text>
+                    <Text style={styles.vitalValue}>
+                      {fahrenheitToCelsius(healthVitals.temperature)}°C ({healthVitals.temperature}°F)
+                    </Text>
                   </View>
                 </View>
-              ))}
-            </View>
-          </Card>
-        )}
+              )}
 
-        {/* Add Health Data Modal */}
-        <Modal
-          visible={showAddModal}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setShowAddModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Record Vital Signs</Text>
-              <ScrollView contentContainerStyle={styles.modalForm}>
-                <Input
-                  label="Heart Rate (bpm)"
-                  value={healthData.heartRate}
-                  onChangeText={text => setHealthData({ ...healthData, heartRate: text })}
-                  keyboardType="numeric"
-                  error={errors.heartRate}
-                />
-                <Input
-                  label="Systolic BP (mmHg)"
-                  value={healthData.systolic}
-                  onChangeText={text => setHealthData({ ...healthData, systolic: text })}
-                  keyboardType="numeric"
-                  error={errors.systolic}
-                />
-                <Input
-                  label="Diastolic BP (mmHg)"
-                  value={healthData.diastolic}
-                  onChangeText={text => setHealthData({ ...healthData, diastolic: text })}
-                  keyboardType="numeric"
-                  error={errors.diastolic}
-                />
-                <Input
-                  label="Temperature (°C)"
-                  value={healthData.temperature}
-                  onChangeText={text => setHealthData({ ...healthData, temperature: text })}
-                  keyboardType="numeric"
-                  error={errors.temperature}
-                />
-                <Input
-                  label="Weight (kg)"
-                  value={healthData.weight}
-                  onChangeText={text => setHealthData({ ...healthData, weight: text })}
-                  keyboardType="numeric"
-                  error={errors.weight}
-                />
-                <Input
-                  label="Oxygen Saturation (%)"
-                  value={healthData.oxygenSaturation}
-                  onChangeText={text => setHealthData({ ...healthData, oxygenSaturation: text })}
-                  keyboardType="numeric"
-                  error={errors.oxygenSaturation}
-                />
-                <Input
-                  label="Sleep Hours"
-                  value={healthData.sleepHours}
-                  onChangeText={text => setHealthData({ ...healthData, sleepHours: text })}
-                  keyboardType="numeric"
-                  error={errors.sleepHours}
-                />
-                <Input
-                  label="Notes"
-                  value={healthData.notes}
-                  onChangeText={text => setHealthData({ ...healthData, notes: text })}
-                  multiline
-                  error={errors.notes}
-                />
-                {errors.general && (
-                  <Alert
-                    type="error"
-                    message={errors.general}
-                    style={styles.errorAlert}
-                  />
-                )}
-                <View style={styles.modalButtons}>
-                  <Button
-                    title="Cancel"
-                    onPress={() => setShowAddModal(false)}
-                    variant="secondary"
-                    style={styles.cancelButton}
-                  />
-                  <Button
-                    title={isSubmitting ? "Saving..." : "Save"}
-                    onPress={handleSubmit}
-                    variant="primary"
-                    disabled={isSubmitting}
-                    style={styles.saveButton}
-                  />
+              {/* Weight */}
+              {healthVitals.weight && (
+                <View style={styles.vitalRow}>
+                  <View style={styles.vitalIconContainer}>
+                    <Ionicons name="scale-outline" size={28} color="#FF6B6B" />
+                  </View>
+                  <View style={styles.vitalContent}>
+                    <Text style={styles.vitalLabel}>Weight</Text>
+                    <Text style={styles.vitalValue}>{healthVitals.weight} kg</Text>
+                  </View>
                 </View>
-              </ScrollView>
+              )}
+
+              {/* Oxygen Saturation */}
+              {healthVitals.oxygenSaturation && (
+                <View style={styles.vitalRow}>
+                  <View style={styles.vitalIconContainer}>
+                    <Ionicons name="water" size={28} color="#FF6B6B" />
+                  </View>
+                  <View style={styles.vitalContent}>
+                    <Text style={styles.vitalLabel}>Oxygen Saturation</Text>
+                    <Text style={styles.vitalValue}>{healthVitals.oxygenSaturation}%</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Blood Sugar */}
+              {healthVitals.bloodSugar && (
+                <View style={styles.vitalRow}>
+                  <View style={styles.vitalIconContainer}>
+                    <Ionicons name="water-outline" size={28} color="#FF6B6B" />
+                  </View>
+                  <View style={styles.vitalContent}>
+                    <Text style={styles.vitalLabel}>Blood Sugar</Text>
+                    <Text style={styles.vitalValue}>{healthVitals.bloodSugar} mg/dL</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Sleep Hours */}
+              {healthVitals.sleepHours && (
+                <View style={styles.vitalRow}>
+                  <View style={styles.vitalIconContainer}>
+                    <Ionicons name="moon" size={28} color="#FF6B6B" />
+                  </View>
+                  <View style={styles.vitalContent}>
+                    <Text style={styles.vitalLabel}>Sleep Hours</Text>
+                    <Text style={styles.vitalValue}>{healthVitals.sleepHours} hours</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Notes from Staff */}
+              {healthVitals.notes && (
+                <View style={styles.notesContainer}>
+                  <View style={styles.notesHeader}>
+                    <Ionicons name="document-text" size={20} color="#FF6B6B" />
+                    <Text style={styles.notesLabel}>Staff Notes</Text>
+                  </View>
+                  <Text style={styles.notesText}>{healthVitals.notes}</Text>
+                </View>
+              )}
+
+              {/* Recorded Info */}
+              <View style={styles.recordedInfo}>
+                <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
+                <Text style={styles.recordedText}>
+                  Recorded: {new Date(healthVitals.monitoringDate).toLocaleString()}
+                </Text>
+              </View>
+            </>
+          ) : !loadingVitals && !healthVitals ? (
+            <View style={styles.noDataContainer}>
+              <Ionicons name="medical-outline" size={64} color={COLORS.gray300} />
+              <Text style={styles.noDataText}>No health vitals recorded today</Text>
+              <Text style={styles.noDataSubtext}>
+                Your care team will record your vitals during checkups
+              </Text>
+            </View>
+          ) : null}
+        </Card>
+
+        {/* Health Tips Card */}
+        <Card style={styles.tipsCard}>
+          <View style={styles.tipsHeader}>
+            <Ionicons name="bulb" size={24} color="#FFA500" />
+            <Text style={styles.tipsTitle}>Health Tips</Text>
+          </View>
+          <View style={styles.tipsList}>
+            <View style={styles.tipItem}>
+              <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+              <Text style={styles.tipText}>Stay hydrated - drink 6-8 glasses of water daily</Text>
+            </View>
+            <View style={styles.tipItem}>
+              <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+              <Text style={styles.tipText}>Take your medications on time</Text>
+            </View>
+            <View style={styles.tipItem}>
+              <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+              <Text style={styles.tipText}>Get 7-8 hours of quality sleep</Text>
+            </View>
+            <View style={styles.tipItem}>
+              <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+              <Text style={styles.tipText}>Regular light exercise helps maintain health</Text>
             </View>
           </View>
-        </Modal>
+        </Card>
       </ScrollView>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  
   scrollView: {
     flex: 1,
   },
-  
   scrollContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 24,
   },
-  
-  statusCard: {
+  headerCard: {
     marginBottom: 16,
-    padding: 16,
+    padding: 20,
+    backgroundColor: '#FFF5F5',
+    borderWidth: 0,
+    borderRadius: 16,
   },
-  
-  statusHeader: {
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
   },
-  
-  statusTextContainer: {
-    marginLeft: 12,
+  headerText: {
+    marginLeft: 16,
     flex: 1,
   },
-  
-  statusTitle: {
-    fontSize: 18,
-    fontFamily: 'OpenSans-Bold',
+  headerTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
-  },
-  
-  statusSubtitle: {
-    fontSize: 14,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-  },
-  
-  recordButton: {
-    marginTop: 12,
-  },
-  
-  metricsSection: {
-    marginBottom: 16,
-  },
-  
-  sectionTitle: {
-    fontSize: 20,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: COLORS.textPrimary,
-  },
-  
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  
-  metricCard: {
-    marginBottom: 12,
-    width: '48%',
-  },
-  
-  lastUpdated: {
-    fontSize: 14,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-    marginTop: 8,
-    textAlign: 'right',
-  },
-  
-  historyCard: {
-    marginBottom: 16,
-    padding: 16,
-  },
-  
-  historyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  
-  viewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  
-  viewAllText: {
-    color: COLORS.primary,
-    fontFamily: 'OpenSans-SemiBold',
-    fontWeight: 'bold',
-    marginRight: 4,
-  },
-  
-  historyList: {
-    marginTop: 8,
-  },
-  
-  historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-  },
-  
-  historyDate: {
-    width: 60,
-    alignItems: 'center',
-  },
-  
-  historyDateText: {
-    fontSize: 14,
-    fontFamily: 'OpenSans-SemiBold',
-    color: COLORS.textSecondary,
-  },
-  
-  historyMetrics: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginLeft: 12,
-  },
-  
-  historyMetric: {
-    fontSize: 14,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textPrimary,
-    marginRight: 12,
+    color: '#FF6B6B',
     marginBottom: 4,
   },
-  
-  errorAlert: {
+  headerSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  vitalsCard: {
     marginBottom: 16,
-  },
-  
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  modalContent: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
     padding: 20,
-    width: '90%',
-    maxHeight: '90%',
   },
-  
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: 'OpenSans-Bold',
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  
-  modalForm: {
-    paddingBottom: 16,
-  },
-  
-  modalButtons: {
+  healthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: '#FFE8E8',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  vitalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray100,
+  },
+  vitalIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FFE8E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  vitalContent: {
+    flex: 1,
+  },
+  vitalLabel: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  vitalValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  notesContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#FFF5F5',
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF6B6B',
+  },
+  notesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  notesLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF6B6B',
+    marginLeft: 8,
+  },
+  notesText: {
+    fontSize: 15,
+    color: COLORS.text,
+    lineHeight: 22,
+  },
+  recordedInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray100,
+  },
+  recordedText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginLeft: 6,
+  },
+  noDataContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+  },
+  noDataText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noDataSubtext: {
+    fontSize: 14,
+    color: COLORS.gray400,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  tipsCard: {
+    marginBottom: 16,
+    padding: 20,
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: '#FFF5E6',
+  },
+  tipsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginLeft: 12,
+  },
+  tipsList: {
     gap: 12,
   },
-  
-  cancelButton: {
-    flex: 1,
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
   },
-  
-  saveButton: {
+  tipText: {
+    fontSize: 15,
+    color: COLORS.text,
+    marginLeft: 12,
     flex: 1,
+    lineHeight: 22,
   },
 });
 

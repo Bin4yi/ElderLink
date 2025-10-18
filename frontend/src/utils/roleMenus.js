@@ -68,7 +68,7 @@ export const getRoleMenuItems = (role) => {
     case 'pharmacist':
       return [
         { path: '/pharmacist/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/pharmacist/medications', icon: Pill, label: 'Medications' },
+        { path: '/pharmacist/analysis', icon: BarChart3, label: 'Analysis' },
         { path: '/pharmacist/prescriptions', icon: FileText, label: 'Prescriptions' },
         { path: '/pharmacist/delivery', icon: Truck, label: 'Delivery' },
         { path: '/pharmacist/inventory', icon: Package, label: 'Inventory' },

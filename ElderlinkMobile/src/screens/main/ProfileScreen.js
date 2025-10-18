@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -137,105 +137,6 @@ const ProfileScreen = ({ navigation }) => {
         </View>
       </Card>
 
-      {/* Health Information */}
-      {elder && (
-        <Card style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Health Information</Text>
-          
-          <View style={styles.infoRow}>
-            <Ionicons name="medical" size={20} color={COLORS.textSecondary} />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Medical Conditions</Text>
-              <Text style={styles.infoValue}>
-                {elder.medicalConditions || 'None reported'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Ionicons name="bandage" size={20} color={COLORS.textSecondary} />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Allergies</Text>
-              <Text style={styles.infoValue}>
-                {elder.allergies || 'None reported'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Ionicons name="flask" size={20} color={COLORS.textSecondary} />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Current Medications</Text>
-              <Text style={styles.infoValue}>
-                {elder.currentMedications || 'None reported'}
-              </Text>
-            </View>
-          </View>
-        </Card>
-      )}
-
-      {/* App Settings */}
-      <Card style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Settings</Text>
-        
-        <TouchableOpacity
-          style={styles.settingRow}
-          onPress={() => navigation.navigate('Settings')}
-        >
-          <Ionicons name="settings" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.settingText}>App Settings</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray400} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingRow}
-          onPress={() => navigation.navigate('NotificationSettings')}
-        >
-          <Ionicons name="notifications" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.settingText}>Notifications</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray400} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingRow}
-          onPress={() => navigation.navigate('EmergencyContacts')}
-        >
-          <Ionicons name="people" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.settingText}>Emergency Contacts</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray400} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingRow}
-          onPress={() => {
-            Alert.alert(
-              'Privacy Policy',
-              'Your privacy is important to us. Contact your care coordinator for more information about how your data is protected.',
-              [{ text: 'OK' }]
-            );
-          }}
-        >
-          <Ionicons name="shield-checkmark" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.settingText}>Privacy Policy</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray400} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingRow}
-          onPress={() => {
-            Alert.alert(
-              'Help & Support',
-              'For help with the app:\n\n• Contact your family member\n• Reach out to your care coordinator\n• Call the support number provided by your care team',
-              [{ text: 'OK' }]
-            );
-          }}
-        >
-          <Ionicons name="help-circle" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.settingText}>Help & Support</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray400} />
-        </TouchableOpacity>
-      </Card>
-
       {/* Sign Out */}
       <Card style={styles.signOutCard}>
         <Button
@@ -334,7 +235,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: 20,
   },
-  
+
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -360,23 +261,6 @@ const styles = StyleSheet.create({
     fontFamily: 'OpenSans-SemiBold',
     fontWeight: '600',
     color: COLORS.textPrimary,
-  },
-  
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-  },
-  
-  settingText: {
-    flex: 1,
-    fontSize: 18,
-    fontFamily: 'OpenSans-SemiBold',
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginLeft: 16,
   },
   
   signOutCard: {

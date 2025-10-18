@@ -1,5 +1,4 @@
-// backend/controllers/prescriptionController.js
-const { Prescription, PrescriptionItem, User, Elder, Doctor, Inventory, InventoryTransaction } = require('../models');
+const { Prescription, PrescriptionItem, User, Elder, Doctor, Inventory, InventoryTransaction, Subscription, Delivery } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -59,6 +58,12 @@ const getPrescriptions = async (req, res) => {
           model: PrescriptionItem,
           as: 'items',
           attributes: ['id', 'medicationName', 'quantityPrescribed', 'quantityDispensed', 'status']
+        },
+        {
+          model: Delivery,
+          as: 'delivery',
+          attributes: ['id', 'deliveryNumber', 'status', 'scheduledDate', 'deliveredDate'],
+          required: false
         }
       ],
       order: [['createdAt', 'DESC']],
@@ -110,14 +115,14 @@ const getPrescription = async (req, res) => {
           include: [{
             model: Doctor,
             as: 'doctorProfile',
-            attributes: ['specialization', 'licenseNumber', 'phoneNumber']
+            attributes: ['specialization', 'licenseNumber']
           }],
-          attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber']
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
         },
         {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 'phoneNumber']
+          attributes: ['id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 'phone', 'address']
         },
         {
           model: User,
