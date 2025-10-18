@@ -9,7 +9,7 @@ import {
   DollarSign, Save, ArrowLeft, User, Calendar, FileText
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5002/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
 const FillPrescription = () => {
   const navigate = useNavigate();
@@ -35,7 +35,7 @@ const FillPrescription = () => {
       });
 
       if (response.data.success) {
-        const prescriptionData = response.data.data.prescription;
+        const prescriptionData = response.data.data; // Backend returns data: prescription
         setPrescription(prescriptionData);
         
         // Initialize items state with prescription items
@@ -121,7 +121,7 @@ const FillPrescription = () => {
     updated[index].quantityToDispense = 0;
     updated[index].totalPrice = 0;
     setItems(updated);
-    toast.info('Marked as out of stock');
+    toast('Marked as out of stock', { icon: 'ℹ️' });
   };
 
   const updateItemField = (index, field, value) => {
@@ -460,7 +460,7 @@ const FillPrescription = () => {
                             updated[index].totalPrice = 0;
                             updated[index].status = 'filled';
                             setItems(updated);
-                            toast.info('Enter price and quantity manually');
+                            toast('Enter price and quantity manually', { icon: 'ℹ️' });
                           }}
                           className="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
                         >

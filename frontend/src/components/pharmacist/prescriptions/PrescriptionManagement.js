@@ -311,7 +311,7 @@ const PrescriptionManagement = () => {
 
                       <div className="flex flex-col gap-2 ml-4">
                         <button
-                          onClick={() => navigate(`/pharmacist/prescriptions/${prescription.id}`)}
+                          onClick={() => navigate(`/pharmacist/prescriptions/${prescription.id}/fill`)}
                           className="flex items-center gap-1 px-3 py-1 text-blue-600 border border-blue-600 rounded hover:bg-blue-50 transition-colors"
                         >
                           <Eye className="h-4 w-4" />
@@ -328,7 +328,7 @@ const PrescriptionManagement = () => {
                           </button>
                         )}
                         
-                        {(prescription.status === 'filled' || prescription.status === 'partially_filled') && (
+                        {(prescription.status === 'filled' || prescription.status === 'partially_filled') && !prescription.delivery && (
                           <button
                             onClick={() => navigate(`/pharmacist/prescriptions/${prescription.id}/create-delivery`)}
                             className="flex items-center gap-1 px-3 py-1 text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors"
@@ -336,6 +336,15 @@ const PrescriptionManagement = () => {
                             <Truck className="h-4 w-4" />
                             Create Delivery
                           </button>
+                        )}
+                        
+                        {prescription.delivery && (
+                          <div className="flex items-center gap-2 px-3 py-1 text-sm">
+                            <Truck className="h-4 w-4 text-green-600" />
+                            <span className="text-gray-700">
+                              Delivery: <span className="font-semibold capitalize">{prescription.delivery.status}</span>
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>

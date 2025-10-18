@@ -287,13 +287,6 @@ const DeliverySchedule = () => {
                       )}
                     </div>
                     <div className="flex flex-col gap-2 ml-4">
-                      <button
-                        onClick={() => navigate(`/pharmacist/deliveries/${delivery.id}`)}
-                        className="flex items-center gap-1 px-3 py-1 text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
-                      >
-                        <Eye className="h-4 w-4" />
-                        View
-                      </button>
                       {delivery.status !== 'delivered' && delivery.status !== 'cancelled' && (
                         <button
                           onClick={() => updateDeliveryStatus(delivery.id, getNextStatus(delivery.status))}

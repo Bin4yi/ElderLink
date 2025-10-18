@@ -6,6 +6,7 @@ const {
   Elder,
   User,
   Inventory,
+  Subscription,
 } = require("../models");
 const { Op } = require("sequelize");
 const emailService = require("../services/emailService");
@@ -160,7 +161,22 @@ exports.updateDeliveryStatus = async (req, res) => {
         {
           model: Elder,
           as: "elder",
-          include: [{ model: User, as: "user", attributes: ["email", "firstName", "lastName"] }],
+          include: [
+            { 
+              model: User, 
+              as: "user", 
+              attributes: ["email", "firstName", "lastName"] 
+            },
+            {
+              model: Subscription,
+              as: "subscription",
+              include: [{
+                model: User,
+                as: "user",
+                attributes: ["email", "firstName", "lastName"]
+              }]
+            }
+          ],
         },
         { model: Prescription, as: "prescription" },
       ],
@@ -176,25 +192,38 @@ exports.updateDeliveryStatus = async (req, res) => {
     const updateData = { status };
     if (notes) updateData.notes = notes;
     
-    // If delivered, set delivered date and update prescription
+    // If delivered, set delivered date and update prescription delivery date only
     if (status === "delivered") {
       updateData.deliveredDate = new Date();
+      // Update prescription's deliveryDate but keep status as 'filled'
       await delivery.prescription.update({
-        status: "delivered",
         deliveryDate: new Date(),
       });
 
       // Send email to family member
       try {
-        const familyEmail = delivery.elder.user?.email;
+        console.log('🔍 Checking for family member email...');
+        console.log('Elder data:', delivery.elder);
+        console.log('Elder subscription:', delivery.elder?.subscription);
+        console.log('Family member (subscription user):', delivery.elder?.subscription?.user);
+        
+        // Try to get email from subscription user (family member) first, then elder user
+        const familyMember = delivery.elder?.subscription?.user || delivery.elder?.user;
+        const familyEmail = familyMember?.email;
+        const familyName = familyMember?.firstName || 'Family Member';
+        
+        console.log('Family email:', familyEmail);
+        console.log('Family name:', familyName);
+        
         if (familyEmail) {
+          console.log('📧 Sending delivery notification email to:', familyEmail);
           await emailService.sendEmail({
             to: familyEmail,
             subject: `Medication Delivered - ${delivery.elder.firstName} ${delivery.elder.lastName}`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #2563eb;">Medication Delivery Confirmation</h2>
-                <p>Dear ${delivery.elder.user.firstName},</p>
+                <p>Dear ${familyName},</p>
                 <p>This is to inform you that the prescribed medications for <strong>${delivery.elder.firstName} ${delivery.elder.lastName}</strong> have been successfully delivered.</p>
                 
                 <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
@@ -214,10 +243,12 @@ exports.updateDeliveryStatus = async (req, res) => {
               </div>
             `,
           });
-          console.log(`✅ Delivery notification email sent to ${familyEmail}`);
+          console.log(`✅ Delivery notification email sent successfully to ${familyEmail}`);
+        } else {
+          console.log('⚠️ No family member email found for elder:', delivery.elder?.firstName);
         }
       } catch (emailError) {
-        console.error("Error sending delivery email:", emailError);
+        console.error("❌ Error sending delivery email:", emailError);
         // Don't fail the request if email fails
       }
     }

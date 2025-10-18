@@ -136,6 +136,8 @@ const doctorAppointmentsRoutes = require("./routes/doctorAppointments");
 // Import new inventory routes
 const inventoryRoutes = require("./routes/inventory");
 const prescriptionRoutes = require("./routes/prescriptions");
+const deliveryRoutes = require("./routes/deliveries");
+const pharmacistAnalyticsRoutes = require("./routes/pharmacistAnalytics");
 
 // 🚨 ADD: Import emergency routes
 const emergencyRoutes = require("./routes/emergency");
@@ -213,6 +215,8 @@ try {
   // Use new inventory routes
   app.use("/api/inventory", inventoryRoutes);
   app.use("/api/prescriptions", prescriptionRoutes);
+  app.use("/api/deliveries", deliveryRoutes);
+  app.use("/api/analytics/pharmacist", pharmacistAnalyticsRoutes);
 
   // 🚨 ADD: Use emergency routes
   app.use("/api/emergency", emergencyRoutes);
