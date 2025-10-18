@@ -4,7 +4,7 @@
 //   Windows: Run 'ipconfig' in Command Prompt, look for IPv4 Address
 //   Mac/Linux: Run 'ifconfig' in Terminal, look for inet address
 // Your phone and computer MUST be on the same WiFi network!
-export const API_BASE_URL = 'http://10.58.254.63:5000';
+export const API_BASE_URL = 'http://10.96.238.63:5000';
 
 // API Config object for backward compatibility
 export const API_CONFIG = {
@@ -209,6 +209,7 @@ export const ROUTES = {
   MAIN: 'Main',
   HOME: 'Home',
   APPOINTMENTS: 'Appointments',
+  REMINDERS: 'Reminders',
   HEALTH_METRICS: 'HealthMetrics',
   PROFILE: 'Profile',
   SETTINGS: 'Settings',

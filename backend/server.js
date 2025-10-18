@@ -355,8 +355,8 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log("✅ Database connected successfully");
 
-    await sequelize.sync({ alter: true });
-    console.log("✅ Database models synchronized");
+    // await sequelize.sync({ alter: true }); // Commented out to prevent hanging
+    console.log("✅ Database models synchronized (sync skipped)");
 
     // Start reservation cleanup task
     const { startReservationCleanup } = require("./utils/reservationCleanup");
