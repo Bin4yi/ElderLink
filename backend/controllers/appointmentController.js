@@ -305,6 +305,10 @@ class AppointmentController {
         }
       }
 
+      // Get doctor's current consultation fee
+      const doctor = await Doctor.findByPk(doctorId);
+      const consultationFee = doctor ? doctor.consultationFee : null;
+
       // Create a temporary reservation
       // familyMemberId is the user's ID (not a separate table)
       const reservation = await Appointment.create({
@@ -316,7 +320,8 @@ class AppointmentController {
         familyMemberId: req.user.id, // Family member is the logged-in user
         duration: 30,
         type: 'consultation',
-        priority: 'medium'
+        priority: 'medium',
+        consultationFee: consultationFee // Record doctor's fee at booking time
         // reason, elderId, symptoms, notes will be added when completing reservation
       });
 
@@ -581,6 +586,10 @@ class AppointmentController {
       // Get family member ID from authenticated user
       const familyMemberId = req.user.role === 'family_member' ? req.user.id : null;
 
+      // Get doctor's current consultation fee
+      const doctorData = await Doctor.findByPk(doctorId);
+      const consultationFee = doctorData ? doctorData.consultationFee : null;
+
       // Create appointment
       const appointment = await Appointment.create({
         elderId,
@@ -593,7 +602,8 @@ class AppointmentController {
         reason,
         symptoms,
         notes,
-        status: 'pending'
+        status: 'pending',
+        consultationFee: consultationFee // Record doctor's fee at booking time
       });
 
       // Fetch the complete appointment with relations
