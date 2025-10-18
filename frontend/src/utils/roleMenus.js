@@ -12,14 +12,11 @@ export const getRoleMenuItems = (role) => {
     case 'family_member':
       return [
         { path: '/family/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/family/elders', icon: Heart, label: 'My Elders' },
         { path: '/family/subscriptions', icon: Package, label: 'Subscriptions' },
         { path: '/family/appointments', icon: Calendar, label: 'Appointments' },
         { path: '/family/sessions', icon: Calendar, label: 'Monthly Sessions' },
-        { path: '/family/doctors', icon: Stethoscope, label: 'Doctors' },
         { path: '/family/health-reports', icon: Activity, label: 'Health Reports' },
         { path: '/family/profile', icon: User, label: 'Profile' },
-        { path: '/family/settings', icon: Settings, label: 'Settings' }
       ];
 
     case 'admin':

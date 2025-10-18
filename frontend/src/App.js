@@ -43,7 +43,6 @@ import AutoScheduleMonthly from "./components/family/sessions/AutoScheduleMonthl
 import Doctors from "./components/family/doctors/Doctors";
 import DoctorAssignment from "./components/family/doctors/DoctorAssignment"; // NEW IMPORT
 import AppointmentBooking from "./components/family/appointments/AppointmentBooking";
-import FamilySettings from "./components/family/settings/FamilySettings";
 import FamilyProfile from "./components/family/profile/FamilyProfile";
 import FamilyHealthReports from "./components/family/reports/FamilyHealthReports";
 import FamilySubscriptions from "./components/family/subscription/FamilySubscriptions";
@@ -163,7 +162,6 @@ function App() {
                     element={<DoctorAssignment />}
                   />{" "}
                   {/* NEW ROUTE */}
-                  <Route path="/family/settings" element={<FamilySettings />} />
                   <Route path="/family/profile" element={<FamilyProfile />} />
                   <Route
                     path="/family/health-reports"

@@ -1,6 +1,11 @@
 // backend/controllers/subscriptionController.js (FIXED)
-const { Subscription, User, Elder } = require('../models');
+const { Subscription, User, Elder, SubscriptionHistory } = require('../models');
 const stripe = require('../config/stripe');
+const { 
+  getSubscriptionStats, 
+  expireSubscriptions,
+  checkExpiringSubscriptions 
+} = require('../services/subscriptionService');
 
 const PACKAGE_PRICES = {
   '1_month': 99,
@@ -60,7 +65,25 @@ const createSubscription = async (req, res) => {
         endDate,
         amount,
         duration, // <-- this is '1_month', '6_months', or '1_year'
-        autoRenew: true
+        autoRenew: true,
+        stripePaymentIntentId: paymentIntent.id
+      });
+
+      // Log to history
+      await SubscriptionHistory.create({
+        subscriptionId: subscription.id,
+        userId,
+        action: 'created',
+        plan: subscription.plan,
+        duration: subscription.duration,
+        amount: subscription.amount,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate,
+        stripePaymentIntentId: paymentIntent.id,
+        metadata: {
+          stripeCustomerId: customer.id,
+          paymentStatus: paymentIntent.status
+        }
       });
 
       console.log('✅ Subscription created successfully:', subscription.id);
@@ -172,9 +195,227 @@ const cancelSubscription = async (req, res) => {
   }
 };
 
+// Get subscription statistics with expiration info
+const getSubscriptionStatistics = async (req, res) => {
+  try {
+    const stats = await getSubscriptionStats(req.user.id);
+    res.json({ success: true, stats });
+  } catch (error) {
+    console.error('Get subscription statistics error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Manual trigger to check expiring subscriptions (admin only)
+const checkExpiring = async (req, res) => {
+  try {
+    const result = await checkExpiringSubscriptions();
+    res.json({ success: true, result });
+  } catch (error) {
+    console.error('Check expiring subscriptions error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Manual trigger to expire subscriptions (admin only)
+const expireOldSubscriptions = async (req, res) => {
+  try {
+    const result = await expireSubscriptions();
+    res.json({ success: true, result });
+  } catch (error) {
+    console.error('Expire subscriptions error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Renew an expired subscription - keeps all data (elder assignment, history)
+const renewSubscription = async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+    const { duration, paymentMethodId } = req.body;
+    const userId = req.user.id;
+
+    // Find the subscription
+    const subscription = await Subscription.findOne({
+      where: { id: subscriptionId, userId },
+      include: [{ model: Elder, as: 'elder' }]
+    });
+
+    if (!subscription) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Subscription not found' 
+      });
+    }
+
+    // Check if subscription is expired or canceled
+    if (!['expired', 'canceled'].includes(subscription.status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only expired or canceled subscriptions can be renewed'
+      });
+    }
+
+    const amount = PACKAGE_PRICES[duration];
+    if (!amount) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid duration' 
+      });
+    }
+
+    console.log('🔄 Renewing subscription:', subscriptionId);
+    console.log('🔄 Previous elder assignment:', subscription.elderId);
+
+    // Process payment with Stripe
+    const customer = await stripe.customers.create({
+      email: req.user.email,
+      name: `${req.user.firstName} ${req.user.lastName}`,
+      payment_method: paymentMethodId,
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount * 100,
+      currency: 'usd',
+      customer: customer.id,
+      payment_method: paymentMethodId,
+      confirmation_method: 'manual',
+      confirm: true,
+      return_url: `${process.env.FRONTEND_URL}/dashboard`,
+      metadata: {
+        subscriptionId: subscription.id,
+        renewal: 'true'
+      }
+    });
+
+    console.log('🔄 Payment processed:', paymentIntent.status);
+
+    // Calculate new dates
+    const startDate = new Date();
+    let endDate = new Date(startDate);
+    
+    switch(duration) {
+      case '1_month':
+        endDate.setMonth(endDate.getMonth() + 1);
+        break;
+      case '6_months':
+        endDate.setMonth(endDate.getMonth() + 6);
+        break;
+      case '1_year':
+        endDate.setFullYear(endDate.getFullYear() + 1);
+        break;
+    }
+
+    // Update the subscription - KEEP elderId to preserve assignment
+    // IMPORTANT: Subscription ID stays the same!
+    await subscription.update({
+      status: 'active',
+      startDate,
+      endDate,
+      duration,
+      amount,
+      stripeCustomerId: customer.id,
+      stripePaymentIntentId: paymentIntent.id,
+      reminderSent: false // Reset reminder flag
+    });
+
+    // Log renewal to history
+    await SubscriptionHistory.create({
+      subscriptionId: subscription.id, // Same ID - not creating new subscription
+      userId,
+      action: 'renewed',
+      plan: subscription.plan,
+      duration: subscription.duration,
+      amount: subscription.amount,
+      startDate: subscription.startDate,
+      endDate: subscription.endDate,
+      stripePaymentIntentId: paymentIntent.id,
+      metadata: {
+        previousEndDate: subscription.endDate, // Store when it expired
+        elderIdPreserved: subscription.elderId ? true : false,
+        stripeCustomerId: customer.id,
+        paymentStatus: paymentIntent.status
+      }
+    });
+
+    // Reload to get updated data
+    await subscription.reload({
+      include: [{ model: Elder, as: 'elder' }]
+    });
+
+    console.log('✅ Subscription renewed successfully');
+    console.log('✅ Subscription ID unchanged:', subscription.id);
+    console.log('✅ Elder assignment preserved:', subscription.elderId);
+
+    res.json({
+      success: true,
+      message: 'Subscription renewed successfully',
+      subscription,
+      dataPreserved: {
+        elderAssignment: subscription.elderId ? true : false,
+        elderName: subscription.elder ? 
+          `${subscription.elder.firstName} ${subscription.elder.lastName}` : null
+      }
+    });
+  } catch (error) {
+    console.error('❌ Renewal error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to renew subscription',
+      error: error.message 
+    });
+  }
+};
+
+// Get subscription history for a user
+const getSubscriptionHistory = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { subscriptionId } = req.query;
+
+    let whereClause = { userId };
+    if (subscriptionId) {
+      whereClause.subscriptionId = subscriptionId;
+    }
+
+    const history = await SubscriptionHistory.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Subscription,
+          as: 'subscription',
+          include: [{ model: Elder, as: 'elder' }]
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      history,
+      total: history.length
+    });
+  } catch (error) {
+    console.error('❌ Get history error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get subscription history',
+      error: error.message
+    });
+  }
+};
+
 module.exports = { 
   createSubscription, 
   getSubscriptions, 
   getAvailableSubscriptions,
-  cancelSubscription 
+  cancelSubscription,
+  getSubscriptionStatistics,
+  checkExpiring,
+  expireOldSubscriptions,
+  renewSubscription,
+  getSubscriptionHistory
 };

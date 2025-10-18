@@ -51,6 +51,10 @@ const Subscription = sequelize.define('Subscription', {
   autoRenew: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  reminderSent: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 });
 
