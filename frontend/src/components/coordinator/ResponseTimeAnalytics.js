@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { coordinatorService } from '../../services/ambulance';
+import Loading from '../common/Loading';
 import './ResponseTimeAnalytics.css';
 
 const ResponseTimeAnalytics = () => {
@@ -26,7 +27,7 @@ const ResponseTimeAnalytics = () => {
   if (loading) {
     return (
       <div className="analytics loading">
-        <div className="loading-spinner"></div>
+        <Loading text="Loading analytics..." />
       </div>
     );
   }

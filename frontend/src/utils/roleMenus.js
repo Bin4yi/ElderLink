@@ -23,9 +23,7 @@ export const getRoleMenuItems = (role) => {
       return [
         { path: '/admin/dashboard', icon: Home, label: 'Dashboard' },
         { path: '/admin/users', icon: Users, label: 'User Management' },
-        { path: '/admin/packages', icon: Package, label: 'Package Management' },
-        { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
-        { path: '/admin/settings', icon: Settings, label: 'System Settings' }
+        { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' }
       ];
 
     case 'coordinator':

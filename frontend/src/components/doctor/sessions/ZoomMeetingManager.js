@@ -6,6 +6,7 @@ import {
   startMeeting,
   getDoctorMonthlySessions 
 } from '../../../services/monthlySessionService';
+import Loading from '../../common/Loading';
 import './ZoomMeetingManager.css';
 
 const ZoomMeetingManager = () => {
@@ -123,10 +124,7 @@ const ZoomMeetingManager = () => {
   if (loading) {
     return (
       <div className="zoom-manager-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Loading sessions...</p>
-        </div>
+        <Loading text="Loading sessions..." />
       </div>
     );
   }
