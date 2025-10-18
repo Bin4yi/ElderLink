@@ -25,4 +25,11 @@ router.get('/stats',
   DoctorProfileController.getDoctorStats
 );
 
+// Get daily revenue for chart
+router.get('/revenue-chart', 
+  authenticate, 
+  authorize('doctor'), 
+  DoctorProfileController.getDailyRevenue
+);
+
 module.exports = router;

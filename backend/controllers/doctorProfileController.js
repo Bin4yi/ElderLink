@@ -208,6 +208,7 @@ class DoctorProfileController {
 
       // Get statistics from various tables
       const { Appointment, DoctorAssignment } = require('../models');
+      const { fn, col, literal } = require('sequelize');
       
       const totalAppointments = await Appointment.count({
         where: { doctorId: doctor.id }
@@ -227,15 +228,119 @@ class DoctorProfileController {
         }
       });
 
+      // Calculate total revenue from completed appointments (earned revenue)
+      const earnedRevenueResult = await Appointment.findOne({
+        attributes: [
+          [fn('SUM', col('consultationFee')), 'earnedRevenue']
+        ],
+        where: {
+          doctorId: doctor.id,
+          status: 'completed',
+          consultationFee: { [Op.ne]: null }
+        },
+        raw: true
+      });
+
+      const earnedRevenue = parseFloat(earnedRevenueResult?.earnedRevenue || 0);
+
+      // Calculate expected revenue from all confirmed appointments (not cancelled)
+      const expectedRevenueResult = await Appointment.findOne({
+        attributes: [
+          [fn('SUM', col('consultationFee')), 'expectedRevenue']
+        ],
+        where: {
+          doctorId: doctor.id,
+          status: { 
+            [Op.in]: ['pending', 'upcoming', 'today', 'in-progress', 'completed'] 
+          },
+          consultationFee: { [Op.ne]: null }
+        },
+        raw: true
+      });
+
+      const expectedRevenue = parseFloat(expectedRevenueResult?.expectedRevenue || 0);
+      const totalRevenue = expectedRevenue; // Total includes all confirmed appointments
+
+      // Calculate revenue this month (completed)
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const monthlyEarnedResult = await Appointment.findOne({
+        attributes: [
+          [fn('SUM', col('consultationFee')), 'monthlyEarned']
+        ],
+        where: {
+          doctorId: doctor.id,
+          status: 'completed',
+          consultationFee: { [Op.ne]: null },
+          createdAt: { [Op.gte]: startOfMonth }
+        },
+        raw: true
+      });
+
+      const monthlyEarned = parseFloat(monthlyEarnedResult?.monthlyEarned || 0);
+
+      // Calculate expected revenue this month (all confirmed appointments)
+      const monthlyExpectedResult = await Appointment.findOne({
+        attributes: [
+          [fn('SUM', col('consultationFee')), 'monthlyExpected']
+        ],
+        where: {
+          doctorId: doctor.id,
+          status: { 
+            [Op.in]: ['pending', 'upcoming', 'today', 'in-progress', 'completed'] 
+          },
+          consultationFee: { [Op.ne]: null },
+          createdAt: { [Op.gte]: startOfMonth }
+        },
+        raw: true
+      });
+
+      const monthlyExpected = parseFloat(monthlyExpectedResult?.monthlyExpected || 0);
+      const monthlyRevenue = monthlyExpected; // Show expected revenue for the month
+
+      // Calculate average consultation fee
+      const avgFeeResult = await Appointment.findOne({
+        attributes: [
+          [fn('AVG', col('consultationFee')), 'averageFee']
+        ],
+        where: {
+          doctorId: doctor.id,
+          consultationFee: { [Op.ne]: null }
+        },
+        raw: true
+      });
+
+      const averageConsultationFee = parseFloat(avgFeeResult?.averageFee || doctor.consultationFee);
+
+      // Count pending appointments (for additional info)
+      const pendingAppointments = await Appointment.count({
+        where: {
+          doctorId: doctor.id,
+          status: { [Op.in]: ['pending', 'upcoming', 'today'] }
+        }
+      });
+
+      // Apply 90% calculation (10% goes to system)
+      const DOCTOR_SHARE = 0.90;
+
       res.json({
         success: true,
         data: {
           totalAppointments,
           completedAppointments,
+          pendingAppointments,
           totalPatients,
           yearsOfExperience: doctor.experience,
           consultationFee: doctor.consultationFee,
-          verificationStatus: doctor.verificationStatus
+          verificationStatus: doctor.verificationStatus,
+          // Revenue analytics (90% to doctor, 10% to system)
+          totalRevenue: (totalRevenue * DOCTOR_SHARE).toFixed(2), // All confirmed appointments
+          earnedRevenue: (earnedRevenue * DOCTOR_SHARE).toFixed(2), // Only completed
+          monthlyRevenue: (monthlyRevenue * DOCTOR_SHARE).toFixed(2), // This month's expected
+          monthlyEarned: (monthlyEarned * DOCTOR_SHARE).toFixed(2), // This month's earned
+          averageConsultationFee: (averageConsultationFee * DOCTOR_SHARE).toFixed(2)
         }
       });
 
@@ -244,6 +349,92 @@ class DoctorProfileController {
       res.status(500).json({
         success: false,
         message: 'Failed to fetch statistics',
+        error: error.message
+      });
+    }
+  }
+
+  // Get daily revenue for chart (30 days)
+  static async getDailyRevenue(req, res) {
+    try {
+      const userId = req.user.id;
+      const days = parseInt(req.query.days) || 30;
+      
+      // Find doctor
+      const doctor = await Doctor.findOne({
+        where: { userId }
+      });
+
+      if (!doctor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Doctor profile not found'
+        });
+      }
+
+      const { Appointment } = require('../models');
+      const { fn, col, Op } = require('sequelize');
+      const { Sequelize } = require('sequelize');
+      
+      // Get date range
+      const endDate = new Date();
+      endDate.setHours(23, 59, 59, 999);
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      startDate.setHours(0, 0, 0, 0);
+      
+      // Query daily revenue
+      const dailyRevenue = await Appointment.findAll({
+        attributes: [
+          [fn('DATE', col('createdAt')), 'date'],
+          [fn('SUM', col('consultationFee')), 'revenue'],
+          [fn('COUNT', col('id')), 'appointments']
+        ],
+        where: {
+          doctorId: doctor.id,
+          status: {
+            [Op.in]: ['pending', 'upcoming', 'today', 'in-progress', 'completed']
+          },
+          consultationFee: { [Op.ne]: null },
+          createdAt: {
+            [Op.between]: [startDate, endDate]
+          }
+        },
+        group: [fn('DATE', col('createdAt'))],
+        order: [[fn('DATE', col('createdAt')), 'ASC']],
+        raw: true
+      });
+
+      // Apply 90% calculation (10% goes to system)
+      const DOCTOR_SHARE = 0.90;
+      
+      // Fill in missing days with zero revenue
+      const result = [];
+      const currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const dayData = dailyRevenue.find(d => d.date === dateStr);
+        
+        result.push({
+          date: dateStr,
+          revenue: dayData ? (parseFloat(dayData.revenue) * DOCTOR_SHARE).toFixed(2) : '0.00',
+          appointments: dayData ? parseInt(dayData.appointments) : 0
+        });
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      res.json({
+        success: true,
+        data: result
+      });
+
+    } catch (error) {
+      console.error('❌ Error fetching daily revenue:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch daily revenue',
         error: error.message
       });
     }
