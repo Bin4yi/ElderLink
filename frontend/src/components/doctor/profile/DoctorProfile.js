@@ -5,9 +5,19 @@ import {
   User, Mail, Phone, Briefcase, Award, GraduationCap, 
   MapPin, Calendar, Clock, DollarSign, Edit2, Save, X,
   CheckCircle, AlertCircle, Stethoscope, Users, FileText,
-  Star, TrendingUp, Activity, CalendarCheck
+  Star, TrendingUp, Activity, CalendarCheck, Lock, Eye, EyeOff
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  Legend 
+} from 'recharts';
 import api from '../../../services/api';
 import RoleLayout from '../../common/RoleLayout';
 import Loading from '../../common/Loading';
@@ -20,11 +30,51 @@ const DoctorProfile = () => {
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [formData, setFormData] = useState({});
+  const [activeTab, setActiveTab] = useState('profile'); // New state for tabs
+  const [chartData, setChartData] = useState([]);
+  const [chartLoading, setChartLoading] = useState(false);
+  
+  // Password change modal states
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     loadProfile();
     loadStats();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      fetchChartData();
+    }
+  }, [activeTab]);
+
+  const fetchChartData = async () => {
+    setChartLoading(true);
+    try {
+      const response = await api.get('/api/doctor/profile/revenue-chart?days=30');
+      // Format data for chart
+      const formattedData = response.data.data.map(item => ({
+        date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        revenue: parseFloat(item.revenue || 0),
+        appointments: parseInt(item.appointments || 0)
+      }));
+      setChartData(formattedData);
+    } catch (error) {
+      console.error('Failed to fetch chart data:', error);
+      toast.error('Failed to load chart data');
+    } finally {
+      setChartLoading(false);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -107,6 +157,91 @@ const DoctorProfile = () => {
       toast.error(error.response?.data?.message || 'Failed to save profile');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Password change functions
+  const handlePasswordModalOpen = () => {
+    setShowPasswordModal(true);
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+  };
+
+  const handlePasswordModalClose = () => {
+    setShowPasswordModal(false);
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!passwordData.currentPassword) {
+      toast.error('Please enter your current password');
+      return;
+    }
+    
+    if (!passwordData.newPassword) {
+      toast.error('Please enter a new password');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters long');
+      return;
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      toast.error('New password must be different from current password');
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      
+      const response = await api.post('/auth/change-password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      
+      if (response.data.success) {
+        toast.success('Password changed successfully!');
+        handlePasswordModalClose();
+      } else {
+        toast.error(response.data.message || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('❌ Error changing password:', error);
+      if (error.response?.status === 401) {
+        toast.error('Current password is incorrect');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to change password');
+      }
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -203,37 +338,75 @@ const DoctorProfile = () => {
               </div>
             </div>
             
-            {!editing ? (
-              <button
-                onClick={handleEdit}
-                className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center space-x-2"
-              >
-                <Edit2 className="w-5 h-5" />
-                <span>Edit Profile</span>
-              </button>
-            ) : (
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors flex items-center space-x-2 disabled:opacity-50"
-                >
-                  <Save className="w-5 h-5" />
-                  <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-                </button>
-                <button
-                  onClick={handleCancel}
-                  disabled={saving}
-                  className="bg-white text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-red-50 transition-colors flex items-center space-x-2 disabled:opacity-50"
-                >
-                  <X className="w-5 h-5" />
-                  <span>Cancel</span>
-                </button>
-              </div>
+            {activeTab === 'profile' && (
+              <>
+                {!editing ? (
+                  <button
+                    onClick={handleEdit}
+                    className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center space-x-2"
+                  >
+                    <Edit2 className="w-5 h-5" />
+                    <span>Edit Profile</span>
+                  </button>
+                ) : (
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                    >
+                      <Save className="w-5 h-5" />
+                      <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      disabled={saving}
+                      className="bg-white text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-red-50 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                    >
+                      <X className="w-5 h-5" />
+                      <span>Cancel</span>
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
 
+        {/* Tabs Navigation */}
+        <div className="bg-white rounded-xl shadow-lg p-2">
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
+                activeTab === 'profile'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <User className="w-5 h-5" />
+              <span>Profile Details</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('analytics');
+                setEditing(false); // Disable editing when switching to analytics
+              }}
+              className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
+                activeTab === 'analytics'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <TrendingUp className="w-5 h-5" />
+              <span>Analytics</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Profile Details Tab */}
+        {activeTab === 'profile' && (
+          <>
         {/* Statistics Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -364,6 +537,17 @@ const DoctorProfile = () => {
                 ) : (
                   <p className="text-gray-800 text-base leading-relaxed">{profile.bio || 'No bio provided'}</p>
                 )}
+              </div>
+
+              {/* Change Password Button */}
+              <div className="md:col-span-2 pt-4 border-t">
+                <button
+                  onClick={handlePasswordModalOpen}
+                  className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  <Lock className="w-5 h-5" />
+                  <span>Change Password</span>
+                </button>
               </div>
             </div>
           </div>
@@ -592,7 +776,340 @@ const DoctorProfile = () => {
             )}
           </div>
         </div>
+          </>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Revenue Analytics</h2>
+            
+            {stats ? (
+              <>
+                {/* Revenue Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  {/* Total Revenue */}
+                  <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <DollarSign className="w-8 h-8 text-emerald-600" />
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
+                    <p className="text-3xl font-bold text-emerald-700">
+                      ${parseFloat(stats.totalRevenue || 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      From all confirmed appointments (90% share)
+                    </p>
+                  </div>
+
+                  {/* Earned Revenue */}
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-400">
+                    <div className="flex items-center justify-between mb-2">
+                      <CheckCircle className="w-8 h-8 text-green-600" />
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">Earned Revenue</p>
+                    <p className="text-3xl font-bold text-green-700">
+                      ${parseFloat(stats.earnedRevenue || 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      From completed appointments (90% share)
+                    </p>
+                  </div>
+
+                  {/* Monthly Revenue */}
+                  <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-6 border border-teal-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <TrendingUp className="w-8 h-8 text-teal-600" />
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">This Month</p>
+                    <p className="text-3xl font-bold text-teal-700">
+                      ${parseFloat(stats.monthlyRevenue || 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Expected revenue this month (90% share)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Detailed Breakdown */}
+                <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Detailed Breakdown</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Total Appointments</p>
+                      <p className="text-2xl font-bold text-gray-800">
+                        {stats.totalAppointments || 0}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Average Consultation Fee</p>
+                      <p className="text-2xl font-bold text-gray-800">
+                        ${parseFloat(stats.averageConsultationFee || 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Monthly Earned</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        ${parseFloat(stats.monthlyEarned || 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Monthly Pending</p>
+                      <p className="text-2xl font-bold text-orange-600">
+                        ${(parseFloat(stats.monthlyRevenue || 0) - parseFloat(stats.monthlyEarned || 0)).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Revenue Chart */}
+                <div className="mt-8 bg-gray-50 rounded-xl p-8 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+                    <TrendingUp className="w-6 h-6 mr-2 text-emerald-600" />
+                    30-Day Revenue Trend (90% Share)
+                  </h3>
+                  {chartLoading ? (
+                    <div className="flex items-center justify-center h-80">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+                        <p className="text-gray-500">Loading chart data...</p>
+                      </div>
+                    </div>
+                  ) : chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={400}>
+                      <LineChart 
+                        data={chartData}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                        <XAxis 
+                          dataKey="date" 
+                          tick={{ fontSize: 12, fill: '#666' }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis 
+                          tick={{ fontSize: 12, fill: '#666' }}
+                          tickFormatter={(value) => `$${value.toLocaleString()}`}
+                        />
+                        <Tooltip 
+                          formatter={(value, name) => {
+                            if (name === 'revenue') return [`$${parseFloat(value).toLocaleString()}`, 'Revenue (90%)'];
+                            return [value, 'Appointments'];
+                          }}
+                          contentStyle={{ 
+                            backgroundColor: 'white', 
+                            border: '1px solid #ccc',
+                            borderRadius: '8px',
+                            padding: '10px'
+                          }}
+                          labelStyle={{ fontWeight: 'bold', marginBottom: '5px' }}
+                        />
+                        <Legend 
+                          wrapperStyle={{ paddingTop: '20px' }}
+                          formatter={(value) => value === 'revenue' ? 'Revenue (90% Share)' : 'Appointments'}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="revenue" 
+                          stroke="#10b981" 
+                          strokeWidth={3}
+                          dot={{ fill: '#10b981', r: 5, strokeWidth: 2, stroke: '#fff' }}
+                          activeDot={{ r: 7, strokeWidth: 2 }}
+                          name="revenue"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-80 text-gray-500">
+                      <div className="text-center">
+                        <TrendingUp className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                        <p className="text-lg font-medium">No revenue data available</p>
+                        <p className="text-sm mt-2">Revenue data will appear here once you have appointments</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500">Loading analytics...</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+                    <Lock className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">Change Password</h2>
+                </div>
+                <button
+                  onClick={handlePasswordModalClose}
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors"
+                  disabled={changingPassword}
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <p className="text-blue-100 mt-2 text-sm">
+                Enter your current password and choose a new secure password
+              </p>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handlePasswordSubmit} className="p-6 space-y-5">
+              {/* Current Password */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Current Password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showCurrentPassword ? "text" : "password"}
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter your current password"
+                    disabled={changingPassword}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    disabled={changingPassword}
+                  >
+                    {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  You must verify your current password to make changes
+                </p>
+              </div>
+
+              {/* New Password */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  New Password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter your new password"
+                    disabled={changingPassword}
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    disabled={changingPassword}
+                  >
+                    {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Minimum 6 characters required
+                </p>
+              </div>
+
+              {/* Confirm New Password */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Confirm New Password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordChange}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Confirm your new password"
+                    disabled={changingPassword}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    disabled={changingPassword}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {passwordData.newPassword && passwordData.confirmPassword && 
+                 passwordData.newPassword !== passwordData.confirmPassword && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center">
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    Passwords do not match
+                  </p>
+                )}
+              </div>
+
+              {/* Security Tips */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-2" />
+                  Password Security Tips
+                </h4>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• Use at least 6 characters</li>
+                  <li>• Mix uppercase and lowercase letters</li>
+                  <li>• Include numbers and special characters</li>
+                  <li>• Avoid common words or personal information</li>
+                </ul>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handlePasswordModalClose}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                  disabled={changingPassword}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  disabled={changingPassword}
+                >
+                  {changingPassword ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Changing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      Change Password
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </RoleLayout>
   );
 };
