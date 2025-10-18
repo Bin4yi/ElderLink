@@ -1,10 +1,12 @@
 // backend/controllers/monthlySessionController.js
-const MonthlySession = require('../models/MonthlySession');
-const DoctorSchedule = require('../models/DoctorSchedule');
-const Doctor = require('../models/Doctor');
-const Elder = require('../models/Elder');
-const User = require('../models/User');
-const Subscription = require('../models/Subscription');
+const { 
+  MonthlySession, 
+  DoctorSchedule, 
+  Doctor, 
+  Elder, 
+  User, 
+  Subscription 
+} = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -479,11 +481,13 @@ exports.getDoctorMonthlySessions = async (req, res) => {
         {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName', 'dateOfBirth', 'photo', 'medicalHistory', 'allergies', 'phone', 'emergencyContact']
+          required: false,
+          attributes: ['id', 'firstName', 'lastName', 'dateOfBirth', 'photo', 'medicalHistory', 'allergies', 'phone', 'emergencyContact', 'bloodType', 'gender']
         },
         {
           model: User,
           as: 'familyMember',
+          required: false,
           attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
         }
       ],
@@ -498,7 +502,9 @@ exports.getDoctorMonthlySessions = async (req, res) => {
         doctorId: sessions[0].doctorId,
         sessionDate: sessions[0].sessionDate,
         sessionTime: sessions[0].sessionTime,
-        status: sessions[0].status
+        status: sessions[0].status,
+        hasElder: !!sessions[0].elder,
+        hasFamilyMember: !!sessions[0].familyMember
       });
     }
 
@@ -511,11 +517,13 @@ exports.getDoctorMonthlySessions = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching doctor monthly sessions:', error);
+    console.error('❌ Error fetching doctor monthly sessions:', error);
+    console.error('❌ Error stack:', error.stack);
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch monthly sessions',
-      error: error.message
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
