@@ -4,12 +4,25 @@ const { User } = require('../models');
 
 const auth = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const authHeader = req.header('Authorization');
     
-    if (!token) {
+    if (!authHeader) {
       return res.status(401).json({
         success: false,
         message: 'No token, authorization denied'
+      });
+    }
+
+    // Extract token - handle both "Bearer token" and just "token" formats
+    let token = authHeader;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.replace('Bearer ', '');
+    }
+    
+    if (!token || token.trim() === '') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token format'
       });
     }
 

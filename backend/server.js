@@ -362,6 +362,10 @@ const startServer = async () => {
     const { startReservationCleanup } = require("./utils/reservationCleanup");
     startReservationCleanup();
 
+    // Start subscription scheduler
+    const { initSubscriptionScheduler } = require("./schedulers/subscriptionScheduler");
+    initSubscriptionScheduler();
+
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
