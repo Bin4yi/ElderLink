@@ -112,7 +112,9 @@ class DoctorAppointmentController {
     }
   }
 
-  // Review appointment (approve/reject)
+  // REMOVED: Review appointment (approve/reject) - No longer needed
+  // Appointments are now automatically set to 'upcoming' status
+  /* 
   static async reviewAppointment(req, res) {
     try {
       const { id } = req.params;
@@ -206,6 +208,8 @@ class DoctorAppointmentController {
       });
     }
   }
+  */
+
 
   // Reschedule appointment
   static async rescheduleAppointment(req, res) {
