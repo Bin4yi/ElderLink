@@ -6,6 +6,7 @@ import { COLORS } from '../utils/colors';
 
 // Import main screens
 import HomeScreen from '../screens/main/HomeScreen';
+import RemindersScreen from '../screens/main/RemindersScreen';
 import HealthMetricsScreen from '../screens/main/HealthMetricsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 
@@ -68,6 +69,9 @@ const TabNavigator = () => {
             case ROUTES.HOME:
               iconName = focused ? 'home' : 'home-outline';
               break;
+            case ROUTES.REMINDERS:
+              iconName = focused ? 'notifications' : 'notifications-outline';
+              break;
             case ROUTES.HEALTH_METRICS:
               iconName = focused ? 'medical' : 'medical-outline';
               break;
@@ -97,6 +101,16 @@ const TabNavigator = () => {
           title: 'Home',
           headerTitle: 'ElderLink',
           tabBarLabel: 'Home',
+        }}
+      />
+      
+      <Tab.Screen 
+        name={ROUTES.REMINDERS} 
+        component={RemindersScreen}
+        options={{
+          title: 'Reminders',
+          headerTitle: 'My Appointments',
+          tabBarLabel: 'Reminders',
         }}
       />
       

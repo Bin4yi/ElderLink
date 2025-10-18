@@ -649,19 +649,48 @@ class AppointmentController {
   // Get appointments for family member
   static async getAppointments(req, res) {
     try {
+      console.log('📅 getAppointments called');
+      console.log('   User:', req.user ? { id: req.user.id, role: req.user.role, email: req.user.email } : 'NO USER');
+      
       const { status, page = 1, limit = 10 } = req.query;
       const offset = (page - 1) * limit;
 
       const whereClause = {};
       if (req.user.role === 'family_member') {
+        console.log('   Setting familyMemberId:', req.user.id);
         whereClause.familyMemberId = req.user.id;
       } else if (req.user.role === 'elder') {
-        whereClause.elderId = req.user.id;
+        console.log('   Elder role detected, finding Elder record for userId:', req.user.id);
+        // For elders, we need to find their Elder record first
+        const elder = await Elder.findOne({ where: { userId: req.user.id } });
+        console.log('   Elder found:', elder ? `ID=${elder.id}, Name=${elder.firstName} ${elder.lastName}` : 'NULL');
+        if (elder) {
+          whereClause.elderId = elder.id;
+          console.log('   Setting elderId to:', elder.id);
+        } else {
+          console.log('⚠️ No elder profile found for user:', req.user.id);
+          return res.json({
+            success: true,
+            appointments: [],
+            pagination: {
+              currentPage: 1,
+              totalPages: 0,
+              totalItems: 0,
+              itemsPerPage: parseInt(limit)
+            }
+          });
+        }
+      } else {
+        console.log('   Unknown role:', req.user.role);
       }
 
       if (status) {
+        console.log('   Adding status filter:', status);
         whereClause.status = status;
       }
+
+      console.log('   Final whereClause:', JSON.stringify(whereClause));
+      console.log('   Querying appointments...');
 
       const appointments = await Appointment.findAndCountAll({
         where: whereClause,
@@ -687,6 +716,9 @@ class AppointmentController {
         limit: parseInt(limit),
         offset: parseInt(offset)
       });
+
+      console.log(`   ✅ Found ${appointments.count} appointments`);
+      console.log(`   Returning ${appointments.rows.length} rows`);
 
       res.json({
         success: true,

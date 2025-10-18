@@ -28,25 +28,26 @@ const HealthMetricsScreen = ({ navigation }) => {
 
   const fetchHealthVitals = async () => {
     try {
-      console.log('🏥 Fetching health vitals for elder...');
+      console.log('🏥 Fetching most recent health vitals for elder...');
       setLoadingVitals(true);
       
-      // Call the API endpoint that staff use to record health data
-      const response = await apiService.get('/api/health-monitoring/today');
+      // Call the API endpoint to get all health records (sorted by date DESC)
+      // With limit=1, we get only the most recent record
+      const response = await apiService.get('/api/health-monitoring?limit=1');
       
       console.log('🏥 Health vitals response:', response);
       
       if (response && response.success && response.data) {
-        // Handle array response (take the latest record)
+        // Get the most recent record from the array
         const vitalsData = Array.isArray(response.data) 
           ? (response.data.length > 0 ? response.data[0] : null)
           : response.data;
         
         setHealthVitals(vitalsData);
-        console.log('✅ Health vitals loaded:', vitalsData);
+        console.log('✅ Most recent health vitals loaded:', vitalsData);
       } else {
         setHealthVitals(null);
-        console.log('ℹ️ No health vitals found for today');
+        console.log('ℹ️ No health vitals found');
       }
     } catch (error) {
       console.error('❌ Error fetching health vitals:', error);
@@ -68,6 +69,26 @@ const HealthMetricsScreen = ({ navigation }) => {
     return ((fahrenheit - 32) * 5 / 9).toFixed(1);
   };
 
+  // Format the time ago for the recorded date
+  const getTimeAgo = (dateString) => {
+    if (!dateString) return '';
+    
+    const now = new Date();
+    const recordedDate = new Date(dateString);
+    const diffMs = now - recordedDate;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    
+    return recordedDate.toLocaleDateString();
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView 
@@ -86,7 +107,7 @@ const HealthMetricsScreen = ({ navigation }) => {
           <View style={styles.headerContent}>
             <Ionicons name="heart-circle" size={48} color="#FF6B6B" />
             <View style={styles.headerText}>
-              <Text style={styles.headerTitle}>Today's Health Vitals</Text>
+              <Text style={styles.headerTitle}>Recent Health Vitals</Text>
               <Text style={styles.headerSubtitle}>Recorded by your care team</Text>
             </View>
           </View>
@@ -213,14 +234,25 @@ const HealthMetricsScreen = ({ navigation }) => {
               <View style={styles.recordedInfo}>
                 <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
                 <Text style={styles.recordedText}>
-                  Recorded: {new Date(healthVitals.monitoringDate).toLocaleString()}
+                  Recorded {getTimeAgo(healthVitals.monitoringDate)}
+                </Text>
+              </View>
+              <View style={styles.recordedInfo}>
+                <Ionicons name="calendar-outline" size={16} color={COLORS.textSecondary} />
+                <Text style={styles.recordedText}>
+                  {new Date(healthVitals.monitoringDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
                 </Text>
               </View>
             </>
           ) : !loadingVitals && !healthVitals ? (
             <View style={styles.noDataContainer}>
               <Ionicons name="medical-outline" size={64} color={COLORS.gray300} />
-              <Text style={styles.noDataText}>No health vitals recorded today</Text>
+              <Text style={styles.noDataText}>No health vitals recorded yet</Text>
               <Text style={styles.noDataSubtext}>
                 Your care team will record your vitals during checkups
               </Text>
