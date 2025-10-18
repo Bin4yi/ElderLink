@@ -51,7 +51,7 @@ import DoctorCalendarModal from "./components/family/appointments/DoctorCalendar
 
 // Pharmacy
 import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
-import MedicationManagement from './components/pharmacist/medications/MedicationManagement';
+import PharmacistAnalysis from './components/pharmacist/analysis/PharmacistAnalysis';
 import DeliverySchedule from './components/pharmacist/delivery/DeliverySchedule';
 import PrescriptionManagement from './components/pharmacist/prescriptions/PrescriptionManagement';
 import FillPrescription from './components/pharmacist/prescriptions/FillPrescription';
@@ -176,7 +176,7 @@ function App() {
                   />
                   {/* Pharmacy routes */}
                   <Route path="/pharmacist/dashboard" element={<PharmacyDashboard />} />
-                  <Route path="/pharmacist/medications" element={<MedicationManagement />} />
+                  <Route path="/pharmacist/analysis" element={<PharmacistAnalysis />} />
                   <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
                   <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
                   <Route path="/pharmacist/prescriptions/:id/fill" element={<FillPrescription />} />
