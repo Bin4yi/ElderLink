@@ -32,7 +32,40 @@ class AppointmentService {
       const response = await api.get(`/appointments/doctor/${doctorId}/availability`, {
         params: { date }
       });
-      return response.data.slots; // should be an array of slot objects
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Reserve time slot (locks for 10 minutes)
+  async reserveTimeSlot(doctorId, appointmentDate) {
+    try {
+      const response = await api.post('/appointments/reserve-slot', {
+        doctorId,
+        appointmentDate
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Complete reservation with booking details
+  async completeReservation(reservationId, bookingData) {
+    try {
+      const response = await api.post(`/appointments/reservations/${reservationId}/complete`, bookingData);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Cancel reservation
+  async cancelReservation(reservationId) {
+    try {
+      const response = await api.delete(`/appointments/reservations/${reservationId}`);
+      return response.data;
     } catch (error) {
       throw this.handleError(error);
     }

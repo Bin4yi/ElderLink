@@ -167,22 +167,24 @@ class DoctorAssignmentController {
 
       console.log('🔍 Getting assignments for elder:', elderId);
 
-      // Verify elder belongs to family member
-      const elder = await Elder.findOne({
+      // Get assignments from DoctorAssignment table with doctor details
+      const assignments = await DoctorAssignment.findAll({
         where: { 
-          id: elderId,
-          userId: familyMemberId
-        }
+          elderId,
+          familyMemberId,
+          status: 'active'  // Only get active assignments
+        },
+        include: [
+          {
+            model: User,
+            as: 'doctor',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'specialization', 'experience', 'photo']
+          }
+        ],
+        order: [['assignmentDate', 'DESC']]
       });
 
-      if (!elder) {
-        return res.status(404).json({
-          success: false,
-          message: 'Elder not found or not authorized'
-        });
-      }
-
-      const assignments = elder.doctorAssignmentData || [];  // ✅ Changed field name
+      console.log('✅ Found assignments:', assignments.length);
 
       res.json({
         success: true,

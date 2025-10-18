@@ -61,10 +61,15 @@ const Button = ({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 12,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   
   // Variants
@@ -74,29 +79,33 @@ const styles = StyleSheet.create({
   
   secondary: {
     backgroundColor: COLORS.white,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderWidth: 1,
+    borderColor: COLORS.gray300,
   },
   
   outline: {
     backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderWidth: 1,
+    borderColor: COLORS.gray300,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   
   ghost: {
     backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   
   danger: {
     backgroundColor: COLORS.error,
   },
   
-  // Sizes
+  // Sizes - professional but accessible
   small: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    minHeight: 40,
+    paddingVertical: 10,
+    minHeight: 44,
   },
   
   medium: {
@@ -107,9 +116,8 @@ const styles = StyleSheet.create({
   
   large: {
     paddingHorizontal: 24,
-    paddingVertical: 16,
-    minHeight: 56,
-    minWidth: 120,
+    paddingVertical: 14,
+    minHeight: 52,
   },
   
   // States
@@ -121,7 +129,7 @@ const styles = StyleSheet.create({
   text: {
     fontFamily: 'OpenSans-SemiBold',
     textAlign: 'center',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   
   // Text variants
@@ -130,11 +138,11 @@ const styles = StyleSheet.create({
   },
   
   secondaryText: {
-    color: COLORS.primary,
+    color: COLORS.textPrimary,
   },
   
   outlineText: {
-    color: COLORS.primary,
+    color: COLORS.textPrimary,
   },
   
   ghostText: {
@@ -145,17 +153,17 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   
-  // Text sizes
+  // Text sizes - readable but professional
   smallText: {
     fontSize: 14,
   },
   
   mediumText: {
-    fontSize: 16,
+    fontSize: 15,
   },
   
   largeText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
   

@@ -29,26 +29,34 @@ const DoctorCalendarModal = ({ doctor, onClose, onSlotSelect }) => {
 
   useEffect(() => {
     if (!doctor?.id) return;
+    console.log('🔍 Fetching available dates for doctor:', doctor.id);
     setLoadingDates(true);
     appointmentService.getDoctorAvailableDates(doctor.id)
       .then((dates) => {
-        console.log('Available dates from API:', dates); // <-- Add this line
+        console.log('✅ Available dates from API:', dates);
+        console.log('   Dates array:', dates);
         setAvailableDates(dates || []);
       })
-      .catch(() => setAvailableDates([]))
+      .catch((error) => {
+        console.error('❌ Error fetching dates:', error);
+        setAvailableDates([]);
+      })
       .finally(() => setLoadingDates(false));
   }, [doctor]);
 
   useEffect(() => {
     if (selectedDate) {
       const loadAvailability = async () => {
+        console.log('🔍 Loading time slots for:', selectedDate, 'doctor:', doctor.id);
         setLoading(true);
         try {
           const response = await appointmentService.getDoctorAvailability(doctor.id, selectedDate);
-          // Use only response.availableSlots
+          console.log('✅ Availability response:', response);
+          console.log('   Available slots:', response.availableSlots);
+          // Use availableSlots from response
           setAvailableSlots(response.availableSlots || []);
         } catch (error) {
-          console.error('Error loading availability:', error);
+          console.error('❌ Error loading availability:', error);
           setAvailableSlots([]);
         } finally {
           setLoading(false);

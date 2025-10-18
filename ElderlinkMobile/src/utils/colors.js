@@ -1,10 +1,10 @@
 export const COLORS = {
-  // Primary Red + Pink Theme
-  primary: '#DC2626', // Red-600
-  primaryLight: '#FCA5A5', // Red-300
-  primaryDark: '#991B1B', // Red-800
-  secondary: '#EC4899', // Pink-500
-  secondaryLight: '#F9A8D4', // Pink-300
+  // Primary Brand - ElderLink (professional medical tone)
+  primary: '#FF6B6B', // Brand primary
+  primaryLight: '#FFE5E5', // Subtle tint for backgrounds
+  primaryDark: '#E63946', // Darker shade for depth
+  secondary: '#4A5568', // Professional gray
+  secondaryLight: '#E2E8F0', // Light gray
   
   // Status Colors
   success: '#059669', // Emerald-600

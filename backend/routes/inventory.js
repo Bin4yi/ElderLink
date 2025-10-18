@@ -5,7 +5,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 const inventoryController = require('../controllers/inventoryController');
 
 // Inventory management routes
-router.get('/', authenticate, authorize(['pharmacist', 'admin']), inventoryController.getInventoryItems);
+router.get('/', authenticate, authorize(['pharmacist', 'admin', 'doctor']), inventoryController.getInventoryItems);
 router.get('/stats', authenticate, authorize(['pharmacist', 'admin']), inventoryController.getInventoryStats);
 router.get('/low-stock', authenticate, authorize(['pharmacist', 'admin']), inventoryController.getLowStockItems);
 router.get('/expiring', authenticate, authorize(['pharmacist', 'admin']), inventoryController.getExpiringItems);

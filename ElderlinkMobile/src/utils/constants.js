@@ -4,11 +4,7 @@
 //   Windows: Run 'ipconfig' in Command Prompt, look for IPv4 Address
 //   Mac/Linux: Run 'ifconfig' in Terminal, look for inet address
 // Your phone and computer MUST be on the same WiFi network!
-// 
-// ⚠️ DO NOT USE NGROK URL HERE! 
-// ngrok is ONLY for QStash webhook (see QSTASH_CONFIG below)
-// This should be your LOCAL IP address like: http://192.168.X.X:5000
-export const API_BASE_URL = 'http://192.168.8.168:5000';
+export const API_BASE_URL = 'http://192.168.177.63:5000';
 
 // API Config object for backward compatibility
 export const API_CONFIG = {

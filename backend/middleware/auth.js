@@ -36,7 +36,7 @@ const auth = async (req, res, next) => {
   }
 };
 
-const checkRole = (allowedRoles) => {
+const checkRole = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -45,8 +45,11 @@ const checkRole = (allowedRoles) => {
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
-      console.log(`❌ Access denied - user role: ${req.user.role} allowed roles: [${allowedRoles.map(r => ` '${r}'`)} ]`);
+    // Flatten array in case roles are passed as array or individual arguments
+    const roles = Array.isArray(allowedRoles[0]) ? allowedRoles[0] : allowedRoles;
+
+    if (!roles.includes(req.user.role)) {
+      console.log(`❌ Access denied - user role: ${req.user.role}, allowed roles: [${roles.join(', ')}]`);
       return res.status(403).json({
         success: false,
         message: 'You are not authorized to perform this action'
@@ -60,10 +63,12 @@ const checkRole = (allowedRoles) => {
 // Alternative function names for backwards compatibility
 const authenticate = auth;
 const authorize = checkRole;
+const protect = auth; // Add protect as an alias for auth
 
 module.exports = { 
   auth, 
   checkRole, 
   authenticate, 
-  authorize 
+  authorize,
+  protect // Export protect for consistency with other routes
 };

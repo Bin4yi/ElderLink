@@ -5,7 +5,7 @@ export const doctorAppointmentService = {
   // Get doctor's appointments
   async getDoctorAppointments(params = {}) {
     try {
-      const { status, date, page = 1, limit = 10 } = params;
+      const { status, date, page = 1, limit = 100 } = params; // Increased to 100 to show more appointments
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString()
@@ -112,43 +112,18 @@ export const doctorAppointmentService = {
     }
   },
 
-  // ✅ FIXED: Update schedule - now using the correct endpoint
-  // Replace the existing updateSchedule method
-  updateSchedule: async (data) => {
-    try {
-      console.log('🔄 Updating doctor schedule:', data);
-      
-      const response = await api.post('/doctor/schedule', data);
-      
-      console.log('✅ Schedule update response:', response);
-      return response;
-    } catch (error) {
-      console.error('❌ Error updating schedule:', error);
-      throw error;
-    }
-  },
-
-  // Add schedule exception
-  async addScheduleException(exceptionData) {
-    try {
-      const response = await api.post('/doctor/schedule/exceptions', exceptionData);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding schedule exception:', error);
-      throw error;
-    }
-  },
-
-  // ✅ NEW: Get doctor's current schedule
+  // ✅ FIXED: Schedule management - using correct /api/doctor/schedules endpoint
+  
+  // Get doctor's schedules
   async getDoctorSchedule(params = {}) {
     try {
-      const { startDate, endDate } = params;
+      const { month, year } = params;
       const queryParams = new URLSearchParams();
       
-      if (startDate) queryParams.append('startDate', startDate);
-      if (endDate) queryParams.append('endDate', endDate);
+      if (month) queryParams.append('month', month);
+      if (year) queryParams.append('year', year);
       
-      const response = await api.get(`/doctor/schedule?${queryParams}`);
+      const response = await api.get(`/doctor/schedules?${queryParams}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching doctor schedule:', error);
@@ -156,15 +131,54 @@ export const doctorAppointmentService = {
     }
   },
 
-  // ✅ NEW: Delete specific schedule slots
-  async deleteScheduleSlots(scheduleIds) {
+  // Add single schedule
+  async addSchedule(scheduleData) {
     try {
-      const response = await api.delete('/doctor/schedule', {
-        data: { scheduleIds }
-      });
+      console.log('🔄 Adding schedule:', scheduleData);
+      const response = await api.post('/doctor/schedules', scheduleData);
+      console.log('✅ Schedule added:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error deleting schedule slots:', error);
+      console.error('❌ Error adding schedule:', error);
+      throw error;
+    }
+  },
+
+  // Add bulk schedules
+  async addBulkSchedules(bulkData) {
+    try {
+      console.log('🔄 Adding bulk schedules:', bulkData);
+      const response = await api.post('/doctor/schedules/bulk', bulkData);
+      console.log('✅ Bulk schedules added:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error adding bulk schedules:', error);
+      throw error;
+    }
+  },
+
+  // Update specific schedule
+  async updateSchedule(scheduleId, scheduleData) {
+    try {
+      console.log('🔄 Updating schedule:', scheduleId, scheduleData);
+      const response = await api.put(`/doctor/schedules/${scheduleId}`, scheduleData);
+      console.log('✅ Schedule updated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating schedule:', error);
+      throw error;
+    }
+  },
+
+  // Delete specific schedule
+  async deleteSchedule(scheduleId) {
+    try {
+      console.log('🔄 Deleting schedule:', scheduleId);
+      const response = await api.delete(`/doctor/schedules/${scheduleId}`);
+      console.log('✅ Schedule deleted:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error deleting schedule:', error);
       throw error;
     }
   }
