@@ -16,8 +16,8 @@ router.get('/test', (req, res) => {
 // Get doctor's appointments - USE CONTROLLER
 router.get('/appointments', authenticate, authorize('doctor'), DoctorAppointmentController.getDoctorAppointments);
 
-// Review appointment (approve/reject) - USE CONTROLLER
-router.patch('/appointments/:id/review', authenticate, authorize('doctor'), DoctorAppointmentController.reviewAppointment);
+// REMOVED: Review appointment (approve/reject) - No longer needed with new workflow
+// router.patch('/appointments/:id/review', authenticate, authorize('doctor'), DoctorAppointmentController.reviewAppointment);
 
 // Reschedule appointment - USE CONTROLLER
 router.patch('/appointments/:id/reschedule', authenticate, authorize('doctor'), DoctorAppointmentController.rescheduleAppointment);

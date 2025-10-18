@@ -293,11 +293,11 @@ const AppointmentManagement = () => {
   // Get status badge styling
   const getStatusBadge = (status) => {
     const statusStyles = {
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      approved: 'bg-green-100 text-green-800 border-green-200',
+      upcoming: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      today: 'bg-orange-100 text-orange-800 border-orange-200',
+      'in-progress': 'bg-green-100 text-green-800 border-green-200',
       completed: 'bg-blue-100 text-blue-800 border-blue-200',
       cancelled: 'bg-red-100 text-red-800 border-red-200',
-      rejected: 'bg-red-100 text-red-800 border-red-200',
       'no-show': 'bg-gray-100 text-gray-800 border-gray-200'
     };
 
@@ -329,8 +329,9 @@ const AppointmentManagement = () => {
         className="bg-white rounded-xl shadow-md border-l-4 hover:shadow-xl transition-all duration-300 overflow-hidden scroll-mt-20"
         style={{
           borderLeftColor: 
-            appointment.status === 'pending' ? '#F59E0B' :
-            appointment.status === 'approved' ? '#10B981' :
+            appointment.status === 'upcoming' ? '#F59E0B' :
+            appointment.status === 'today' ? '#F97316' :
+            appointment.status === 'in-progress' ? '#10B981' :
             appointment.status === 'completed' ? '#3B82F6' :
             '#EF4444'
         }}
@@ -547,40 +548,7 @@ const AppointmentManagement = () => {
               View Full Details
             </button>
 
-            {appointment.status === 'pending' && (
-              <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAppointmentAction(appointment.id, 'approve');
-                  }}
-                  disabled={actionLoading}
-                  className="flex-1 min-w-[140px] px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
-                >
-                  {actionLoading ? (
-                    <Loader className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <CheckCircle className="w-5 h-5" />
-                  )}
-                  Approve
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAppointmentAction(appointment.id, 'reject', 'Rejected by doctor');
-                  }}
-                  disabled={actionLoading}
-                  className="flex-1 min-w-[140px] px-5 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
-                >
-                  {actionLoading ? (
-                    <Loader className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <XCircle className="w-5 h-5" />
-                  )}
-                  Reject
-                </button>
-              </>
-            )}
+            {/* REMOVED: Approve/Reject buttons - No longer needed */}
           </div>
         </div>
       </div>
@@ -606,10 +574,10 @@ const AppointmentManagement = () => {
   // Get stats for the dashboard
   const stats = {
     total: appointments.length,
-    pending: appointments.filter(a => a.status === 'pending').length,
-    approved: appointments.filter(a => a.status === 'approved').length,
-    completed: appointments.filter(a => a.status === 'completed').length,
-    today: groupedAppointments().today.length
+    upcoming: appointments.filter(a => a.status === 'upcoming').length,
+    today: groupedAppointments().today.length,
+    inProgress: appointments.filter(a => a.status === 'in-progress').length,
+    completed: appointments.filter(a => a.status === 'completed').length
   };
 
   return (
@@ -670,25 +638,29 @@ const AppointmentManagement = () => {
               <Calendar className="w-8 h-8 opacity-80" />
             </div>
           </div>
-          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg p-4 text-white relative">
+          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-yellow-100 text-sm">Pending</p>
-                <p className="text-2xl font-bold">{stats.pending}</p>
+                <p className="text-yellow-100 text-sm">Upcoming</p>
+                <p className="text-2xl font-bold">{stats.upcoming}</p>
               </div>
               <Clock className="w-8 h-8 opacity-80" />
             </div>
-            {stats.pending > 0 && (
-              <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
-                {stats.pending}
+          </div>
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm">Today</p>
+                <p className="text-2xl font-bold">{stats.today}</p>
               </div>
-            )}
+              <Stethoscope className="w-8 h-8 opacity-80" />
+            </div>
           </div>
           <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">Approved</p>
-                <p className="text-2xl font-bold">{stats.approved}</p>
+                <p className="text-green-100 text-sm">In Progress</p>
+                <p className="text-2xl font-bold">{stats.inProgress}</p>
               </div>
               <CheckCircle className="w-8 h-8 opacity-80" />
             </div>
@@ -700,15 +672,6 @@ const AppointmentManagement = () => {
                 <p className="text-2xl font-bold">{stats.completed}</p>
               </div>
               <CheckCircle className="w-8 h-8 opacity-80" />
-            </div>
-          </div>
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-4 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-orange-100 text-sm">Today</p>
-                <p className="text-2xl font-bold">{stats.today}</p>
-              </div>
-              <Stethoscope className="w-8 h-8 opacity-80" />
             </div>
           </div>
         </div>
@@ -839,11 +802,11 @@ const AppointmentManagement = () => {
               className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="today">Today</option>
+              <option value="in-progress">In Progress</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
-              <option value="rejected">Rejected</option>
             </select>
 
             {/* Date Range Filter */}

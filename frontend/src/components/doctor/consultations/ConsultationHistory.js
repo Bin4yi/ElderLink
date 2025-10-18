@@ -9,6 +9,10 @@ import ConsultationCalendar from './ConsultationCalendar';
 import ElderDetailsModal from './ElderDetailsModal';
 import DoctorDetailsModal from './DoctorDetailsModal';
 import ZoomMeetingModal from './ZoomMeetingModal';
+import LastRecordModal from './LastRecordModal';
+import ScheduleSessionModal from './ScheduleSessionModal';
+import UploadRecordModal from './UploadRecordModal';
+import UploadPrescriptionModal from './UploadPrescriptionModal';
 import { 
   Calendar, 
   Clock, 
@@ -34,7 +38,11 @@ import {
   RefreshCw,
   PlayCircle,
   CheckCircle2,
-  TrendingUp
+  TrendingUp,
+  Upload,
+  Pill,
+  History,
+  Download
 } from 'lucide-react';
 
 const ConsultationHistory = () => {
@@ -50,6 +58,15 @@ const ConsultationHistory = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [monthlySessions, setMonthlySessions] = useState([]);
   const [loadingMonthlySessions, setLoadingMonthlySessions] = useState(true);
+
+  // New modal states
+  const [showLastRecordModal, setShowLastRecordModal] = useState(false);
+  const [showScheduleSessionModal, setShowScheduleSessionModal] = useState(false);
+  const [showUploadRecordModal, setShowUploadRecordModal] = useState(false);
+  const [showUploadPrescriptionModal, setShowUploadPrescriptionModal] = useState(false);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'in-progress', 'completed'
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,8 +87,8 @@ const ConsultationHistory = () => {
       setLoading(true);
       console.log('🔄 Loading consultations...');
 
-      // Only fetch approved appointments for consultations
-      const params = { status: 'approved' };
+      // Fetch all appointments for consultations (no status filter)
+      const params = {}; // Show all appointments
       const response = await doctorAppointmentService.getDoctorAppointments(params);
       
       console.log('📋 Consultations response:', response);
@@ -286,11 +303,39 @@ const ConsultationHistory = () => {
     setShowZoomModal(true);
   };
 
+  // Handle view last record
+  const handleViewLastRecord = (consultation) => {
+    setSelectedConsultation(consultation);
+    setShowLastRecordModal(true);
+  };
+
+  // Handle schedule session
+  const handleScheduleSession = (consultation) => {
+    setSelectedConsultation(consultation);
+    setShowScheduleSessionModal(true);
+  };
+
+  // Handle upload record
+  const handleUploadRecord = (consultation) => {
+    setSelectedConsultation(consultation);
+    setShowUploadRecordModal(true);
+  };
+
+  // Handle upload prescription
+  const handleUploadPrescription = (consultation) => {
+    setSelectedConsultation(consultation);
+    setShowUploadPrescriptionModal(true);
+  };
+
   // Handle close modals
   const closeAllModals = () => {
     setShowDetailsModal(false);
     setShowElderModal(false);
     setShowDoctorModal(false);
+    setShowLastRecordModal(false);
+    setShowScheduleSessionModal(false);
+    setShowUploadRecordModal(false);
+    setShowUploadPrescriptionModal(false);
     setShowZoomModal(false);
     setSelectedConsultation(null);
     setSelectedElder(null);
@@ -577,8 +622,9 @@ const ConsultationHistory = () => {
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
                   >
                     <option value="all">All Status</option>
-                    <option value="approved">Approved</option>
-                    <option value="pending">Pending</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="today">Today</option>
+                    <option value="in-progress">In Progress</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
@@ -963,7 +1009,68 @@ const ConsultationHistory = () => {
               </div>
             </section>
 
+            {/* Tabs Navigation */}
+            <div className="mb-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-2 border border-gray-200">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setActiveTab('upcoming')}
+                  className={`flex-1 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                    activeTab === 'upcoming'
+                      ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-lg'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    <span>Upcoming</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      activeTab === 'upcoming' ? 'bg-white/20' : 'bg-gray-200'
+                    }`}>
+                      {upcomingConsultations.length}
+                    </span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setActiveTab('in-progress')}
+                  className={`flex-1 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                    activeTab === 'in-progress'
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Activity className="w-4 h-4" />
+                    <span>In Progress</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      activeTab === 'in-progress' ? 'bg-white/20' : 'bg-gray-200'
+                    }`}>
+                      {inProgressConsultations.length}
+                    </span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setActiveTab('completed')}
+                  className={`flex-1 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                    activeTab === 'completed'
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Completed</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      activeTab === 'completed' ? 'bg-white/20' : 'bg-gray-200'
+                    }`}>
+                      {completedConsultations.length}
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             {/* Upcoming Consultations Section (Current Month + Next 2 Months) */}
+            {activeTab === 'upcoming' && (
             <section className="mb-8">
               <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-indigo-100">
                 <div className="flex items-center justify-between mb-6">
@@ -1230,25 +1337,60 @@ const ConsultationHistory = () => {
                               </div>
                             )}
 
-                            {/* Action Buttons */}
-                            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                            {/* Action Buttons - 4 buttons for Upcoming */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-gray-200">
+                              {/* Last Record Button */}
                               <button
-                                onClick={() => handleViewElderDetails(appointment)}
-                                className="flex-1 min-w-[140px] px-5 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
+                                onClick={() => handleViewLastRecord(appointment)}
+                                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
                               >
-                                <UserCircle className="w-5 h-5" />
-                                Elder Details
+                                <History className="w-4 h-4" />
+                                <span className="hidden sm:inline">Last Record</span>
+                                <span className="sm:hidden">Record</span>
                               </button>
+
+                              {/* Schedule Session Button */}
                               <button
-                                onClick={() => handleStartZoomMeeting(appointment)}
-                                className={`flex-1 min-w-[140px] px-5 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base ${
-                                  isToday(appointment.appointmentDate)
-                                    ? 'bg-green-600 text-white hover:bg-green-700 animate-pulse'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                onClick={() => handleScheduleSession(appointment)}
+                                disabled={!!appointment.zoomJoinUrl}
+                                className={`px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md text-sm ${
+                                  appointment.zoomJoinUrl
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-green-600 text-white hover:bg-green-700 hover:shadow-lg'
                                 }`}
                               >
-                                <Video className="w-5 h-5" />
-                                {isToday(appointment.appointmentDate) ? 'Start Call Now' : 'View Details'}
+                                <Calendar className="w-4 h-4" />
+                                <span className="hidden sm:inline">{appointment.zoomJoinUrl ? 'Scheduled ✓' : 'Schedule'}</span>
+                                <span className="sm:hidden">{appointment.zoomJoinUrl ? '✓' : 'Schedule'}</span>
+                              </button>
+
+                              {/* Start Session Button */}
+                              <button
+                                onClick={() => handleStartZoomMeeting(appointment)}
+                                disabled={!appointment.zoomJoinUrl || !isToday(appointment.appointmentDate)}
+                                className={`px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md text-sm ${
+                                  appointment.zoomJoinUrl && isToday(appointment.appointmentDate)
+                                    ? 'bg-green-600 text-white hover:bg-green-700 animate-pulse hover:shadow-lg'
+                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                }`}
+                              >
+                                <Video className="w-4 h-4" />
+                                <span className="hidden sm:inline">
+                                  {appointment.zoomJoinUrl && isToday(appointment.appointmentDate) ? 'Start Now' : 'Not Ready'}
+                                </span>
+                                <span className="sm:hidden">
+                                  {appointment.zoomJoinUrl && isToday(appointment.appointmentDate) ? 'Start' : 'N/A'}
+                                </span>
+                              </button>
+
+                              {/* Elder Details Button */}
+                              <button
+                                onClick={() => handleViewElderDetails(appointment)}
+                                className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                              >
+                                <UserCircle className="w-4 h-4" />
+                                <span className="hidden sm:inline">Elder Details</span>
+                                <span className="sm:hidden">Details</span>
                               </button>
                             </div>
                           </div>
@@ -1259,8 +1401,10 @@ const ConsultationHistory = () => {
                 )}
               </div>
             </section>
+            )}
 
             {/* In Progress Consultations Section (Today's Appointments) */}
+            {activeTab === 'in-progress' && (
             <section id="in-progress-section" className="mb-8 scroll-mt-6">
               <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-green-100">
                 <div className="flex items-center justify-between mb-6">
@@ -1509,22 +1653,46 @@ const ConsultationHistory = () => {
                               </div>
                             )}
 
-                            {/* Action Buttons */}
-                            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                              <button
-                                onClick={() => handleViewElderDetails(appointment)}
-                                className="flex-1 min-w-[140px] px-5 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
-                              >
-                                <UserCircle className="w-5 h-5" />
-                                Elder Details
-                              </button>
-                              <button
-                                onClick={() => handleStartZoomMeeting(appointment)}
-                                className="flex-1 min-w-[140px] px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base animate-pulse"
-                              >
-                                <Video className="w-5 h-5" />
-                                Start Call Now
-                              </button>
+                            {/* LIVE Badge and Action Buttons */}
+                            <div className="pt-4 border-t-2 border-green-200">
+                              {/* LIVE Indicator */}
+                              <div className="mb-3 flex items-center gap-2 p-2 bg-red-50 border-2 border-red-500 rounded-lg animate-pulse">
+                                <span className="relative flex h-3 w-3">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                </span>
+                                <span className="text-red-700 font-bold text-sm">🔴 LIVE - Consultation in Progress</span>
+                              </div>
+
+                              {/* Action Buttons - 3 buttons for In Progress */}
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {/* Last Record Button */}
+                                <button
+                                  onClick={() => handleViewLastRecord(appointment)}
+                                  className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                                >
+                                  <History className="w-4 h-4" />
+                                  <span>Last Record</span>
+                                </button>
+
+                                {/* Join Session Button */}
+                                <button
+                                  onClick={() => handleStartZoomMeeting(appointment)}
+                                  className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm animate-pulse"
+                                >
+                                  <Video className="w-4 h-4" />
+                                  <span>Join Session</span>
+                                </button>
+
+                                {/* Elder Details Button */}
+                                <button
+                                  onClick={() => handleViewElderDetails(appointment)}
+                                  className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                                >
+                                  <UserCircle className="w-4 h-4" />
+                                  <span>Elder Details</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1534,8 +1702,10 @@ const ConsultationHistory = () => {
                 )}
               </div>
             </section>
+            )}
 
             {/* Completed Consultations Section */}
+            {activeTab === 'completed' && (
             <section className="mb-8">
               <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-gray-100">
                 <div className="flex items-center justify-between mb-6">
@@ -1791,21 +1961,46 @@ const ConsultationHistory = () => {
                               </div>
                             )}
 
-                            {/* Action Buttons */}
-                            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                            {/* Action Buttons - 4 buttons for Completed */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-gray-200">
+                              {/* Last Record Button */}
+                              <button
+                                onClick={() => handleViewLastRecord(appointment)}
+                                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                              >
+                                <History className="w-4 h-4" />
+                                <span className="hidden sm:inline">Last Record</span>
+                                <span className="sm:hidden">Record</span>
+                              </button>
+
+                              {/* Elder Details Button */}
                               <button
                                 onClick={() => handleViewElderDetails(appointment)}
-                                className="flex-1 min-w-[140px] px-5 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
+                                className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
                               >
-                                <UserCircle className="w-5 h-5" />
-                                Elder Details
+                                <UserCircle className="w-4 h-4" />
+                                <span className="hidden sm:inline">Elder Details</span>
+                                <span className="sm:hidden">Details</span>
                               </button>
+
+                              {/* Upload Record Button */}
                               <button
-                                onClick={() => handleViewDetails(appointment)}
-                                className="flex-1 min-w-[140px] px-5 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
+                                onClick={() => handleUploadRecord(appointment)}
+                                className="px-4 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
                               >
-                                <Eye className="w-5 h-5" />
-                                View Record
+                                <Upload className="w-4 h-4" />
+                                <span className="hidden sm:inline">Upload Record</span>
+                                <span className="sm:hidden">Upload</span>
+                              </button>
+
+                              {/* Upload Prescription Button */}
+                              <button
+                                onClick={() => handleUploadPrescription(appointment)}
+                                className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                              >
+                                <Pill className="w-4 h-4" />
+                                <span className="hidden sm:inline">Upload Prescription</span>
+                                <span className="sm:hidden">Rx</span>
                               </button>
                             </div>
                           </div>
@@ -1816,6 +2011,7 @@ const ConsultationHistory = () => {
                 )}
               </div>
             </section>
+            )}
 
             {/* No Consultations Message */}
             {consultations.length === 0 && (
@@ -2115,6 +2311,52 @@ const ConsultationHistory = () => {
             </div>
           </Modal>
         )}
+
+        {/* Last Record Modal */}
+        <LastRecordModal
+          isOpen={showLastRecordModal}
+          onClose={() => {
+            setShowLastRecordModal(false);
+            setSelectedConsultation(null);
+          }}
+          elderId={selectedConsultation?.elderId}
+          elderName={`${selectedConsultation?.elder?.firstName || ''} ${selectedConsultation?.elder?.lastName || ''}`.trim()}
+        />
+
+        {/* Schedule Session Modal */}
+        <ScheduleSessionModal
+          isOpen={showScheduleSessionModal}
+          onClose={() => {
+            setShowScheduleSessionModal(false);
+            setSelectedConsultation(null);
+          }}
+          appointment={selectedConsultation}
+          onScheduled={() => {
+            loadConsultations();
+            setShowScheduleSessionModal(false);
+            toast.success('Session scheduled successfully!');
+          }}
+        />
+
+        {/* Upload Record Modal */}
+        <UploadRecordModal
+          isOpen={showUploadRecordModal}
+          onClose={() => {
+            setShowUploadRecordModal(false);
+            setSelectedConsultation(null);
+          }}
+          appointment={selectedConsultation}
+        />
+
+        {/* Upload Prescription Modal */}
+        <UploadPrescriptionModal
+          isOpen={showUploadPrescriptionModal}
+          onClose={() => {
+            setShowUploadPrescriptionModal(false);
+            setSelectedConsultation(null);
+          }}
+          appointment={selectedConsultation}
+        />
       </div>
     </RoleLayout>
   );
