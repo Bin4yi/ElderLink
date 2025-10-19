@@ -73,6 +73,7 @@ app.get("/api", (req, res) => {
 // Route configurations
 const routeConfigs = [
   { path: "./routes/auth", mount: "/api/auth", name: "authRoutes" },
+  { path: "./routes/passwordReset", mount: "/api/password-reset", name: "passwordResetRoutes" },
   { path: "./routes/elder", mount: "/api/elder", name: "elderRoutes" },
   {
     path: "./routes/healthMonitoring",
