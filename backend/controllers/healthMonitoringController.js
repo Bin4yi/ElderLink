@@ -1,5 +1,5 @@
 // backend/controllers/healthMonitoringController.js
-const { HealthMonitoring, Elder, User } = require('../models');
+const { HealthMonitoring, Elder, User, StaffAssignment } = require('../models');
 const { Op } = require('sequelize');
 const { checkHealthVitals } = require('./healthAlertController');
 
@@ -10,6 +10,7 @@ const getAllHealthMonitoring = async (req, res) => {
     const offset = (page - 1) * limit;
     
     let whereClause = {};
+    let elderWhereClause = {};
     
     // If user is an elder, only show their own records
     if (req.user.role === 'elder') {
@@ -22,9 +23,46 @@ const getAllHealthMonitoring = async (req, res) => {
         });
       }
       whereClause.elderId = elder.id;
-    } else if (req.user.role === 'staff' && elderId) {
-      // Staff can filter by specific elder
-      whereClause.elderId = elderId;
+    } else if (req.user.role === 'staff') {
+      // For staff, only show records for elders assigned to them
+      const assignedElders = await StaffAssignment.findAll({
+        where: {
+          staffId: req.user.id,
+          isActive: true
+        },
+        attributes: ['elderId']
+      });
+      
+      const assignedElderIds = assignedElders.map(assignment => assignment.elderId);
+      
+      if (assignedElderIds.length === 0) {
+        return res.json({
+          success: true,
+          data: [],
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: 0,
+            totalRecords: 0,
+            hasNext: false,
+            hasPrev: false
+          }
+        });
+      }
+      
+      whereClause.elderId = {
+        [Op.in]: assignedElderIds
+      };
+      
+      // If specific elderId is requested, verify it's in the assigned list
+      if (elderId) {
+        if (!assignedElderIds.includes(elderId)) {
+          return res.status(403).json({
+            success: false,
+            message: 'You do not have access to this elder\'s records'
+          });
+        }
+        whereClause.elderId = elderId;
+      }
     }
     
     // Add date filtering if provided
@@ -102,6 +140,28 @@ const getTodayHealthMonitoring = async (req, res) => {
         });
       }
       whereClause.elderId = elder.id;
+    } else if (req.user.role === 'staff') {
+      // For staff, only show records for elders assigned to them
+      const assignedElders = await StaffAssignment.findAll({
+        where: {
+          staffId: req.user.id,
+          isActive: true
+        },
+        attributes: ['elderId']
+      });
+      
+      const assignedElderIds = assignedElders.map(assignment => assignment.elderId);
+      
+      if (assignedElderIds.length === 0) {
+        return res.json({
+          success: true,
+          data: []
+        });
+      }
+      
+      whereClause.elderId = {
+        [Op.in]: assignedElderIds
+      };
     }
 
     const healthRecords = await HealthMonitoring.findAll({
