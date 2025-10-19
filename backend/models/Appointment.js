@@ -111,6 +111,11 @@ const Appointment = sequelize.define('Appointment', {
   paymentStatus: {
     type: DataTypes.ENUM('pending', 'completed', 'expired'),
     defaultValue: 'pending'
+  },
+  consultationFee: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    comment: 'Doctor consultation fee at the time of appointment booking'
   }
 }, {
   tableName: 'Appointments',
