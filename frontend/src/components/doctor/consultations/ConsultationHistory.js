@@ -1,5 +1,6 @@
 // src/components/doctor/consultations/ConsultationHistory.js
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { doctorAppointmentService } from '../../../services/doctorAppointment';
 import monthlySessionService from '../../../services/monthlySession';
 import toast from 'react-hot-toast';
@@ -46,6 +47,7 @@ import {
 } from 'lucide-react';
 
 const ConsultationHistory = () => {
+  const navigate = useNavigate();
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedConsultation, setSelectedConsultation] = useState(null);
@@ -323,8 +325,10 @@ const ConsultationHistory = () => {
 
   // Handle upload prescription
   const handleUploadPrescription = (consultation) => {
-    setSelectedConsultation(consultation);
-    setShowUploadPrescriptionModal(true);
+    // Navigate to create prescription page with consultation data
+    navigate(`/doctor/prescriptions/create-from-consultation/${consultation.id}`, {
+      state: { consultation }
+    });
   };
 
   // Handle close modals

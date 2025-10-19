@@ -28,11 +28,13 @@ import CoordinatorDashboard from "./components/coordinator/CoordinatorDashboard"
 import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
 import PatientList from './components/doctor/patients/PatientList';
 import AppointmentManagement from './components/doctor/appointments/AppointmentManagement';
+import DoctorScheduleManager from './components/doctor/appointments/DoctorScheduleManager';
 import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
 import MedicalRecords from './components/doctor/records/MedicalRecords';
 import PrescriptionList from './components/doctor/prescriptions/PrescriptionList';
 import CreatePrescription from './components/doctor/prescriptions/CreatePrescription';
 import ZoomMeetingManager from './components/doctor/sessions/ZoomMeetingManager';
+import DoctorProfile from './components/doctor/profile/DoctorProfile';
 
 
 // Family
@@ -132,16 +134,16 @@ function App() {
                     path="/doctor/appointments"
                     element={<AppointmentManagement />}
                   />
+                  <Route path="/doctor/schedule" element={<DoctorScheduleManager />} />
                   <Route
                     path="/doctor/consultations"
                     element={<ConsultationHistory />}
                   />
                   <Route path="/doctor/records" element={<MedicalRecords />} />
-                  <Route path="/doctor/prescriptions" element={<PrescriptionList />} />
-                  <Route path="/doctor/prescriptions/create" element={<CreatePrescription />} />
-                  <Route path="/doctor/prescriptions/create/:elderId" element={<CreatePrescription />} />
-                  <Route path="/doctor/prescriptions/create/:elderId/:appointmentId" element={<CreatePrescription />} />
-                  <Route path="/doctor/zoom-meetings" element={<ZoomMeetingManager />} />
+              <Route path="/doctor/prescriptions" element={<PrescriptionList />} />
+              <Route path="/doctor/prescriptions/create-from-consultation/:consultationId" element={<CreatePrescription />} />
+              <Route path="/doctor/zoom-meetings" element={<ZoomMeetingManager />} />
+                  <Route path="/doctor/profile" element={<DoctorProfile />} />
                   
                   {/* Family routes */}
                   <Route
