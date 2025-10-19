@@ -12,23 +12,18 @@ export const getRoleMenuItems = (role) => {
     case 'family_member':
       return [
         { path: '/family/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/family/elders', icon: Heart, label: 'My Elders' },
         { path: '/family/subscriptions', icon: Package, label: 'Subscriptions' },
         { path: '/family/appointments', icon: Calendar, label: 'Appointments' },
         { path: '/family/sessions', icon: Calendar, label: 'Monthly Sessions' },
-        { path: '/family/doctors', icon: Stethoscope, label: 'Doctors' },
         { path: '/family/health-reports', icon: Activity, label: 'Health Reports' },
         { path: '/family/profile', icon: User, label: 'Profile' },
-        { path: '/family/settings', icon: Settings, label: 'Settings' }
       ];
 
     case 'admin':
       return [
         { path: '/admin/dashboard', icon: Home, label: 'Dashboard' },
         { path: '/admin/users', icon: Users, label: 'User Management' },
-        { path: '/admin/packages', icon: Package, label: 'Package Management' },
-        { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
-        { path: '/admin/settings', icon: Settings, label: 'System Settings' }
+        { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' }
       ];
 
     case 'coordinator':

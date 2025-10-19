@@ -363,12 +363,16 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log("✅ Database connected successfully");
 
-    await sequelize.sync({ alter: true });
-    console.log("✅ Database models synchronized");
+    // await sequelize.sync({ alter: true }); // Commented out to prevent hanging
+    console.log("✅ Database models synchronized (sync skipped)");
 
     // Start reservation cleanup task
     const { startReservationCleanup } = require("./utils/reservationCleanup");
     startReservationCleanup();
+
+    // Start subscription scheduler
+    const { initSubscriptionScheduler } = require("./schedulers/subscriptionScheduler");
+    initSubscriptionScheduler();
 
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);

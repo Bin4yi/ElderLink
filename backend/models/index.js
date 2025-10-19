@@ -4,8 +4,10 @@ const sequelize = require("../config/database");
 
 // Import models
 const User = require("./User");
+const UserSettings = require("./UserSettings");
 const Elder = require("./Elder");
 const Subscription = require("./Subscription");
+const SubscriptionHistory = require("./SubscriptionHistory");
 const HealthMonitoring = require("./HealthMonitoring");
 const HealthAlert = require("./HealthAlert");
 const Notification = require("./Notification");
@@ -73,6 +75,7 @@ const clearAssociations = (model) => {
 // User associations
 User.hasMany(Elder, { foreignKey: "userId", as: "elders" });
 User.hasMany(Subscription, { foreignKey: "userId", as: "subscriptions" });
+User.hasOne(UserSettings, { foreignKey: "userId", as: "settings" });
 User.hasMany(HealthMonitoring, {
   foreignKey: "staffId",
   as: "healthMonitorings",
@@ -122,9 +125,26 @@ Elder.hasMany(DoctorAssignment, {
   as: "doctorAssignmentRecords",
 }); // ✅ Changed from 'doctorAssignments' to 'doctorAssignmentRecords'
 
+// UserSettings associations
+UserSettings.belongsTo(User, { foreignKey: "userId", as: "user" });
+
 // Subscription associations
 Subscription.belongsTo(User, { foreignKey: "userId", as: "user" });
 Subscription.hasOne(Elder, { foreignKey: "subscriptionId", as: "elder" });
+Subscription.hasMany(SubscriptionHistory, { 
+  foreignKey: "subscriptionId", 
+  as: "history" 
+});
+
+// SubscriptionHistory associations
+SubscriptionHistory.belongsTo(Subscription, { 
+  foreignKey: "subscriptionId", 
+  as: "subscription" 
+});
+SubscriptionHistory.belongsTo(User, { 
+  foreignKey: "userId", 
+  as: "user" 
+});
 
 // HealthMonitoring associations
 HealthMonitoring.belongsTo(User, { foreignKey: "staffId", as: "staff" });
@@ -594,8 +614,10 @@ User.hasMany(MentalHealthResource, {
 module.exports = {
   sequelize,
   User,
+  UserSettings,
   Elder,
   Subscription,
+  SubscriptionHistory,
   HealthMonitoring,
   HealthAlert,
   Notification,

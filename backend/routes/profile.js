@@ -35,4 +35,32 @@ router.get('/pharmacist', profileController.getPharmacistProfile);
  */
 router.put('/pharmacist', profileController.updatePharmacistProfile);
 
+/**
+ * @route   GET /api/profile/family
+ * @desc    Get family member profile information
+ * @access  Private (Family member only)
+ */
+router.get('/family', profileController.getFamilyProfile);
+
+/**
+ * @route   PUT /api/profile/family
+ * @desc    Update family member profile information (email and name cannot be changed)
+ * @access  Private (Family member only)
+ */
+router.put('/family', profileController.updateFamilyProfile);
+
+/**
+ * @route   GET /api/profile/settings
+ * @desc    Get user settings/preferences
+ * @access  Private
+ */
+router.get('/settings', profileController.getUserSettings);
+
+/**
+ * @route   PUT /api/profile/settings
+ * @desc    Update user settings/preferences
+ * @access  Private
+ */
+router.put('/settings', profileController.updateUserSettings);
+
 module.exports = router;
