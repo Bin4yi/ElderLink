@@ -1231,6 +1231,103 @@ class EmailService {
 </html>
     `;
   }
+
+  /**
+   * Send password reset OTP email
+   */
+  async sendPasswordResetOTP({ to, name, otp }) {
+    console.log('📧 Attempting to send password reset OTP to:', to);
+    
+    try {
+      const mailOptions = {
+        from: `"ElderLink Support" <${process.env.EMAIL_USER}>`,
+        to: to,
+        subject: '🔐 Password Reset OTP - ElderLink',
+        html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; background: #f4f4f4; }
+        .container { background: white; margin: 20px; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+        .content { padding: 40px 30px; }
+        .otp-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; padding: 30px; margin: 30px 0; text-align: center; }
+        .otp-code { font-size: 48px; font-weight: bold; letter-spacing: 10px; font-family: 'Courier New', monospace; margin: 20px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .info-box { background: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 12px; }
+        .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        ul { padding-left: 20px; }
+        ul li { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Password Reset Request</h1>
+            <p>ElderLink Security</p>
+        </div>
+        
+        <div class="content">
+            <h2>Hello ${name || 'User'}!</h2>
+            
+            <p>We received a request to reset your password for your ElderLink account. Use the OTP code below to proceed with resetting your password.</p>
+            
+            <div class="otp-box">
+                <p style="margin: 0; font-size: 16px; opacity: 0.9;">Your One-Time Password</p>
+                <div class="otp-code">${otp}</div>
+                <p style="margin: 0; font-size: 14px; opacity: 0.8;">⏱️ Valid for 10 minutes</p>
+            </div>
+            
+            <div class="info-box">
+                <strong>📝 How to use this OTP:</strong>
+                <ol>
+                    <li>Go to the password reset page</li>
+                    <li>Enter this 6-digit OTP code</li>
+                    <li>Create your new password</li>
+                    <li>Login with your new credentials</li>
+                </ol>
+            </div>
+            
+            <div class="warning">
+                <strong>⚠️ Security Notice:</strong>
+                <ul>
+                    <li>This OTP is valid for only <strong>10 minutes</strong></li>
+                    <li>Never share this OTP with anyone</li>
+                    <li>ElderLink staff will never ask for your OTP</li>
+                    <li>If you didn't request this, please ignore this email</li>
+                </ul>
+            </div>
+            
+            <p style="margin-top: 30px;">If you didn't request a password reset, please ignore this email or contact our support team if you have concerns.</p>
+            
+            <p style="margin-top: 30px;">Best regards,<br><strong>ElderLink Security Team</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p><strong>ElderLink - Comprehensive Elder Care Platform</strong></p>
+            <p>This is an automated email. Please do not reply to this message.</p>
+            <p style="margin-top: 10px; color: #999;">
+                © ${new Date().getFullYear()} ElderLink. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+        `
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Password reset OTP email sent successfully to ${to}`);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error sending password reset OTP email:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 module.exports = new EmailService();

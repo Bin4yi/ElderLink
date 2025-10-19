@@ -14,6 +14,9 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Login from "./components/auth/Login";
+import ForgotPassword from "./components/auth/ForgotPassword";
+import VerifyOTP from "./components/auth/VerifyOTP";
+import ResetPassword from "./components/auth/ResetPassword";
 
 // Admin
 import AdminDashboard from "./components/admin/dashboard/AdminDashboard";
@@ -265,6 +268,12 @@ function App() {
                   />
                   <Route path="/elder/emergency" element={<ElderEmergency />} />
                   <Route path="/elder/profile" element={<ElderProfile />} />
+                  
+                  {/* Password Reset Routes */}
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/verify-otp" element={<VerifyOTP />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  
                   {/* Booking and Payment routes */}
                   <Route
                     path="/appointment-booking"

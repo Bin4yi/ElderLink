@@ -42,6 +42,9 @@ const ProgressReport = require("./ProgressReport");
 const GroupTherapySession = require("./GroupTherapySession");
 const MentalHealthResource = require("./MentalHealthResource");
 
+// === Password Reset Model ===
+const PasswordResetOTP = require("./PasswordResetOTP");
+
 // Clear any existing associations to prevent conflicts
 const clearAssociations = (model) => {
   if (model.associations) {
@@ -646,4 +649,7 @@ module.exports = {
   ProgressReport,
   GroupTherapySession,
   MentalHealthResource,
+
+  // Password Reset
+  PasswordResetOTP,
 };
