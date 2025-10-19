@@ -1,7 +1,7 @@
 // backend/routes/auth.js
 const express = require('express');
 const router = express.Router();
-const { register, login, getProfile } = require('../controllers/authController');
+const { register, login, getProfile, changePassword } = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 
@@ -63,5 +63,6 @@ router.get('/pharmacies', authenticate, async (req, res) => {
 router.post('/register', validateRegistration, register);
 router.post('/login', validateLogin, login);
 router.get('/profile', authenticate, getProfile);
+router.post('/change-password', authenticate, changePassword);
 
 module.exports = router;

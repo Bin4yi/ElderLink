@@ -1,141 +1,221 @@
 // backend/controllers/doctorPatientController.js
-const { User, Elder, Appointment, DoctorAssignment, HealthMonitoring, Subscription } = require('../models');
+const { User, Elder, Appointment, DoctorAssignment, HealthMonitoring, Subscription, Doctor } = require('../models');
 const { Op } = require('sequelize');
 
 class DoctorPatientController {
   // Get all patients for the logged-in doctor
   static async getDoctorPatients(req, res) {
     try {
-      const doctorId = req.user.id;
+      // Step 2: Get Doctor Information
+      const userId = req.user.id;
       const { search, status, riskLevel, page = 1, limit = 100 } = req.query;
 
-      console.log('🔍 Getting patients for doctor:', doctorId);
+      console.log('🔍 Getting patients for doctor user:', userId);
 
-      // Get patients from appointments (unique elders with appointments)
+      // Find doctor profile from Doctor table using user ID
+      const doctor = await Doctor.findOne({
+        where: { userId }
+      });
+
+      if (!doctor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Doctor profile not found'
+        });
+      }
+
+      const doctorId = doctor.id;
+      console.log('✅ Found doctor profile:', doctorId);
+
+      // Step 3: Fetch Patients from Appointments
       const appointmentPatients = await Appointment.findAll({
         where: {
           doctorId,
           status: {
-            [Op.in]: ['approved', 'completed']
+            [Op.notIn]: ['cancelled', 'no-show']
           }
         },
-        attributes: ['elderId'],
-        include: [{
-          model: Elder,
-          as: 'elder',
-          attributes: [
-            'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
-            'phone', 'email', 'photo', 'bloodType', 'address',
-            'chronicConditions', 'allergies', 'currentMedications',
-            'emergencyContact', 'emergencyPhone'
-          ],
-          include: [{
-            model: Subscription,
-            as: 'subscription',
+        include: [
+          {
+            model: Elder,
+            as: 'elder',
+            required: false, // Make elder optional
+            attributes: [
+              'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
+              'phone', 'photo', 'bloodType', 'address',
+              'chronicConditions', 'allergies', 'currentMedications',
+              'emergencyContact'
+            ],
             include: [{
-              model: User,
-              as: 'user',
-              attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+              model: Subscription,
+              as: 'subscription',
+              required: false, // Make subscription optional
+              include: [{
+                model: User,
+                as: 'user',
+                required: false, // Make user optional
+                attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+              }]
             }]
-          }]
-        }],
-        group: ['elderId', 'elder.id', 'elder->subscription.id', 'elder->subscription->user.id']
+          },
+          {
+            model: User,
+            as: 'familyMember',
+            required: false, // Make familyMember optional
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+          }
+        ]
       });
 
-      // Get patients from doctor assignments
+      // Step 4: Fetch Patients from Doctor Assignments
       const assignedPatients = await DoctorAssignment.findAll({
         where: {
-          doctorId,
+          doctorId: userId, // DoctorAssignment uses userId, not doctor.id
           status: 'active'
         },
-        include: [{
-          model: Elder,
-          as: 'elder',
-          attributes: [
-            'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
-            'phone', 'email', 'photo', 'bloodType', 'address',
-            'chronicConditions', 'allergies', 'currentMedications',
-            'emergencyContact', 'emergencyPhone'
-          ],
-          include: [{
-            model: Subscription,
-            as: 'subscription',
+        include: [
+          {
+            model: Elder,
+            as: 'elder',
+            required: false, // Make elder optional
+            attributes: [
+              'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
+              'phone', 'photo', 'bloodType', 'address',
+              'chronicConditions', 'allergies', 'currentMedications',
+              'emergencyContact'
+            ],
             include: [{
-              model: User,
-              as: 'user',
-              attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+              model: Subscription,
+              as: 'subscription',
+              required: false, // Make subscription optional
+              include: [{
+                model: User,
+                as: 'user',
+                required: false, // Make user optional
+                attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+              }]
             }]
-          }]
-        }]
+          },
+          {
+            model: User,
+            as: 'familyMember',
+            required: false, // Make familyMember optional
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+          }
+        ]
       });
 
-      // Combine and deduplicate patients
+      console.log('📊 Raw data:', {
+        appointmentPatients: appointmentPatients.length,
+        assignedPatients: assignedPatients.length
+      });
+
+      // Filter out any entries without elder data
+      const validAppointments = appointmentPatients.filter(apt => apt.elder);
+      const validAssignments = assignedPatients.filter(assignment => assignment.elder);
+
+      console.log('✅ Valid data:', {
+        validAppointments: validAppointments.length,
+        validAssignments: validAssignments.length
+      });
+
+      // Step 5 & 6: Format Data and Remove Duplicates
       const patientMap = new Map();
 
       // Add appointment patients
-      appointmentPatients.forEach(apt => {
+      validAppointments.forEach(apt => {
         if (apt.elder) {
+          const existingPatient = patientMap.get(apt.elder.id);
           patientMap.set(apt.elder.id, {
             elder: apt.elder,
-            source: 'appointment'
+            source: existingPatient ? 'both' : 'appointment',
+            appointmentDate: apt.appointmentDate,
+            appointmentStatus: apt.status,
+            familyMember: apt.familyMember || apt.elder.subscription?.user,
+            assignmentType: existingPatient?.assignmentType
           });
         }
       });
 
       // Add assigned patients
-      assignedPatients.forEach(assignment => {
+      validAssignments.forEach(assignment => {
         if (assignment.elder) {
           const existing = patientMap.get(assignment.elder.id);
           patientMap.set(assignment.elder.id, {
             elder: assignment.elder,
             source: existing ? 'both' : 'assignment',
-            assignmentType: assignment.assignmentType
+            assignmentType: assignment.assignmentType,
+            assignmentDate: assignment.assignmentDate,
+            appointmentDate: existing?.appointmentDate,
+            appointmentStatus: existing?.appointmentStatus,
+            familyMember: assignment.familyMember || assignment.elder.subscription?.user
           });
         }
       });
 
       // Get latest vitals for each patient
       const patientIds = Array.from(patientMap.keys());
-      const vitalsData = await HealthMonitoring.findAll({
+      
+      // If no patients found, return early
+      if (patientIds.length === 0) {
+        console.log('⚠️ No patients found for doctor');
+        return res.json({
+          success: true,
+          data: [],
+          statistics: {
+            total: 0,
+            fromAppointments: 0,
+            fromAssignments: 0,
+            active: 0,
+            unique: 0
+          },
+          pagination: {
+            total: 0,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            pages: 0
+          },
+          message: 'No patients found'
+        });
+      }
+      
+      // Fetch vitals without group/limit to avoid SQL errors
+      const allVitals = await HealthMonitoring.findAll({
         where: {
           elderId: {
             [Op.in]: patientIds
           }
         },
-        order: [['recordDate', 'DESC']],
-        limit: patientIds.length,
-        group: ['elderId']
+        order: [['recordDate', 'DESC']]
       });
-
+      
+      // Group vitals manually to get latest for each patient
       const vitalsMap = new Map();
-      vitalsData.forEach(vital => {
+      allVitals.forEach(vital => {
         if (!vitalsMap.has(vital.elderId)) {
           vitalsMap.set(vital.elderId, vital);
         }
       });
 
-      // Get appointment counts for each patient
-      const appointmentCounts = await Appointment.findAll({
+      // Get appointment counts for each patient - simplified
+      const allAppointmentsForCount = await Appointment.findAll({
         where: {
           doctorId,
           elderId: {
             [Op.in]: patientIds
           }
         },
-        attributes: [
-          'elderId',
-          [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'appointmentCount']
-        ],
-        group: ['elderId']
+        attributes: ['elderId', 'id']
       });
 
       const appointmentCountMap = new Map();
-      appointmentCounts.forEach(count => {
-        appointmentCountMap.set(count.elderId, parseInt(count.get('appointmentCount')));
+      allAppointmentsForCount.forEach(apt => {
+        const count = appointmentCountMap.get(apt.elderId) || 0;
+        appointmentCountMap.set(apt.elderId, count + 1);
       });
 
-      // Get last and next appointments
-      const lastAppointments = await Appointment.findAll({
+      // Get last appointments (completed)
+      const allLastAppointments = await Appointment.findAll({
         where: {
           doctorId,
           elderId: {
@@ -146,43 +226,48 @@ class DoctorPatientController {
             [Op.lt]: new Date()
           }
         },
-        order: [['appointmentDate', 'DESC']],
-        limit: patientIds.length,
-        group: ['elderId']
+        order: [['appointmentDate', 'DESC']]
       });
 
       const lastAppointmentMap = new Map();
-      lastAppointments.forEach(apt => {
+      allLastAppointments.forEach(apt => {
         if (!lastAppointmentMap.has(apt.elderId)) {
           lastAppointmentMap.set(apt.elderId, apt.appointmentDate);
         }
       });
 
-      const nextAppointments = await Appointment.findAll({
+      // Get next appointments (upcoming)
+      const allNextAppointments = await Appointment.findAll({
         where: {
           doctorId,
           elderId: {
             [Op.in]: patientIds
           },
-          status: 'approved',
+          status: {
+            [Op.in]: ['upcoming', 'approved', 'today']
+          },
           appointmentDate: {
             [Op.gte]: new Date()
           }
         },
-        order: [['appointmentDate', 'ASC']],
-        limit: patientIds.length,
-        group: ['elderId']
+        order: [['appointmentDate', 'ASC']]
       });
 
       const nextAppointmentMap = new Map();
-      nextAppointments.forEach(apt => {
+      allNextAppointments.forEach(apt => {
         if (!nextAppointmentMap.has(apt.elderId)) {
           nextAppointmentMap.set(apt.elderId, apt.appointmentDate);
         }
       });
 
-      // Format patients
-      let patients = Array.from(patientMap.values()).map(({ elder, source, assignmentType }) => {
+      // Format patients with all details
+      let patients = Array.from(patientMap.values()).map(({ elder, source, assignmentType, appointmentDate, appointmentStatus, assignmentDate, familyMember }) => {
+        // Safety check
+        if (!elder || !elder.id) {
+          console.warn('⚠️ Skipping patient with missing elder data');
+          return null;
+        }
+
         const vitals = vitalsMap.get(elder.id);
         const age = elder.dateOfBirth ? new Date().getFullYear() - new Date(elder.dateOfBirth).getFullYear() : null;
         const appointmentCount = appointmentCountMap.get(elder.id) || 0;
@@ -200,21 +285,18 @@ class DoctorPatientController {
           }
         }
 
-        // Get family member info
-        const familyMember = elder.subscription?.user;
-
         return {
           id: elder.id,
-          name: `${elder.firstName} ${elder.lastName}`,
-          firstName: elder.firstName,
-          lastName: elder.lastName,
+          name: `${elder.firstName || ''} ${elder.lastName || ''}`.trim(),
+          firstName: elder.firstName || '',
+          lastName: elder.lastName || '',
           age,
-          gender: elder.gender,
-          phone: elder.phone,
-          email: elder.email,
-          address: elder.address,
-          bloodType: elder.bloodType,
-          photo: elder.photo,
+          gender: elder.gender || null,
+          phone: elder.phone || null,
+          email: null, // Elder doesn't have email field
+          address: elder.address || null,
+          bloodType: elder.bloodType || null,
+          photo: elder.photo || null,
           lastVisit: lastVisit ? lastVisit.toISOString().split('T')[0] : null,
           nextAppointment: nextAppointment ? nextAppointment.toISOString().split('T')[0] : null,
           appointmentCount,
@@ -223,24 +305,27 @@ class DoctorPatientController {
           medications: elder.currentMedications ? elder.currentMedications.split(',').map(m => m.trim()) : [],
           allergies: elder.allergies || null,
           vitals: vitals ? {
-            bloodPressure: `${vitals.systolic}/${vitals.diastolic}`,
-            heartRate: vitals.heartRate,
-            temperature: vitals.temperature,
-            weight: vitals.weight
+            bloodPressure: `${vitals.systolic || 0}/${vitals.diastolic || 0}`,
+            heartRate: vitals.heartRate || 0,
+            temperature: vitals.temperature || 0,
+            weight: vitals.weight || 0
           } : null,
           status: nextAppointment ? 'active' : 'inactive',
-          emergencyContact: elder.emergencyContact,
-          emergencyPhone: elder.emergencyPhone,
+          emergencyContact: elder.emergencyContact || null,
+          emergencyPhone: null, // Elder doesn't have emergencyPhone field
           source,
           assignmentType: assignmentType || null,
+          appointmentDate: appointmentDate || null,
+          appointmentStatus: appointmentStatus || null,
+          assignmentDate: assignmentDate || null,
           familyMember: familyMember ? {
             id: familyMember.id,
-            name: `${familyMember.firstName} ${familyMember.lastName}`,
-            email: familyMember.email,
-            phone: familyMember.phone
+            name: `${familyMember.firstName || ''} ${familyMember.lastName || ''}`.trim(),
+            email: familyMember.email || null,
+            phone: familyMember.phone || null
           } : null
         };
-      });
+      }).filter(p => p !== null); // Remove any null entries
 
       // Apply filters
       if (search) {
@@ -260,6 +345,13 @@ class DoctorPatientController {
         patients = patients.filter(p => p.riskLevel === riskLevel);
       }
 
+      // Step 7: Calculate Statistics
+      const totalPatients = patients.length;
+      const patientsFromAppointments = appointmentPatients.filter(apt => apt.elder).length;
+      const patientsFromAssignments = assignedPatients.filter(assignment => assignment.elder).length;
+      const activePatients = patients.filter(p => p.status === 'active').length;
+      const uniquePatients = patientMap.size;
+
       // Pagination
       const total = patients.length;
       const startIndex = (page - 1) * limit;
@@ -267,17 +359,26 @@ class DoctorPatientController {
       const paginatedPatients = patients.slice(startIndex, endIndex);
 
       console.log('✅ Found patients:', {
-        total,
-        fromAppointments: appointmentPatients.length,
-        fromAssignments: assignedPatients.length,
-        unique: patients.length,
+        total: totalPatients,
+        fromAppointments: patientsFromAppointments,
+        fromAssignments: patientsFromAssignments,
+        unique: uniquePatients,
+        active: activePatients,
         page,
         limit
       });
 
+      // Step 8: Send Response
       res.json({
         success: true,
         data: paginatedPatients,
+        statistics: {
+          total: totalPatients,
+          fromAppointments: patientsFromAppointments,
+          fromAssignments: patientsFromAssignments,
+          active: activePatients,
+          unique: uniquePatients
+        },
         pagination: {
           total,
           page: parseInt(page),
@@ -288,10 +389,17 @@ class DoctorPatientController {
       });
     } catch (error) {
       console.error('❌ Error getting doctor patients:', error);
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        sql: error.sql // If it's a SQL error
+      });
       res.status(500).json({
         success: false,
         message: 'Failed to retrieve patients',
-        error: error.message
+        error: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }

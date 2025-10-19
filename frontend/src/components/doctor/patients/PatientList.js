@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import RoleLayout from '../../common/RoleLayout';
+import { doctorPatientService } from '../../../services/doctorPatient';
+import toast from 'react-hot-toast';
 import { 
   Users, 
   Search, 
@@ -35,6 +37,19 @@ const PatientList = () => {
   const [sortOrder, setSortOrder] = useState('asc');
   const [selectedPatients, setSelectedPatients] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [statistics, setStatistics] = useState({
+    total: 0,
+    fromAppointments: 0,
+    fromAssignments: 0,
+    active: 0,
+    unique: 0
+  });
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 100,
+    pages: 1
+  });
 
   // Mock patient data - replace with API call
   const mockPatients = [
@@ -170,18 +185,71 @@ const PatientList = () => {
     }
   ];
 
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setPatients(mockPatients);
+  // Fetch patients from API
+  const fetchPatients = async () => {
+    try {
+      setLoading(true);
+      const response = await doctorPatientService.getDoctorPatients({
+        search: searchTerm,
+        status: selectedFilter === 'active' || selectedFilter === 'inactive' ? selectedFilter : undefined,
+        riskLevel: selectedFilter.includes('risk') ? selectedFilter.replace('-risk', '') : undefined,
+        page: pagination.page,
+        limit: pagination.limit
+      });
+
+      if (response.success) {
+        setPatients(response.data || []);
+        setStatistics(response.statistics || {
+          total: 0,
+          fromAppointments: 0,
+          fromAssignments: 0,
+          active: 0,
+          unique: 0
+        });
+        setPagination(response.pagination || {
+          total: 0,
+          page: 1,
+          limit: 100,
+          pages: 0
+        });
+        console.log('✅ Patients loaded:', response.data?.length || 0);
+      } else {
+        console.error('API returned error:', response);
+        toast.error(response.message || 'Failed to load patients');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching patients:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.message || error.message || 'Failed to load patients');
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatients();
+  }, [selectedFilter]);
+
+  // Debounce search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchTerm !== undefined) {
+        fetchPatients();
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  const handleRefresh = () => {
+    fetchPatients();
+    toast.success('Patient list refreshed');
+  };
 
   const filteredPatients = patients.filter(patient => {
     const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         patient.phone.includes(searchTerm);
+                         (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (patient.phone && patient.phone.includes(searchTerm));
     
     const matchesFilter = selectedFilter === 'all' || 
                          (selectedFilter === 'active' && patient.status === 'active') ||
@@ -275,13 +343,12 @@ const PatientList = () => {
               <p className="text-gray-600">Manage and monitor your elderly patients</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Plus className="w-4 h-4" />
-                Add Patient
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <Upload className="w-4 h-4" />
-                Import
+              <button 
+                onClick={handleRefresh}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
               </button>
               <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                 <Download className="w-4 h-4" />
@@ -292,15 +359,38 @@ const PatientList = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Users className="w-6 h-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Patients</p>
-                <p className="text-2xl font-bold text-gray-900">{patients.length}</p>
+                <p className="text-sm font-medium text-gray-600">Unique Patients</p>
+                <p className="text-2xl font-bold text-gray-900">{statistics.unique}</p>
+                <p className="text-xs text-gray-500">Total: {statistics.total}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">From Appointments</p>
+                <p className="text-2xl font-bold text-gray-900">{statistics.fromAppointments}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <Heart className="w-6 h-6 text-indigo-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">From Assignments</p>
+                <p className="text-2xl font-bold text-gray-900">{statistics.fromAssignments}</p>
               </div>
             </div>
           </div>
@@ -311,9 +401,7 @@ const PatientList = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Active Patients</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {patients.filter(p => p.status === 'active').length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{statistics.active}</p>
               </div>
             </div>
           </div>
@@ -326,19 +414,6 @@ const PatientList = () => {
                 <p className="text-sm font-medium text-gray-600">High Risk</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {patients.filter(p => p.riskLevel === 'high').length}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Upcoming Appointments</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {patients.filter(p => p.nextAppointment).length}
                 </p>
               </div>
             </div>
@@ -423,6 +498,9 @@ const PatientList = () => {
                     Next Appointment
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Family Contact
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -453,17 +531,19 @@ const PatientList = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 flex items-center">
-                        <Phone className="w-4 h-4 mr-1" />
-                        {patient.phone}
-                      </div>
                       <div className="text-sm text-gray-500 flex items-center">
-                        <Mail className="w-4 h-4 mr-1" />
-                        {patient.email}
+                        <Phone className="w-4 h-4 mr-1" />
+                        {patient.phone || 'N/A'}
                       </div>
+                      {patient.email && (
+                        <div className="text-sm text-gray-500 flex items-center">
+                          <Mail className="w-4 h-4 mr-1" />
+                          {patient.email}
+                        </div>
+                      )}
                       <div className="text-sm text-gray-500 flex items-center">
                         <MapPin className="w-4 h-4 mr-1" />
-                        {patient.address.split(',')[0]}
+                        {patient.address ? patient.address.split(',')[0] : 'N/A'}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -474,15 +554,34 @@ const PatientList = () => {
                         <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(patient.status)}`}>
                           {patient.status.charAt(0).toUpperCase() + patient.status.slice(1)}
                         </span>
+                        {patient.source && (
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            patient.source === 'appointment' ? 'bg-purple-100 text-purple-800' :
+                            patient.source === 'assignment' ? 'bg-indigo-100 text-indigo-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {patient.source === 'both' ? 'Appt & Assigned' : 
+                             patient.source === 'appointment' ? 'Appointment' : 'Assigned'}
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-gray-500">
-                        <div>BP: {patient.vitals.bloodPressure}</div>
-                        <div>HR: {patient.vitals.heartRate} bpm</div>
+                        {patient.vitals ? (
+                          <>
+                            <div>BP: {patient.vitals.bloodPressure}</div>
+                            <div>HR: {patient.vitals.heartRate} bpm</div>
+                          </>
+                        ) : (
+                          <div>No vitals recorded</div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
-                        {new Date(patient.lastVisit).toLocaleDateString()}
+                        {patient.lastVisit 
+                          ? new Date(patient.lastVisit).toLocaleDateString()
+                          : 'No visits yet'
+                        }
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -492,6 +591,23 @@ const PatientList = () => {
                           : 'Not scheduled'
                         }
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {patient.familyMember ? (
+                        <div className="text-sm">
+                          <div className="font-medium text-gray-900">{patient.familyMember.name}</div>
+                          <div className="text-xs text-gray-500 flex items-center mt-1">
+                            <Phone className="w-3 h-3 mr-1" />
+                            {patient.familyMember.phone || 'N/A'}
+                          </div>
+                          <div className="text-xs text-gray-500 flex items-center">
+                            <Mail className="w-3 h-3 mr-1" />
+                            {patient.familyMember.email}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">No family contact</div>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">

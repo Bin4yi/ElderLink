@@ -216,6 +216,14 @@ try {
   const doctorPatientsRoutes = require('./routes/doctorPatients');
   app.use('/api/doctor/patients', doctorPatientsRoutes);
 
+  // Use doctor profile routes
+  const doctorProfileRoutes = require('./routes/doctorProfile');
+  app.use('/api/doctor/profile', doctorProfileRoutes);
+
+  // Use doctor dashboard routes
+  const doctorDashboardRoutes = require('./routes/doctorDashboard');
+  app.use('/api/doctor/dashboard', doctorDashboardRoutes);
+
   // Use new inventory routes
   app.use("/api/inventory", inventoryRoutes);
   app.use("/api/prescriptions", prescriptionRoutes);
