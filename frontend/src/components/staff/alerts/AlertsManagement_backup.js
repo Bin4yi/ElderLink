@@ -256,7 +256,7 @@ const AlertsManagement = () => {
                         <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                           {alert.elder?.photo ? (
                             <img
-                              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/uploads/elders/${alert.elder.photo}`}
+                              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/elders/${alert.elder.photo}`}
                               alt={`${alert.elder.firstName} ${alert.elder.lastName}`}
                               className="w-full h-full object-cover rounded-full"
                             />

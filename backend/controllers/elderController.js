@@ -124,7 +124,8 @@ const getElders = async (req, res) => {
           as: 'elder',
           attributes: [
             'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
-            'address', 'phone', 'emergencyContact', 'photo', 'createdAt', 'updatedAt'
+            'address', 'phone', 'emergencyContact', 'photo', 'createdAt', 'updatedAt',
+            'hasLoginAccess', 'userId', 'username'
           ],
           required: false
         }

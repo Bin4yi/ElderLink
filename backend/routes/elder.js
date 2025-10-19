@@ -186,7 +186,8 @@ router.get('/', authenticate, authorize('family_member', 'doctor', 'mental-healt
       }],
       attributes: [
         'id', 'firstName', 'lastName', 'dateOfBirth', 'gender', 
-        'address', 'phone', 'emergencyContact', 'photo', 'createdAt', 'updatedAt'
+        'address', 'phone', 'emergencyContact', 'photo', 'createdAt', 'updatedAt',
+        'hasLoginAccess', 'userId', 'username' // ✅ Added login fields
       ],
       order: [['createdAt', 'DESC']]
     });

@@ -9,7 +9,10 @@ import {
   Search, Eye, Package, DollarSign, Truck
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5002/api';
+import api from '../../../services/api';
+
+// API Base URL - we use this for direct axios calls where needed
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
 const PrescriptionManagement = () => {
   const navigate = useNavigate();

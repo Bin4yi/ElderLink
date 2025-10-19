@@ -293,7 +293,7 @@ const AlertsManagement = () => {
                         <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
                           {alert.elder?.photo ? (
                             <img
-                              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/uploads/elders/${alert.elder.photo}`}
+                              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/elders/${alert.elder.photo}`}
                               alt={`${alert.elder.firstName} ${alert.elder.lastName}`}
                               className="w-full h-full object-cover"
                             />
