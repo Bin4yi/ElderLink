@@ -433,7 +433,7 @@ const HealthMonitoring = () => {
                           <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
                             {record.elder?.photo ? (
                               <img
-                                src={`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/uploads/elders/${record.elder.photo}`}
+                                src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/elders/${record.elder.photo}`}
                                 alt={`${record.elder.firstName} ${record.elder.lastName}`}
                                 className="w-full h-full object-cover rounded-full"
                                 onError={(e) => {

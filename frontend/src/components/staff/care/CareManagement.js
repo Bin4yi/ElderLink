@@ -291,7 +291,7 @@ const CareManagement = () => {
                             <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
                               {elder.photo ? (
                                 <img
-                                  src={`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/uploads/elders/${elder.photo}`}
+                                  src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/elders/${elder.photo}`}
                                   alt={`${elder.firstName} ${elder.lastName}`}
                                   className="w-full h-full object-cover rounded-full"
                                 />
@@ -331,7 +331,7 @@ const CareManagement = () => {
                         <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
                           {selectedElder.photo ? (
                             <img
-                              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/uploads/elders/${selectedElder.photo}`}
+                              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/elders/${selectedElder.photo}`}
                               alt={`${selectedElder.firstName} ${selectedElder.lastName}`}
                               className="w-full h-full object-cover"
                             />
