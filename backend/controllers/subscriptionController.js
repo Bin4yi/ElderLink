@@ -318,8 +318,7 @@ const renewSubscription = async (req, res) => {
       duration,
       amount,
       stripeCustomerId: customer.id,
-      stripePaymentIntentId: paymentIntent.id,
-      reminderSent: false // Reset reminder flag
+      stripePaymentIntentId: paymentIntent.id
     });
 
     // Log renewal to history

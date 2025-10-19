@@ -278,8 +278,17 @@ const createHealthMonitoring = async (req, res) => {
 
     // Check for health alerts after creating the record
     const io = req.app.get('io');
+    console.log('🔔 Checking for health alerts...', { 
+      hasSocketIO: !!io,
+      recordId: createdRecord.id,
+      elderId: createdRecord.elderId
+    });
+    
     if (io) {
-      await checkHealthVitals(createdRecord, io);
+      const alerts = await checkHealthVitals(createdRecord, io);
+      console.log(`🔔 Health check completed. Alerts created: ${alerts.length}`);
+    } else {
+      console.log('⚠️ Socket.IO not available - alerts will not be sent in real-time');
     }
 
     res.status(201).json({
@@ -362,8 +371,17 @@ const updateHealthMonitoring = async (req, res) => {
 
     // Check for health alerts after updating the record
     const io = req.app.get('io');
+    console.log('🔔 Checking for health alerts (update)...', { 
+      hasSocketIO: !!io,
+      recordId: updatedRecord.id,
+      elderId: updatedRecord.elderId
+    });
+    
     if (io) {
-      await checkHealthVitals(updatedRecord, io);
+      const alerts = await checkHealthVitals(updatedRecord, io);
+      console.log(`🔔 Health check completed. Alerts created: ${alerts.length}`);
+    } else {
+      console.log('⚠️ Socket.IO not available - alerts will not be sent in real-time');
     }
 
     res.json({

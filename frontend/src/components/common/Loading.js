@@ -4,34 +4,47 @@ import { Heart } from 'lucide-react';
 
 const Loading = ({ text = 'Loading...', size = 'large' }) => {
   const sizeConfig = {
-    small: { logo: 24, icon: 16 },
-    medium: { logo: 32, icon: 20 },
-    large: { logo: 40, icon: 24 }
+    small: { spinner: 48, logo: 24, icon: 16 },
+    medium: { spinner: 64, logo: 32, icon: 20 },
+    large: { spinner: 80, logo: 40, icon: 24 }
   };
 
   const currentSize = sizeConfig[size];
 
-  // Size classes for the spinner
-  const spinnerClasses = {
-    small: 'w-12 h-12',
-    medium: 'w-16 h-16',
-    large: 'w-20 h-20'
-  };
-
   return (
-    <div className="flex flex-col items-center justify-center p-8">
-      <div style={{ position: 'relative', display: 'inline-block', marginBottom: '16px' }}>
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      padding: '32px',
+      minHeight: '200px'
+    }}>
+      <div style={{ 
+        position: 'relative', 
+        display: 'inline-block', 
+        marginBottom: '16px',
+        width: `${currentSize.spinner}px`,
+        height: `${currentSize.spinner}px`,
+        flexShrink: 0
+      }}>
         {/* Spinning border */}
         <div 
-          className={`${spinnerClasses[size]}`}
           style={{ 
+            width: `${currentSize.spinner}px`,
+            height: `${currentSize.spinner}px`,
+            minWidth: `${currentSize.spinner}px`,
+            minHeight: `${currentSize.spinner}px`,
+            maxWidth: `${currentSize.spinner}px`,
+            maxHeight: `${currentSize.spinner}px`,
             border: '3px solid #f3f4f6',
             borderTop: '3px solid #ef4444',
             borderRight: '3px solid #f97316',
             borderBottom: '3px solid #d946ef',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            aspectRatio: '1 / 1'
           }}
         ></div>
         
@@ -44,13 +57,18 @@ const Loading = ({ text = 'Loading...', size = 'large' }) => {
             transform: 'translate(-50%, -50%)',
             width: `${currentSize.logo}px`, 
             height: `${currentSize.logo}px`,
+            minWidth: `${currentSize.logo}px`,
+            minHeight: `${currentSize.logo}px`,
+            maxWidth: `${currentSize.logo}px`,
+            maxHeight: `${currentSize.logo}px`,
             background: 'linear-gradient(135deg, #ef4444 0%, #ec4899 100%)',
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-            zIndex: 10
+            zIndex: 10,
+            aspectRatio: '1 / 1'
           }}
         >
           <Heart 
@@ -59,7 +77,12 @@ const Loading = ({ text = 'Loading...', size = 'large' }) => {
           />
         </div>
       </div>
-      <p className="text-gray-600 font-medium">{text}</p>
+      <p style={{ 
+        color: '#4b5563', 
+        fontWeight: 500,
+        fontSize: '14px',
+        margin: 0
+      }}>{text}</p>
     </div>
   );
 };
