@@ -290,15 +290,54 @@ const AppointmentManagement = () => {
     }
   };
 
+  // Determine status based on appointment date
+  const getAppointmentStatus = (appointmentDate) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const aptDate = new Date(appointmentDate);
+    aptDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = aptDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      return 'completed'; // Past appointments
+    } else if (diffDays === 0) {
+      return 'today'; // Today's appointments
+    } else {
+      return 'upcoming'; // Future appointments
+    }
+  };
+
+  // Get status icon
+  const getStatusIcon = (status) => {
+    switch(status) {
+      case 'upcoming':
+        return <Clock className="w-4 h-4" />;
+      case 'today':
+        return (
+          <div className="relative flex items-center justify-center">
+            <div className="absolute w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+            <div className="relative w-2 h-2 bg-red-600 rounded-full"></div>
+          </div>
+        );
+      case 'completed':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'cancelled':
+        return <XCircle className="w-4 h-4" />;
+      default:
+        return <AlertCircle className="w-4 h-4" />;
+    }
+  };
+
   // Get status badge styling
   const getStatusBadge = (status) => {
     const statusStyles = {
       upcoming: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      today: 'bg-orange-100 text-orange-800 border-orange-200',
-      'in-progress': 'bg-green-100 text-green-800 border-green-200',
-      completed: 'bg-blue-100 text-blue-800 border-blue-200',
-      cancelled: 'bg-red-100 text-red-800 border-red-200',
-      'no-show': 'bg-gray-100 text-gray-800 border-gray-200'
+      today: 'bg-red-100 text-red-800 border-red-200',
+      completed: 'bg-green-100 text-green-800 border-green-200',
+      cancelled: 'bg-red-100 text-red-800 border-red-200'
     };
 
     return statusStyles[status] || 'bg-gray-100 text-gray-800 border-gray-200';
@@ -321,6 +360,7 @@ const AppointmentManagement = () => {
     const { date, time } = formatDateTime(appointment.appointmentDate);
     const elder = appointment.elder || {};
     const familyMember = appointment.familyMember || {};
+    const calculatedStatus = getAppointmentStatus(appointment.appointmentDate);
 
     return (
       <div
@@ -329,10 +369,9 @@ const AppointmentManagement = () => {
         className="bg-white rounded-xl shadow-md border-l-4 hover:shadow-xl transition-all duration-300 overflow-hidden scroll-mt-20"
         style={{
           borderLeftColor: 
-            appointment.status === 'upcoming' ? '#F59E0B' :
-            appointment.status === 'today' ? '#F97316' :
-            appointment.status === 'in-progress' ? '#10B981' :
-            appointment.status === 'completed' ? '#3B82F6' :
+            calculatedStatus === 'upcoming' ? '#F59E0B' :
+            calculatedStatus === 'today' ? '#EF4444' :
+            calculatedStatus === 'completed' ? '#10B981' :
             '#EF4444'
         }}
       >
@@ -378,9 +417,10 @@ const AppointmentManagement = () => {
 
             {/* Status Badge */}
             <div className="flex flex-col items-end gap-2">
-              <span className={`px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide shadow-sm ${getStatusBadge(appointment.status)}`}>
-                {(appointment.status || 'pending').replace('-', ' ')}
-              </span>
+              <div className={`px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide shadow-sm flex items-center gap-2 ${getStatusBadge(calculatedStatus)}`}>
+                {getStatusIcon(calculatedStatus)}
+                <span>{calculatedStatus.charAt(0).toUpperCase() + calculatedStatus.slice(1)}</span>
+              </div>
               {appointment.priority && appointment.priority !== 'normal' && (
                 <span className={`px-3 py-1 rounded-full text-sm font-semibold uppercase ${getPriorityBadge(appointment.priority)}`}>
                   {appointment.priority}
@@ -744,9 +784,9 @@ const AppointmentManagement = () => {
                               scrollToAppointment(apt.id);
                             }}
                             className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity ${
-                              apt.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              apt.status === 'approved' ? 'bg-green-100 text-green-800' :
-                              apt.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                              getAppointmentStatus(apt.appointmentDate) === 'upcoming' ? 'bg-yellow-100 text-yellow-800' :
+                              getAppointmentStatus(apt.appointmentDate) === 'today' ? 'bg-red-100 text-red-800' :
+                              getAppointmentStatus(apt.appointmentDate) === 'completed' ? 'bg-green-100 text-green-800' :
                               'bg-gray-100 text-gray-800'
                             }`}
                             title={`Click to view: ${apt.elder?.firstName} ${apt.elder?.lastName}`}
@@ -947,8 +987,9 @@ const AppointmentManagement = () => {
                     <p><strong>Duration:</strong> {selectedAppointment.duration || 30} minutes</p>
                     <p><strong>Type:</strong> {selectedAppointment.type}</p>
                     <p><strong>Priority:</strong> {selectedAppointment.priority}</p>
-                    <p><strong>Status:</strong> <span className={`px-2 py-1 rounded text-xs ${getStatusBadge(selectedAppointment.status)}`}>
-                      {selectedAppointment.status.toUpperCase()}
+                    <p><strong>Status:</strong> <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 inline-flex ${getStatusBadge(getAppointmentStatus(selectedAppointment.appointmentDate))}`}>
+                      {getStatusIcon(getAppointmentStatus(selectedAppointment.appointmentDate))}
+                      {getAppointmentStatus(selectedAppointment.appointmentDate).toUpperCase()}
                     </span></p>
                   </div>
                 </div>
@@ -982,36 +1023,6 @@ const AppointmentManagement = () => {
                   )}
                 </div>
               </div>
-
-              {/* Action Buttons */}
-              {selectedAppointment.status === 'pending' && (
-                <div className="mt-6 flex justify-end gap-3">
-                  <button
-                    onClick={() => handleAppointmentAction(selectedAppointment.id, 'reject', 'Rejected by doctor')}
-                    disabled={actionLoading}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-                  >
-                    {actionLoading ? (
-                      <Loader className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <XCircle className="w-4 h-4" />
-                    )}
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => handleAppointmentAction(selectedAppointment.id, 'approve')}
-                    disabled={actionLoading}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-                  >
-                    {actionLoading ? (
-                      <Loader className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4" />
-                    )}
-                    Approve
-                  </button>
-                </div>
-              )}
             </div>
           </Modal>
         )}

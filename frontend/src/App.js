@@ -26,7 +26,7 @@ import CoordinatorDashboard from "./components/coordinator/CoordinatorDashboard"
 
 // Doctor
 import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
-import PatientList from './components/doctor/patients/PatientList';
+import PatientsPage from './components/doctor/patients/PatientsPage';
 import AppointmentManagement from './components/doctor/appointments/AppointmentManagement';
 import DoctorScheduleManager from './components/doctor/appointments/DoctorScheduleManager';
 import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
@@ -129,7 +129,7 @@ function App() {
                     path="/doctor/dashboard"
                     element={<DoctorDashboard />}
                   />
-                  <Route path="/doctor/patients" element={<PatientList />} />
+                  <Route path="/doctor/patients" element={<PatientsPage />} />
                   <Route
                     path="/doctor/appointments"
                     element={<AppointmentManagement />}
