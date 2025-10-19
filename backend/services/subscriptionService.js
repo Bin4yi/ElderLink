@@ -37,9 +37,6 @@ const checkExpiringSubscriptions = async () => {
             new Date(fiveDaysFromNow.setHours(0, 0, 0, 0)),
             new Date(fiveDaysFromNow.setHours(23, 59, 59, 999))
           ]
-        },
-        reminderSent: {
-          [Op.or]: [null, false]
         }
       },
       include: [
@@ -61,8 +58,8 @@ const checkExpiringSubscriptions = async () => {
     for (const subscription of expiringSubscriptions) {
       await sendExpirationReminderEmail(subscription);
       
-      // Mark reminder as sent
-      await subscription.update({ reminderSent: true });
+      // Note: Removed reminderSent tracking as column doesn't exist
+      console.log(`✅ Reminder sent for subscription ${subscription.id}`);
     }
 
     return {
