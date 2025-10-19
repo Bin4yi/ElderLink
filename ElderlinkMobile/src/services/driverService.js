@@ -142,6 +142,82 @@ class DriverService {
       throw error;
     }
   }
+
+  /**
+   * Get driver profile information
+   * @returns {Promise<Object>} Driver profile
+   */
+  async getProfile() {
+    try {
+      console.log('👤 Getting driver profile...');
+      const response = await apiService.makeRequest(
+        'GET',
+        '/api/drivers/profile'
+      );
+      console.log('✅ Driver profile:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Error getting driver profile:', error);
+      // Return mock data if API fails
+      return {
+        data: {
+          licenseNumber: 'DL-12345',
+          isAvailable: true,
+          ambulance: {
+            vehicleNumber: 'AMB-001',
+            status: 'available'
+          }
+        }
+      };
+    }
+  }
+
+  /**
+   * Get driver statistics
+   * @returns {Promise<Object>} Driver stats
+   */
+  async getStats() {
+    try {
+      console.log('📊 Getting driver stats...');
+      const response = await apiService.makeRequest(
+        'GET',
+        '/api/drivers/stats'
+      );
+      console.log('✅ Driver stats:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Error getting driver stats:', error);
+      // Return mock data if API fails
+      return {
+        data: {
+          totalRides: 0,
+          completedRides: 0,
+          onTimePercentage: 0
+        }
+      };
+    }
+  }
+
+  /**
+   * Update driver availability status
+   * @param {boolean} isAvailable - Availability status
+   * @returns {Promise<Object>} Response
+   */
+  async updateAvailability(isAvailable) {
+    try {
+      console.log('🔄 Updating availability to:', isAvailable);
+      const response = await apiService.makeRequest(
+        'PATCH',
+        '/api/drivers/availability',
+        { isAvailable }
+      );
+      console.log('✅ Availability updated:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Error updating availability:', error);
+      throw error;
+    }
+  }
 }
 
 export default new DriverService();

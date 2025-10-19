@@ -3,9 +3,9 @@ import {
   View,
   Text,
   StyleSheet,
+  TouchableOpacity,
   ScrollView,
   RefreshControl,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import driverService from '../services/driverService';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '../utils/colors';
 import { USER_ROLES } from '../utils/constants';
 
 const DriverDashboard = () => {
@@ -162,7 +164,7 @@ const DriverDashboard = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
+          <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading rides...</Text>
         </View>
       </SafeAreaView>
@@ -172,24 +174,25 @@ const DriverDashboard = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Driver Dashboard</Text>
-          <Text style={styles.headerSubtitle}>Ambulance Dispatch</Text>
+        <Text style={styles.headerTitle}>Dashboard</Text>
+      </View>
+
+      {/* Status Banner */}
+      <View style={styles.statusBanner}>
+        <View style={styles.statusBannerLeft}>
+          <Ionicons name="pulse" size={24} color={COLORS.success} />
+          <View>
+            <Text style={styles.statusBannerTitle}>Status: Active</Text>
+            <Text style={styles.statusBannerSubtitle}>Ready for dispatches</Text>
+          </View>
         </View>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            style={styles.availableButton}
-            onPress={handleMarkAvailable}
-          >
-            <Text style={styles.availableButtonText}>✓ Available</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={styles.availableButton}
+          onPress={handleMarkAvailable}
+        >
+          <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
+          <Text style={styles.availableButtonText}>Available</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -200,7 +203,10 @@ const DriverDashboard = () => {
       >
         {/* Active Ride Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Active Ride</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="car-sport" size={24} color={COLORS.primary} />
+            <Text style={styles.sectionTitle}>Active Ride</Text>
+          </View>
           {activeDispatch ? (
             <TouchableOpacity
               style={styles.activeRideCard}
@@ -260,7 +266,7 @@ const DriverDashboard = () => {
             </TouchableOpacity>
           ) : (
             <View style={styles.noActiveRide}>
-              <Text style={styles.noActiveRideIcon}>🚗</Text>
+              <Ionicons name="car-sport-outline" size={64} color={COLORS.gray300} />
               <Text style={styles.noActiveRideText}>No active rides</Text>
               <Text style={styles.noActiveRideSubtext}>
                 You'll be notified when a new ride is assigned
@@ -271,7 +277,10 @@ const DriverDashboard = () => {
 
         {/* Recent Rides Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Rides</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="time" size={24} color={COLORS.primary} />
+            <Text style={styles.sectionTitle}>Recent Rides</Text>
+          </View>
           {recentDispatches.length > 0 ? (
             recentDispatches.map((dispatch) => (
               <TouchableOpacity
@@ -316,83 +325,119 @@ const DriverDashboard = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.backgroundLight,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: COLORS.backgroundLight,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: COLORS.textSecondary,
+    fontFamily: 'OpenSans-Regular',
   },
   header: {
-    backgroundColor: '#4CAF50',
-    padding: 20,
-    paddingBottom: 24,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    fontFamily: 'OpenSans-Bold',
+    letterSpacing: 0.5,
+  },
+  statusBanner: {
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  headerButtons: {
+  statusBannerLeft: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: 12,
   },
-  logoutButton: {
-    backgroundColor: '#FFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  statusBannerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    fontFamily: 'OpenSans-Bold',
   },
-  logoutButtonText: {
-    color: '#4CAF50',
-    fontSize: 14,
-    fontWeight: '600',
+  statusBannerSubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontFamily: 'OpenSans-Regular',
+    marginTop: 2,
   },
   availableButton: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: COLORS.success,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    shadowColor: COLORS.success,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   availableButtonText: {
-    color: '#FFF',
+    color: COLORS.white,
     fontSize: 14,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#E8F5E9',
-    marginTop: 4,
+    fontWeight: '700',
+    fontFamily: 'OpenSans-Bold',
   },
   content: {
     flex: 1,
   },
   section: {
-    padding: 16,
+    padding: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
+    color: COLORS.textPrimary,
+    fontFamily: 'OpenSans-Bold',
   },
   activeRideCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: 24,
+    elevation: 6,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
   },
   rideHeader: {
     flexDirection: 'row',
@@ -401,129 +446,181 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   elderName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.textPrimary,
+    fontFamily: 'OpenSans-Bold',
+    letterSpacing: 0.3,
   },
   emergencyType: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    marginTop: 6,
+    fontFamily: 'OpenSans-SemiBold',
   },
   priorityBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   priorityText: {
-    color: '#FFF',
-    fontSize: 12,
+    color: COLORS.white,
+    fontSize: 11,
     fontWeight: 'bold',
+    fontFamily: 'OpenSans-Bold',
+    letterSpacing: 0.5,
   },
   rideDetails: {
-    marginBottom: 12,
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray100,
   },
   detailLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 4,
+    fontSize: 13,
+    color: COLORS.textLight,
+    marginBottom: 6,
+    fontFamily: 'OpenSans-SemiBold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   detailValue: {
     fontSize: 16,
-    color: '#333',
+    color: COLORS.textPrimary,
+    fontFamily: 'OpenSans-SemiBold',
+    lineHeight: 22,
   },
   statusBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
   },
   statusText: {
-    color: '#FFF',
+    color: COLORS.white,
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'OpenSans-SemiBold',
   },
   viewDetailsButton: {
-    marginTop: 8,
-    paddingVertical: 12,
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
+    marginTop: 4,
+    paddingVertical: 16,
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
     alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
   },
   viewDetailsButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: COLORS.white,
+    fontSize: 17,
+    fontWeight: 'bold',
+    fontFamily: 'OpenSans-Bold',
+    letterSpacing: 0.5,
   },
   noActiveRide: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 32,
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: 48,
     alignItems: 'center',
     elevation: 2,
-  },
-  noActiveRideIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
   },
   noActiveRideText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.textSecondary,
+    marginTop: 16,
     marginBottom: 8,
+    fontFamily: 'OpenSans-SemiBold',
   },
   noActiveRideSubtext: {
     fontSize: 14,
-    color: '#999',
+    color: COLORS.textLight,
     textAlign: 'center',
+    fontFamily: 'OpenSans-Regular',
   },
   recentRideCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    elevation: 1,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.gray300,
   },
   recentRideHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 10,
   },
   recentElderName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
     flex: 1,
+    fontFamily: 'OpenSans-Bold',
   },
   recentStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
+    elevation: 1,
   },
   recentStatusText: {
-    color: '#FFF',
-    fontSize: 11,
-    fontWeight: '600',
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'OpenSans-Bold',
+    letterSpacing: 0.3,
   },
   recentRideType: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    color: COLORS.textSecondary,
+    marginBottom: 6,
+    fontFamily: 'OpenSans-SemiBold',
   },
   recentRideTime: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.textLight,
+    fontFamily: 'OpenSans-Regular',
   },
   noRecentRides: {
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 24,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 32,
     alignItems: 'center',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   noRecentRidesText: {
     fontSize: 14,
-    color: '#999',
+    color: COLORS.textLight,
+    fontFamily: 'OpenSans-Regular',
   },
 });
 
