@@ -838,6 +838,279 @@ node --inspect --expose-gc server.js
 pm2 restart all
 ```
 
+### Common Issues Developers May Face
+
+#### Development Environment Issues
+
+**Issue: Node.js Version Conflicts**
+```
+Error: Node.js version 14.x is not supported. Please use Node.js 16+
+```
+**Solutions:**
+```bash
+# Check current Node.js version
+node --version
+
+# Use nvm to switch versions
+nvm install 18
+nvm use 18
+
+# Or update via package manager
+# Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# macOS with Homebrew
+brew install node@18
+```
+
+**Issue: Port Conflicts During Development**
+```
+Error: listen EADDRINUSE: address already in use :::5000
+```
+**Solutions:**
+```bash
+# Find process using the port
+lsof -i :5000
+
+# Kill the process
+kill -9 <PID>
+
+# Or change port in environment
+export PORT=5001
+
+# For React development server
+PORT=3001 npm start
+```
+
+#### Database Development Issues
+
+**Issue: Migration Rollback Problems**
+```
+ERROR: cannot drop table users because other objects depend on it
+```
+**Solutions:**
+```bash
+# Check dependencies
+psql -d elderlink -c "SELECT * FROM information_schema.table_constraints WHERE table_name = 'users';"
+
+# Drop dependent objects first
+npx sequelize-cli db:migrate:undo:all
+
+# Or reset database completely
+npx sequelize-cli db:drop
+npx sequelize-cli db:create
+npx sequelize-cli db:migrate
+```
+
+**Issue: Seeder Data Conflicts**
+```
+ERROR: duplicate key value violates unique constraint
+```
+**Solutions:**
+```bash
+# Clear existing data
+npx sequelize-cli db:seed:undo:all
+
+# Or modify seeders to check for existing data
+# In seeder file:
+const existingUser = await User.findOne({ where: { email: 'admin@example.com' } });
+if (!existingUser) {
+  await User.create({ ... });
+}
+```
+
+#### Frontend Development Issues
+
+**Issue: React Hooks Dependency Warnings**
+```
+Warning: React Hook useEffect has a missing dependency: 'userId'
+```
+**Solutions:**
+```javascript
+// Add missing dependencies
+useEffect(() => {
+  fetchUserData(userId);
+}, [userId]); // Add userId to dependency array
+
+// Or use useCallback for stable functions
+const fetchData = useCallback(() => {
+  // fetch logic
+}, [userId]);
+
+useEffect(() => {
+  fetchData();
+}, [fetchData]);
+```
+
+**Issue: CORS Issues with API Calls**
+```
+Access to fetch at 'http://localhost:5000/api/users' blocked by CORS policy
+```
+**Solutions:**
+```javascript
+// In backend (Express)
+const cors = require('cors');
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001'],
+  credentials: true
+}));
+
+// Or configure proxy in frontend package.json
+"proxy": "http://localhost:5000"
+```
+
+#### Mobile Development Issues
+
+**Issue: Expo Development Server Connection**
+```
+Error: connect ECONNREFUSED 127.0.0.1:19000
+```
+**Solutions:**
+```bash
+# Restart Expo CLI
+expo r
+
+# Clear Expo cache
+expo r -c
+
+# Check firewall settings
+# Allow connections on port 19000
+```
+
+**Issue: iOS Simulator Build Failures**
+```
+xcodebuild: error: Unable to find a destination matching the provided destination specifier
+```
+**Solutions:**
+```bash
+# Install iOS Simulator
+xcode-select --install
+
+# Open Xcode and install simulators
+# Xcode > Preferences > Components
+
+# Reset simulator
+xcrun simctl erase all
+```
+
+#### Integration Issues
+
+**Issue: Zoom API Authentication Failed**
+```
+Error: Invalid access token
+```
+**Solutions:**
+```bash
+# Check Zoom app credentials
+echo $ZOOM_CLIENT_ID
+echo $ZOOM_CLIENT_SECRET
+
+# Regenerate tokens
+# Go to Zoom Marketplace > Manage > Regenerate
+
+# Verify account permissions
+# Ensure account has meeting creation permissions
+```
+
+**Issue: Stripe Webhook Signature Verification**
+```
+Error: Webhook signature verification failed
+```
+**Solutions:**
+```javascript
+// Check webhook secret
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+// Ensure raw body is used
+app.use(express.raw({ type: 'application/json' }));
+
+// Verify signature
+const sig = req.get('stripe-signature');
+try {
+  event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+} catch (err) {
+  console.log(`Webhook signature verification failed.`, err.message);
+  return res.status(400).send(`Webhook Error: ${err.message}`);
+}
+```
+
+#### Production Deployment Issues
+
+**Issue: PM2 Process Not Starting**
+```
+Error: Script not found or not executable
+```
+**Solutions:**
+```bash
+# Check ecosystem file
+cat ecosystem.config.js
+
+# Ensure correct paths
+{
+  "apps": [{
+    "name": "elderlink-backend",
+    "script": "./dist/server.js", // Check if file exists
+    "env": {
+      "NODE_ENV": "production"
+    }
+  }]
+}
+
+# Start with correct path
+pm2 start ecosystem.config.js
+```
+
+**Issue: Docker Container Memory Issues**
+```
+ERROR: Pool overlaps with other one on this address space
+```
+**Solutions:**
+```bash
+# Clean Docker system
+docker system prune -a
+
+# Reset Docker networks
+docker network prune
+
+# Or specify different network
+docker-compose up --force-recreate
+```
+
+#### Performance Issues
+
+**Issue: Slow Database Queries**
+```
+Query execution time: 5000ms+
+```
+**Solutions:**
+```bash
+# Add database indexes
+npx sequelize-cli migration:generate --name add-index-to-users-email
+
+# In migration file:
+queryInterface.addIndex('Users', ['email']);
+
+# Analyze query performance
+EXPLAIN ANALYZE SELECT * FROM users WHERE email = 'test@example.com';
+```
+
+**Issue: Memory Leaks in Production**
+```
+FATAL ERROR: Ineffective mark-compacts near heap limit
+```
+**Solutions:**
+```bash
+# Monitor memory usage
+pm2 monit
+
+# Increase Node.js memory limit
+node --max-old-space-size=4096 server.js
+
+# Check for memory leaks
+node --inspect --expose-gc server.js
+```
+
 ### Getting Help
 
 If you encounter issues not covered here:
