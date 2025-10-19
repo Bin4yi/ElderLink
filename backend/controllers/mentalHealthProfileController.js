@@ -156,9 +156,8 @@ const changePassword = async (req, res) => {
       return res.status(401).json({ message: "Current password is incorrect" });
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    specialist.password = hashedPassword;
+    // Set new password (will be hashed by the beforeUpdate hook)
+    specialist.password = newPassword;
     specialist.lastPasswordChange = new Date();
 
     await specialist.save();
