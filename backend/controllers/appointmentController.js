@@ -97,7 +97,7 @@ class AppointmentController {
             [Op.between]: [startOfDay, endOfDay]
           },
           status: {
-            [Op.in]: ['pending', 'approved', 'reserved']
+            [Op.in]: ['upcoming', 'today', 'in-progress', 'reserved']
           }
         }
       });
@@ -275,7 +275,7 @@ class AppointmentController {
           doctorId,
           appointmentDate: new Date(appointmentDate),
           status: {
-            [Op.in]: ['pending', 'approved', 'reserved']
+            [Op.in]: ['upcoming', 'today', 'in-progress', 'reserved']
           }
         }
       });
@@ -848,7 +848,7 @@ class AppointmentController {
       await appointment.update({
         appointmentDate: new Date(newDateTime),
         rescheduleReason: reason,
-        status: 'approved' // Assuming rescheduled appointments are approved
+        status: 'upcoming' // Rescheduled appointments go back to upcoming
       });
 
       res.json({

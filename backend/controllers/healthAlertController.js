@@ -1,7 +1,7 @@
 // backend/controllers/healthAlertController.js
 const { HealthAlert, Elder, User, StaffAssignment, HealthMonitoring, Notification } = require('../models');
 const { Op } = require('sequelize');
-const { sendHealthAlertEmail } = require('../services/emailService');
+const emailService = require('../services/emailService');
 
 // Health thresholds for alerts
 const HEALTH_THRESHOLDS = {
@@ -26,12 +26,25 @@ const HEALTH_THRESHOLDS = {
 // Check health vitals and create alerts
 const checkHealthVitals = async (healthRecord, io) => {
   try {
+    console.log('🔍 Checking health vitals for record:', healthRecord.id);
+    console.log('📊 Vital signs:', {
+      bloodPressure: `${healthRecord.bloodPressureSystolic}/${healthRecord.bloodPressureDiastolic}`,
+      heartRate: healthRecord.heartRate,
+      temperature: healthRecord.temperature,
+      oxygenSaturation: healthRecord.oxygenSaturation
+    });
+    
     const alerts = [];
     const elder = await Elder.findByPk(healthRecord.elderId, {
       include: [{ model: User, as: 'user' }]
     });
 
-    if (!elder) return alerts;
+    if (!elder) {
+      console.log('❌ Elder not found for health record');
+      return alerts;
+    }
+    
+    console.log('👤 Elder:', `${elder.firstName} ${elder.lastName}`);
 
     // Check Blood Pressure
     if (healthRecord.bloodPressureSystolic && healthRecord.bloodPressureDiastolic) {
@@ -67,21 +80,29 @@ const checkHealthVitals = async (healthRecord, io) => {
 
     // Check Heart Rate
     if (healthRecord.heartRate) {
+      console.log(`💓 Checking heart rate: ${healthRecord.heartRate} bpm (threshold: high ≥${HEALTH_THRESHOLDS.HEART_RATE_HIGH}, critical ≥${HEALTH_THRESHOLDS.HEART_RATE_CRITICAL})`);
+      
       let severity = 'low';
       let alertType = null;
       
       if (healthRecord.heartRate >= HEALTH_THRESHOLDS.HEART_RATE_CRITICAL) {
         severity = 'critical';
         alertType = 'HIGH_HEART_RATE';
+        console.log(`⚠️ Heart rate CRITICAL: ${healthRecord.heartRate} >= ${HEALTH_THRESHOLDS.HEART_RATE_CRITICAL}`);
       } else if (healthRecord.heartRate >= HEALTH_THRESHOLDS.HEART_RATE_HIGH) {
         severity = 'high';
         alertType = 'HIGH_HEART_RATE';
+        console.log(`⚠️ Heart rate HIGH: ${healthRecord.heartRate} >= ${HEALTH_THRESHOLDS.HEART_RATE_HIGH}`);
       } else if (healthRecord.heartRate <= HEALTH_THRESHOLDS.HEART_RATE_CRITICAL_LOW) {
         severity = 'critical';
         alertType = 'LOW_HEART_RATE';
+        console.log(`⚠️ Heart rate CRITICAL LOW: ${healthRecord.heartRate} <= ${HEALTH_THRESHOLDS.HEART_RATE_CRITICAL_LOW}`);
       } else if (healthRecord.heartRate <= HEALTH_THRESHOLDS.HEART_RATE_LOW) {
         severity = 'medium';
         alertType = 'LOW_HEART_RATE';
+        console.log(`⚠️ Heart rate LOW: ${healthRecord.heartRate} <= ${HEALTH_THRESHOLDS.HEART_RATE_LOW}`);
+      } else {
+        console.log(`✅ Heart rate normal: ${healthRecord.heartRate} is within 60-100 bpm range`);
       }
 
       if (alertType) {
@@ -157,14 +178,40 @@ const checkHealthVitals = async (healthRecord, io) => {
 
     // Create alert records
     if (alerts.length > 0) {
+      console.log(`⚠️ ${alerts.length} alert(s) detected:`, alerts.map(a => `${a.alertType} (${a.severity})`));
+      
       const createdAlerts = await HealthAlert.bulkCreate(alerts);
+      
+      // Update the health monitoring record's alertLevel based on highest severity
+      const highestSeverity = alerts.reduce((max, alert) => {
+        const severityLevels = { low: 1, medium: 2, high: 3, critical: 4 };
+        const currentLevel = severityLevels[alert.severity] || 0;
+        const maxLevel = severityLevels[max] || 0;
+        return currentLevel > maxLevel ? alert.severity : max;
+      }, 'low');
+      
+      // Map severity to alertLevel enum (normal, warning, critical)
+      let alertLevel = 'normal';
+      if (highestSeverity === 'critical') {
+        alertLevel = 'critical';
+      } else if (highestSeverity === 'high' || highestSeverity === 'medium') {
+        alertLevel = 'warning';
+      }
+      
+      await healthRecord.update({ alertLevel });
+      console.log(`📊 Updated health record alertLevel to: ${alertLevel} (based on severity: ${highestSeverity})`);
       
       // Send notifications for each alert
       for (const alert of createdAlerts) {
+        console.log(`📤 Sending notifications for alert ${alert.id}...`);
         await sendAlertNotifications(alert, io);
       }
       
       return createdAlerts;
+    } else {
+      console.log('✅ No alerts - all vitals are within normal range');
+      // Ensure alertLevel is set to normal if no alerts
+      await healthRecord.update({ alertLevel: 'normal' });
     }
 
     return alerts;
@@ -177,11 +224,34 @@ const checkHealthVitals = async (healthRecord, io) => {
 // Send alert notifications to family and staff
 const sendAlertNotifications = async (alert, io) => {
   try {
+    const { Subscription } = require('../models');
+    
+    console.log(`🔔 sendAlertNotifications called for alert ${alert.id}`);
+    
     const elder = await Elder.findByPk(alert.elderId, {
-      include: [{ model: User, as: 'user' }]
+      include: [
+        { model: User, as: 'user' },
+        { 
+          model: Subscription, 
+          as: 'subscription',
+          include: [{ 
+            model: User, 
+            as: 'user'
+          }]
+        }
+      ]
     });
 
-    if (!elder) return;
+    if (!elder) {
+      console.log('❌ Elder not found for alert');
+      return;
+    }
+    
+    console.log(`👤 Elder found: ${elder.firstName} ${elder.lastName}`);
+    console.log(`📋 Subscription:`, elder.subscription ? `ID: ${elder.subscription.id}` : 'Not found');
+    if (elder.subscription) {
+      console.log(`👨‍👩‍👧 Subscription User:`, elder.subscription.user ? `${elder.subscription.user.firstName} ${elder.subscription.user.lastName} (${elder.subscription.user.email}) - Role: ${elder.subscription.user.role}` : 'Not found');
+    }
 
     // Get assigned staff
     const staffAssignments = await StaffAssignment.findAll({
@@ -192,15 +262,18 @@ const sendAlertNotifications = async (alert, io) => {
       include: [{ model: User, as: 'staff' }]
     });
 
-    // Get family members (connected to this elder)
-    const familyMembers = await User.findAll({
-      where: {
-        role: 'family_member',
-        id: {
-          [Op.in]: [elder.userId] // Assuming elder.userId links to family
-        }
+    // Get family member from subscription - only if they are actually a family member
+    const familyMembers = [];
+    if (elder.subscription && elder.subscription.user) {
+      if (elder.subscription.user.role === 'family_member') {
+        familyMembers.push(elder.subscription.user);
+        console.log(`✅ Family member identified: ${elder.subscription.user.email}`);
+      } else {
+        console.log(`⚠️ Subscription user is not a family member. Role: ${elder.subscription.user.role}`);
       }
-    });
+    } else {
+      console.log(`❌ No subscription or subscription user found for elder`);
+    }
 
     // Prepare notification data
     const notificationData = {
@@ -252,7 +325,11 @@ const sendAlertNotifications = async (alert, io) => {
     }
 
     // Send to family members via EMAIL (no socket notifications)
+    console.log(`📧 Attempting to send emails to ${familyMembers.length} family member(s)`);
+    
     for (const family of familyMembers) {
+      console.log(`📧 Family member found: ${family.firstName} ${family.lastName} (${family.email})`);
+      
       // Create database notification
       await Notification.create({
         userId: family.id,
@@ -272,7 +349,7 @@ const sendAlertNotifications = async (alert, io) => {
 
       // Send email notification to family member
       try {
-        await sendHealthAlertEmail({
+        await emailService.sendHealthAlertEmail({
           to: family.email,
           recipientName: `${family.firstName} ${family.lastName}`,
           elderName: `${elder.firstName} ${elder.lastName}`,
@@ -283,9 +360,9 @@ const sendAlertNotifications = async (alert, io) => {
           normalRange: alert.normalRange,
           timestamp: alert.createdAt
         });
-        console.log(`� Health alert email sent to family member: ${family.email}`);
+        console.log(`✅ Health alert email sent successfully to family member: ${family.email}`);
       } catch (emailError) {
-        console.error(`❌ Failed to send email to ${family.email}:`, emailError);
+        console.error(`❌ Failed to send email to ${family.email}:`, emailError.message);
       }
     }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { coordinatorService, ambulanceService } from '../../services/ambulance';
 import DispatchPanel from './DispatchPanel';
+import Loading from '../common/Loading';
 import './EmergencyQueue.css';
 
 const EmergencyQueue = () => {
@@ -103,7 +104,7 @@ const EmergencyQueue = () => {
   if (loading) {
     return (
       <div className="emergency-queue loading">
-        <div className="loading-spinner"></div>
+        <Loading text="Loading emergencies..." />
       </div>
     );
   }

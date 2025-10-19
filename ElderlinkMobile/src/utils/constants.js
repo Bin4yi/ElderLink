@@ -99,11 +99,14 @@ export const SOS_CONFIG = {
 };
 
 // Upstash QStash Configuration
+// ⚠️ IMPORTANT: The EMERGENCY_WEBHOOK must use ngrok URL for external access
+// Update this URL whenever ngrok restarts (free tier gives new URL each time)
+// To get ngrok URL: Run 'ngrok http 5000' and copy the https://xxx.ngrok.io URL
 export const QSTASH_CONFIG = {
   ENABLED: true,
   TOKEN: 'eyJVc2VySUQiOiI3NDFmZWU2Mi1mZThmLTQ2OGEtOTM3Mi00NjhlM2JlOGY5Y2QiLCJQYXNzd29yZCI6IjIyNTAwNjk1NGI5NDRiYjJiMGVkOGU0ZDA4ZGRmYjRmIn0=',
   URL: 'https://qstash.upstash.io/v2/publish',
-  EMERGENCY_WEBHOOK: 'https://nonalined-opal-cerebellar.ngrok-free.dev/api/webhook/emergency',
+  EMERGENCY_WEBHOOK: 'https://nonalined-opal-cerebellar.ngrok-free.dev/api/webhook/emergency', // ← Update this with YOUR ngrok URL
   RETRY_CONFIG: {
     maxRetries: 3,
     retryDelay: 2000,

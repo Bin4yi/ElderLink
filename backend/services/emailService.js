@@ -722,6 +722,135 @@ class EmailService {
   }
 
   /**
+   * Send prescription bill email to family member
+   */
+  async sendPrescriptionBillEmail({ to, familyMemberName, elderName, prescriptionNumber, doctorName, items, totalAmount, status }) {
+    console.log('📧 Attempting to send prescription bill email to:', to);
+    
+    // Generate items list HTML
+    const itemsHTML = items.map(item => `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
+          <strong>${item.name}</strong>
+          ${item.status === 'out_of_stock' ? '<br><span style="color: #ef4444; font-size: 12px;">⚠️ Out of Stock</span>' : ''}
+          ${item.status === 'partially_filled' ? '<br><span style="color: #f59e0b; font-size: 12px;">⚠️ Partially Filled</span>' : ''}
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity || 0}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">LKR ${parseFloat(item.unitPrice || 0).toFixed(2)}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;"><strong>LKR ${parseFloat(item.total || 0).toFixed(2)}</strong></td>
+      </tr>
+    `).join('');
+
+    const statusBadge = status === 'filled' 
+      ? '<span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">Filled</span>'
+      : '<span style="background: #f59e0b; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">Partially Filled</span>';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .footer { background: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; font-size: 12px; color: #6b7280; }
+          .button { display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 6px; margin-top: 20px; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th { background: #f3f4f6; padding: 12px; text-align: left; font-weight: 600; }
+          .total-row { background: #f9fafb; font-size: 18px; }
+          .info-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">💊 Prescription Bill Ready</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Prescription #${prescriptionNumber}</p>
+          </div>
+          
+          <div class="content">
+            <p>Dear ${familyMemberName},</p>
+            
+            <p>The prescription for <strong>${elderName}</strong> has been processed by our pharmacy. Below are the details and total bill amount:</p>
+            
+            <div class="info-box">
+              <p style="margin: 5px 0;"><strong>Prescription Number:</strong> ${prescriptionNumber}</p>
+              <p style="margin: 5px 0;"><strong>Prescribed By:</strong> ${doctorName}</p>
+              <p style="margin: 5px 0;"><strong>Patient:</strong> ${elderName}</p>
+              <p style="margin: 5px 0;"><strong>Status:</strong> ${statusBadge}</p>
+            </div>
+
+            <h2 style="color: #667eea; margin-top: 30px;">Itemized Bill</h2>
+            
+            <table>
+              <thead>
+                <tr>
+                  <th>Medication</th>
+                  <th style="text-align: center;">Quantity</th>
+                  <th style="text-align: right;">Unit Price</th>
+                  <th style="text-align: right;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHTML}
+                <tr class="total-row">
+                  <td colspan="3" style="padding: 15px; text-align: right;"><strong>Total Amount:</strong></td>
+                  <td style="padding: 15px; text-align: right;"><strong style="color: #667eea; font-size: 20px;">LKR ${parseFloat(totalAmount).toFixed(2)}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+
+            ${status === 'partially_filled' ? `
+              <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0; color: #92400e;"><strong>⚠️ Note:</strong> Some medications were out of stock or partially filled. Please contact the pharmacy for alternatives or to arrange a later pickup for remaining items.</p>
+              </div>
+            ` : ''}
+
+            <p style="margin-top: 30px;">Please contact us if you have any questions about this bill or would like to arrange for home delivery.</p>
+
+            <p style="margin-top: 20px;">
+              <strong>Thank you for choosing ElderLink!</strong><br>
+              Your loved one's health is our priority.
+            </p>
+          </div>
+          
+          <div class="footer">
+            <p style="margin: 5px 0;">This is an automated email from ElderLink Pharmacy Services</p>
+            <p style="margin: 5px 0;">If you have questions, please contact our support team</p>
+            <p style="margin: 5px 0;">© ${new Date().getFullYear()} ElderLink. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const subject = `Prescription Bill Ready - ${prescriptionNumber} for ${elderName}`;
+
+    try {
+      if (!this.transporter) {
+        console.error('❌ Email transporter not initialized');
+        return { success: false, error: 'Email transporter not initialized' };
+      }
+
+      const mailOptions = {
+        from: `"ElderLink Pharmacy" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        html
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Prescription bill email sent to ${to} for ${elderName}`);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error sending prescription bill email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Generic send email method
    */
   async sendEmail({ to, subject, html, text }) {
@@ -747,6 +876,360 @@ class EmailService {
       console.error('❌ Error sending email:', error);
       return { success: false, error: error.message };
     }
+  }
+
+  /**
+   * Send Zoom meeting link to family member
+   * @param {Object} emailData - Email configuration
+   */
+  async sendZoomLinkToFamily(emailData) {
+    try {
+      const {
+        to, // Family member email
+        familyMemberName,
+        elderName,
+        doctorName,
+        sessionDate,
+        sessionTime,
+        zoomJoinUrl,
+        zoomPassword,
+        duration
+      } = emailData;
+
+      const html = this.getZoomEmailTemplate({
+        familyMemberName,
+        elderName,
+        doctorName,
+        sessionDate,
+        sessionTime,
+        zoomJoinUrl,
+        zoomPassword,
+        duration
+      });
+
+      const result = await this.sendEmail({
+        to,
+        subject: `Monthly Health Session Scheduled - ${elderName}`,
+        html
+      });
+
+      console.log('✅ Zoom link email sent successfully to:', to);
+      return result;
+    } catch (error) {
+      console.error('❌ Error sending Zoom link email:', error.message);
+      throw new Error('Failed to send Zoom link email: ' + error.message);
+    }
+  }
+
+  /**
+   * Send session completion notification with prescription details
+   * @param {Object} emailData - Completion email data
+   */
+  async sendSessionCompletionEmail(emailData) {
+    try {
+      const {
+        to,
+        familyMemberName,
+        elderName,
+        doctorName,
+        sessionDate,
+        doctorNotes,
+        prescriptionDetails,
+        pharmacyName,
+        nextSessionDate
+      } = emailData;
+
+      const html = this.getCompletionEmailTemplate({
+        familyMemberName,
+        elderName,
+        doctorName,
+        sessionDate,
+        doctorNotes,
+        prescriptionDetails,
+        pharmacyName,
+        nextSessionDate
+      });
+
+      const result = await this.sendEmail({
+        to,
+        subject: `Session Completed - ${elderName}`,
+        html
+      });
+
+      console.log('✅ Completion email sent:', to);
+      return result;
+    } catch (error) {
+      console.error('❌ Error sending completion email:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * HTML template for Zoom meeting invitation
+   */
+  getZoomEmailTemplate(data) {
+    const {
+      familyMemberName,
+      elderName,
+      doctorName,
+      sessionDate,
+      sessionTime,
+      zoomJoinUrl,
+      zoomPassword,
+      duration
+    } = data;
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .content {
+      padding: 30px 20px;
+    }
+    .session-details {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .detail-row {
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+    }
+    .detail-label {
+      font-weight: bold;
+      color: #555;
+      min-width: 120px;
+    }
+    .detail-value {
+      color: #333;
+    }
+    .zoom-button {
+      display: inline-block;
+      background: #2d8cff;
+      color: white !important;
+      padding: 15px 30px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .zoom-button:hover {
+      background: #1a73e8;
+    }
+    .password-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .password-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #856404;
+      letter-spacing: 3px;
+    }
+    .instructions {
+      background: #e7f3ff;
+      border-left: 4px solid #2d8cff;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .footer {
+      background: #f8f9fa;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏥 Monthly Health Session</h1>
+      <p>Video Meeting Scheduled</p>
+    </div>
+    
+    <div class="content">
+      <p>Dear ${familyMemberName},</p>
+      
+      <p>A monthly health monitoring session has been scheduled for <strong>${elderName}</strong>.</p>
+      
+      <div class="session-details">
+        <div class="detail-row">
+          <span class="detail-label">👨‍⚕️ Doctor:</span>
+          <span class="detail-value">Dr. ${doctorName}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">👴 Patient:</span>
+          <span class="detail-value">${elderName}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">📅 Date:</span>
+          <span class="detail-value">${sessionDate}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">⏰ Time:</span>
+          <span class="detail-value">${sessionTime}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">⏱️ Duration:</span>
+          <span class="detail-value">${duration} minutes</span>
+        </div>
+      </div>
+
+      <div style="text-align: center;">
+        <a href="${zoomJoinUrl}" class="zoom-button">
+          📹 Join Zoom Meeting
+        </a>
+      </div>
+
+      <div class="password-box">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">🔐 Meeting Password:</p>
+        <div class="password-value">${zoomPassword}</div>
+      </div>
+
+      <div class="instructions">
+        <h3 style="margin-top: 0;">📝 Instructions:</h3>
+        <ol style="padding-left: 20px;">
+          <li>Click the "Join Zoom Meeting" button 5-10 minutes before the scheduled time</li>
+          <li>Enter the meeting password when prompted: <strong>${zoomPassword}</strong></li>
+          <li>Make sure ${elderName} is comfortable and in a quiet environment</li>
+          <li>Have a list of any questions or concerns ready to discuss</li>
+          <li>Ensure good lighting and internet connection</li>
+        </ol>
+      </div>
+
+      <p><strong>💡 Tips for a successful session:</strong></p>
+      <ul>
+        <li>Test your camera and microphone before the meeting</li>
+        <li>Have ${elderName}'s medications list ready</li>
+        <li>Note any recent health changes or concerns</li>
+        <li>Keep a pen and paper to take notes</li>
+      </ul>
+
+      <p style="margin-top: 30px;">If you need to reschedule or have any questions, please contact us through the ElderLink app.</p>
+
+      <p>Best regards,<br><strong>ElderLink Health Team</strong></p>
+    </div>
+
+    <div class="footer">
+      <p>This is an automated message from ElderLink Health System</p>
+      <p>📱 Download the ElderLink app for easier access to meetings</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+  }
+
+  /**
+   * HTML template for session completion email
+   */
+  getCompletionEmailTemplate(data) {
+    const {
+      familyMemberName,
+      elderName,
+      doctorName,
+      sessionDate,
+      doctorNotes,
+      prescriptionDetails,
+      pharmacyName,
+      nextSessionDate
+    } = data;
+
+    const prescriptionHTML = prescriptionDetails ? `
+      <div class="session-details">
+        <h3>💊 Prescription Details:</h3>
+        <p><strong>Pharmacy:</strong> ${pharmacyName}</p>
+        <p>${prescriptionDetails}</p>
+        <p style="color: #856404; background: #fff3cd; padding: 10px; border-radius: 4px;">
+          📋 Your prescription has been sent to ${pharmacyName}. They will notify you when it's ready for pickup or delivery.
+        </p>
+      </div>
+    ` : '';
+
+    const nextSessionHTML = nextSessionDate ? `
+      <div style="background: #e7f3ff; padding: 15px; border-radius: 4px; margin: 20px 0;">
+        <p style="margin: 0;"><strong>📅 Next Monthly Session:</strong> ${nextSessionDate}</p>
+        <p style="margin: 10px 0 0 0; font-size: 14px;">You will receive a Zoom link 24 hours before the session.</p>
+      </div>
+    ` : '';
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #28a745; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f8f9fa; padding: 20px; }
+    .session-details { background: white; padding: 15px; margin: 15px 0; border-left: 4px solid #28a745; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>✅ Session Completed</h1>
+    </div>
+    <div class="content">
+      <p>Dear ${familyMemberName},</p>
+      <p>The monthly health session for <strong>${elderName}</strong> with Dr. ${doctorName} has been completed successfully.</p>
+      
+      <div class="session-details">
+        <p><strong>📅 Session Date:</strong> ${sessionDate}</p>
+        <p><strong>👨‍⚕️ Doctor:</strong> Dr. ${doctorName}</p>
+        ${doctorNotes ? `<p><strong>📝 Doctor's Notes:</strong><br>${doctorNotes}</p>` : ''}
+      </div>
+
+      ${prescriptionHTML}
+      ${nextSessionHTML}
+
+      <p>You can view the full session details and records in your ElderLink app.</p>
+      <p>Best regards,<br><strong>ElderLink Health Team</strong></p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
   }
 }
 

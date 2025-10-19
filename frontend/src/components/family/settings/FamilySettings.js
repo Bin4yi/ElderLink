@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Settings, 
   Bell, 
@@ -16,48 +16,119 @@ import {
   VolumeX,
   Toggle,
   Save,
-  Edit
+  Edit,
+  Loader
 } from 'lucide-react';
 import RoleLayout from '../../common/RoleLayout';
+import axios from 'axios';
 
 const FamilySettings = () => {
-  const [notifications, setNotifications] = useState({
-    email: true,
-    sms: false,
-    push: true,
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  
+  const [settings, setSettings] = useState({
+    emailNotifications: true,
+    smsNotifications: false,
+    pushNotifications: true,
     emergencyAlerts: true,
     healthReminders: true,
-    appointmentReminders: true
-  });
-
-  const [privacy, setPrivacy] = useState({
+    appointmentReminders: true,
     profileVisibility: 'family',
     shareHealthData: false,
-    allowDataAnalytics: true
-  });
-
-  const [preferences, setPreferences] = useState({
+    allowDataAnalytics: true,
     darkMode: false,
     language: 'english',
     timezone: 'EST',
     soundEnabled: true
   });
 
-  const toggleNotification = (key) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/profile/settings', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        setSettings(response.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching settings:', err);
+      setError(err.response?.data?.message || 'Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const togglePrivacy = (key) => {
-    setPrivacy(prev => ({ ...prev, [key]: !prev[key] }));
+  const handleSaveSettings = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+      
+      const token = localStorage.getItem('token');
+      const response = await axios.put(
+        'http://localhost:5000/api/profile/settings',
+        settings,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      if (response.data.success) {
+        setSettings(response.data.data);
+        setSuccess('Settings saved successfully!');
+        setTimeout(() => setSuccess(null), 3000);
+      }
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      setError(err.response?.data?.message || 'Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const togglePreference = (key) => {
-    setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleSetting = (key) => {
+    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
+
+  const updateSetting = (key, value) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  if (loading) {
+    return (
+      <RoleLayout>
+        <div className="flex items-center justify-center h-screen">
+          <Loader className="w-8 h-8 animate-spin text-red-600" />
+        </div>
+      </RoleLayout>
+    );
+  }
 
   return (
     <RoleLayout>
       <div className="max-w-4xl mx-auto space-y-6 p-6">
+        {/* Success/Error Messages */}
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl">
+            {success}
+          </div>
+        )}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl">
+            {error}
+          </div>
+        )}
+
         {/* Header */}
         <div className="bg-gradient-to-r from-red-500 via-red-600 to-pink-600 rounded-2xl p-8 text-white shadow-xl">
           <div className="flex items-center justify-between">
@@ -68,9 +139,22 @@ const FamilySettings = () => {
               </h1>
               <p className="text-red-100 text-lg">Manage your account and notification preferences</p>
             </div>
-            <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl px-6 py-3 flex items-center transition-all duration-200 hover:scale-105">
-              <Save className="w-5 h-5 mr-2" />
-              Save Changes
+            <button 
+              onClick={handleSaveSettings}
+              disabled={saving}
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl px-6 py-3 flex items-center transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <Loader className="w-5 h-5 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5 mr-2" />
+                  Save Changes
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -111,9 +195,9 @@ const FamilySettings = () => {
             
             <div className="p-6 space-y-4">
               {[
-                { key: 'email', label: 'Email Notifications', icon: Mail, description: 'Receive updates via email' },
-                { key: 'sms', label: 'SMS Notifications', icon: Phone, description: 'Get text message alerts' },
-                { key: 'push', label: 'Push Notifications', icon: Smartphone, description: 'Mobile app notifications' },
+                { key: 'emailNotifications', label: 'Email Notifications', icon: Mail, description: 'Receive updates via email' },
+                { key: 'smsNotifications', label: 'SMS Notifications', icon: Phone, description: 'Get text message alerts' },
+                { key: 'pushNotifications', label: 'Push Notifications', icon: Smartphone, description: 'Mobile app notifications' },
                 { key: 'emergencyAlerts', label: 'Emergency Alerts', icon: Shield, description: 'Critical health emergencies' },
                 { key: 'healthReminders', label: 'Health Reminders', icon: Bell, description: 'Medication and checkup reminders' },
                 { key: 'appointmentReminders', label: 'Appointment Reminders', icon: Bell, description: 'Upcoming appointment alerts' }
@@ -127,14 +211,14 @@ const FamilySettings = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => toggleNotification(key)}
+                    onClick={() => toggleSetting(key)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      notifications[key] ? 'bg-red-600' : 'bg-gray-300'
+                      settings[key] ? 'bg-red-600' : 'bg-gray-300'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        notifications[key] ? 'translate-x-6' : 'translate-x-1'
+                        settings[key] ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>
@@ -161,8 +245,8 @@ const FamilySettings = () => {
                   </div>
                 </div>
                 <select 
-                  value={privacy.profileVisibility}
-                  onChange={(e) => setPrivacy(prev => ({ ...prev, profileVisibility: e.target.value }))}
+                  value={settings.profileVisibility}
+                  onChange={(e) => updateSetting('profileVisibility', e.target.value)}
                   className="w-full mt-2 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 >
                   <option value="public">Public</option>
@@ -184,14 +268,14 @@ const FamilySettings = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => togglePrivacy(key)}
+                    onClick={() => toggleSetting(key)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      privacy[key] ? 'bg-red-600' : 'bg-gray-300'
+                      settings[key] ? 'bg-red-600' : 'bg-gray-300'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        privacy[key] ? 'translate-x-6' : 'translate-x-1'
+                        settings[key] ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>
@@ -226,21 +310,21 @@ const FamilySettings = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-red-50 transition-colors">
                   <div className="flex items-center space-x-3">
-                    {preferences.darkMode ? <Moon className="w-5 h-5 text-red-600" /> : <Sun className="w-5 h-5 text-red-600" />}
+                    {settings.darkMode ? <Moon className="w-5 h-5 text-red-600" /> : <Sun className="w-5 h-5 text-red-600" />}
                     <div>
                       <div className="font-medium text-gray-900">Dark Mode</div>
                       <div className="text-sm text-gray-600">Switch to dark theme</div>
                     </div>
                   </div>
                   <button
-                    onClick={() => togglePreference('darkMode')}
+                    onClick={() => toggleSetting('darkMode')}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      preferences.darkMode ? 'bg-red-600' : 'bg-gray-300'
+                      settings.darkMode ? 'bg-red-600' : 'bg-gray-300'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        preferences.darkMode ? 'translate-x-6' : 'translate-x-1'
+                        settings.darkMode ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>
@@ -248,21 +332,21 @@ const FamilySettings = () => {
 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-red-50 transition-colors">
                   <div className="flex items-center space-x-3">
-                    {preferences.soundEnabled ? <Volume2 className="w-5 h-5 text-red-600" /> : <VolumeX className="w-5 h-5 text-red-600" />}
+                    {settings.soundEnabled ? <Volume2 className="w-5 h-5 text-red-600" /> : <VolumeX className="w-5 h-5 text-red-600" />}
                     <div>
                       <div className="font-medium text-gray-900">Sound Effects</div>
                       <div className="text-sm text-gray-600">Enable app sounds</div>
                     </div>
                   </div>
                   <button
-                    onClick={() => togglePreference('soundEnabled')}
+                    onClick={() => toggleSetting('soundEnabled')}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      preferences.soundEnabled ? 'bg-red-600' : 'bg-gray-300'
+                      settings.soundEnabled ? 'bg-red-600' : 'bg-gray-300'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        preferences.soundEnabled ? 'translate-x-6' : 'translate-x-1'
+                        settings.soundEnabled ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>
@@ -276,8 +360,8 @@ const FamilySettings = () => {
                     <span className="font-medium text-gray-900">Language</span>
                   </div>
                   <select 
-                    value={preferences.language}
-                    onChange={(e) => setPreferences(prev => ({ ...prev, language: e.target.value }))}
+                    value={settings.language}
+                    onChange={(e) => updateSetting('language', e.target.value)}
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   >
                     <option value="english">English</option>
@@ -293,8 +377,8 @@ const FamilySettings = () => {
                     <span className="font-medium text-gray-900">Timezone</span>
                   </div>
                   <select 
-                    value={preferences.timezone}
-                    onChange={(e) => setPreferences(prev => ({ ...prev, timezone: e.target.value }))}
+                    value={settings.timezone}
+                    onChange={(e) => updateSetting('timezone', e.target.value)}
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   >
                     <option value="EST">Eastern Time (EST)</option>
@@ -312,9 +396,22 @@ const FamilySettings = () => {
         <div className="bg-gradient-to-r from-red-100 to-pink-100 rounded-2xl p-6 border border-red-200 text-center">
           <h3 className="text-lg font-bold text-red-900 mb-2">Ready to save your changes?</h3>
           <p className="text-red-700 mb-4">Your settings will be applied immediately across all devices.</p>
-          <button className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-medium transition-colors flex items-center mx-auto">
-            <Save className="w-5 h-5 mr-2" />
-            Save All Settings
+          <button 
+            onClick={handleSaveSettings}
+            disabled={saving}
+            className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-medium transition-colors flex items-center mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? (
+              <>
+                <Loader className="w-5 h-5 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5 mr-2" />
+                Save All Settings
+              </>
+            )}
           </button>
         </div>
       </div>

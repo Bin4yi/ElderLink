@@ -20,7 +20,7 @@ class DoctorAppointmentController {
     try {
       console.log('🔄 Getting doctor appointments for user:', req.user.id);
       
-      const { status, date, page = 1, limit = 10 } = req.query;
+      const { status, date, page = 1, limit = 100 } = req.query; // Increased default limit to 100
       const offset = (page - 1) * limit;
 
       // Get doctor profile
@@ -112,7 +112,9 @@ class DoctorAppointmentController {
     }
   }
 
-  // Review appointment (approve/reject)
+  // REMOVED: Review appointment (approve/reject) - No longer needed
+  // Appointments are now automatically set to 'upcoming' status
+  /* 
   static async reviewAppointment(req, res) {
     try {
       const { id } = req.params;
@@ -206,6 +208,8 @@ class DoctorAppointmentController {
       });
     }
   }
+  */
+
 
   // Reschedule appointment
   static async rescheduleAppointment(req, res) {

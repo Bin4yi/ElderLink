@@ -1,11 +1,10 @@
 // src/utils/roleMenus.js
 import { 
   Home, Users, Package, Activity, Settings, User, Heart,
-  Stethoscope, Calendar, FileText, Pill, Truck, Shield,
-  Monitor, AlertTriangle, UserCheck, ClipboardList, BarChart3,
+  Stethoscope, Calendar, FileText, Pill, Truck,
+  Monitor, AlertTriangle, ClipboardList, BarChart3,
   Brain, // Icon for mental health
-  Navigation, // Icon for ambulance tracking
-  Clock // Icon for analytics
+  Navigation // Icon for ambulance tracking
 } from 'lucide-react';
 
 export const getRoleMenuItems = (role) => {
@@ -13,23 +12,18 @@ export const getRoleMenuItems = (role) => {
     case 'family_member':
       return [
         { path: '/family/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/family/elders', icon: Heart, label: 'My Elders' },
         { path: '/family/subscriptions', icon: Package, label: 'Subscriptions' },
         { path: '/family/appointments', icon: Calendar, label: 'Appointments' },
         { path: '/family/sessions', icon: Calendar, label: 'Monthly Sessions' },
-        { path: '/family/doctors', icon: Stethoscope, label: 'Doctors' },
         { path: '/family/health-reports', icon: Activity, label: 'Health Reports' },
         { path: '/family/profile', icon: User, label: 'Profile' },
-        { path: '/family/settings', icon: Settings, label: 'Settings' }
       ];
 
     case 'admin':
       return [
         { path: '/admin/dashboard', icon: Home, label: 'Dashboard' },
         { path: '/admin/users', icon: Users, label: 'User Management' },
-        { path: '/admin/packages', icon: Package, label: 'Package Management' },
-        { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
-        { path: '/admin/settings', icon: Settings, label: 'System Settings' }
+        { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' }
       ];
 
     case 'coordinator':
@@ -49,6 +43,7 @@ export const getRoleMenuItems = (role) => {
         { path: '/doctor/patients', icon: Users, label: 'Patients' },
         { path: '/doctor/consultations', icon: Stethoscope, label: 'Consultations' },
         { path: '/doctor/appointments', icon: Calendar, label: 'Appointments' },
+        { path: '/doctor/prescriptions', icon: Pill, label: 'Prescriptions [TEST]' }, // TEMPORARY - For testing prescription system
         { path: '/doctor/records', icon: FileText, label: 'Medical Records' },
         { path: '/doctor/profile', icon: User, label: 'Profile' }
       ];
@@ -68,7 +63,7 @@ export const getRoleMenuItems = (role) => {
     case 'pharmacist':
       return [
         { path: '/pharmacist/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/pharmacist/medications', icon: Pill, label: 'Medications' },
+        { path: '/pharmacist/analysis', icon: BarChart3, label: 'Analysis' },
         { path: '/pharmacist/prescriptions', icon: FileText, label: 'Prescriptions' },
         { path: '/pharmacist/delivery', icon: Truck, label: 'Delivery' },
         { path: '/pharmacist/inventory', icon: Package, label: 'Inventory' },

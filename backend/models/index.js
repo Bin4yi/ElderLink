@@ -4,8 +4,10 @@ const sequelize = require("../config/database");
 
 // Import models
 const User = require("./User");
+const UserSettings = require("./UserSettings");
 const Elder = require("./Elder");
 const Subscription = require("./Subscription");
+const SubscriptionHistory = require("./SubscriptionHistory");
 const HealthMonitoring = require("./HealthMonitoring");
 const HealthAlert = require("./HealthAlert");
 const Notification = require("./Notification");
@@ -15,12 +17,14 @@ const Doctor = require("./Doctor");
 const Appointment = require("./Appointment");
 const ConsultationRecord = require("./ConsultationRecord"); // ✅ Add this
 const DoctorSchedule = require("./DoctorSchedule");
+const MonthlySession = require("./MonthlySession"); // ✅ Add MonthlySession
 
 // Import new inventory models
 const Inventory = require("./Inventory");
 const InventoryTransaction = require("./InventoryTransaction");
 const Prescription = require("./Prescription");
 const PrescriptionItem = require("./PrescriptionItem");
+const Delivery = require("./Delivery");
 
 // Import ambulance and emergency models
 const Ambulance = require("./Ambulance");
@@ -65,11 +69,13 @@ const clearAssociations = (model) => {
   EmergencyAlert,
   AmbulanceDispatch,
   EmergencyLocation,
+  MonthlySession
 ].forEach(clearAssociations);
 
 // User associations
 User.hasMany(Elder, { foreignKey: "userId", as: "elders" });
 User.hasMany(Subscription, { foreignKey: "userId", as: "subscriptions" });
+User.hasOne(UserSettings, { foreignKey: "userId", as: "settings" });
 User.hasMany(HealthMonitoring, {
   foreignKey: "staffId",
   as: "healthMonitorings",
@@ -119,9 +125,26 @@ Elder.hasMany(DoctorAssignment, {
   as: "doctorAssignmentRecords",
 }); // ✅ Changed from 'doctorAssignments' to 'doctorAssignmentRecords'
 
+// UserSettings associations
+UserSettings.belongsTo(User, { foreignKey: "userId", as: "user" });
+
 // Subscription associations
 Subscription.belongsTo(User, { foreignKey: "userId", as: "user" });
 Subscription.hasOne(Elder, { foreignKey: "subscriptionId", as: "elder" });
+Subscription.hasMany(SubscriptionHistory, { 
+  foreignKey: "subscriptionId", 
+  as: "history" 
+});
+
+// SubscriptionHistory associations
+SubscriptionHistory.belongsTo(Subscription, { 
+  foreignKey: "subscriptionId", 
+  as: "subscription" 
+});
+SubscriptionHistory.belongsTo(User, { 
+  foreignKey: "userId", 
+  as: "user" 
+});
 
 // HealthMonitoring associations
 HealthMonitoring.belongsTo(User, { foreignKey: "staffId", as: "staff" });
@@ -248,6 +271,61 @@ Elder.hasMany(ConsultationRecord, {
   as: "consultationRecords",
 });
 
+// ========== MONTHLY SESSION ASSOCIATIONS ==========
+
+// MonthlySession associations
+MonthlySession.belongsTo(Elder, {
+  foreignKey: 'elderId',
+  as: 'elder'
+});
+
+MonthlySession.belongsTo(User, {
+  foreignKey: 'familyMemberId',
+  as: 'familyMember'
+});
+
+MonthlySession.belongsTo(Doctor, {
+  foreignKey: 'doctorId',
+  as: 'doctor'
+});
+
+MonthlySession.belongsTo(DoctorSchedule, {
+  foreignKey: 'scheduleId',
+  as: 'schedule'
+});
+
+// Self-referencing for rescheduled sessions
+MonthlySession.belongsTo(MonthlySession, {
+  foreignKey: 'rescheduledFrom',
+  as: 'originalSession'
+});
+
+MonthlySession.hasOne(MonthlySession, {
+  foreignKey: 'rescheduledFrom',
+  as: 'rescheduledSession'
+});
+
+// Reverse associations
+Elder.hasMany(MonthlySession, {
+  foreignKey: 'elderId',
+  as: 'monthlySessions'
+});
+
+User.hasMany(MonthlySession, {
+  foreignKey: 'familyMemberId',
+  as: 'scheduledMonthlySessions'
+});
+
+Doctor.hasMany(MonthlySession, {
+  foreignKey: 'doctorId',
+  as: 'monthlySessions'
+});
+
+DoctorSchedule.hasMany(MonthlySession, {
+  foreignKey: 'scheduleId',
+  as: 'monthlySessions'
+});
+
 // === NEW INVENTORY ASSOCIATIONS ===
 
 // Inventory associations
@@ -281,6 +359,22 @@ Prescription.hasMany(PrescriptionItem, {
   foreignKey: "prescriptionId",
   as: "items",
 });
+Prescription.hasOne(Delivery, {
+  foreignKey: "prescriptionId",
+  as: "delivery",
+});
+
+// Delivery associations
+Delivery.belongsTo(Prescription, {
+  foreignKey: "prescriptionId",
+  as: "prescription",
+});
+Delivery.belongsTo(Elder, { foreignKey: "elderId", as: "elder" });
+Delivery.belongsTo(User, { foreignKey: "pharmacistId", as: "pharmacist" });
+
+// Reverse associations
+User.hasMany(Delivery, { foreignKey: "pharmacistId", as: "deliveries" });
+Elder.hasMany(Delivery, { foreignKey: "elderId", as: "deliveries" });
 
 // PrescriptionItem associations
 PrescriptionItem.belongsTo(Prescription, {
@@ -520,8 +614,10 @@ User.hasMany(MentalHealthResource, {
 module.exports = {
   sequelize,
   User,
+  UserSettings,
   Elder,
   Subscription,
+  SubscriptionHistory,
   HealthMonitoring,
   HealthAlert,
   Notification,
@@ -531,10 +627,12 @@ module.exports = {
   ConsultationRecord,
   Doctor,
   DoctorSchedule,
+  MonthlySession, // ✅ Add this
   Inventory,
   InventoryTransaction,
   Prescription,
   PrescriptionItem,
+  Delivery,
   Ambulance,
   EmergencyAlert,
   AmbulanceDispatch,

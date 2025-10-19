@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { coordinatorService, ambulanceService } from '../../services/ambulance';
+import Loading from '../common/Loading';
 import './DispatchPanel.css';
 
 const DispatchPanel = ({ emergency, onClose, onDispatchComplete }) => {
@@ -104,7 +105,7 @@ const DispatchPanel = ({ emergency, onClose, onDispatchComplete }) => {
           <h3>Available Ambulances ({availableAmbulances.length}):</h3>
 
           {loading ? (
-            <div className="loading-spinner"></div>
+            <Loading text="Loading ambulances..." size="small" />
           ) : availableAmbulances.length === 0 ? (
             <div className="no-ambulances">
               <p>⚠️ No ambulances available</p>
