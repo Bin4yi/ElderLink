@@ -404,6 +404,450 @@ docker system prune -a
 docker-compose build --no-cache
 ```
 
+## 🏛️ System Architecture
+
+### High-Level Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ElderLink Platform                           │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
+│  │   Web App   │  │ Mobile App  │  │ Admin Panel│            │
+│  │  (React)    │  │(React Native)│  │  (React)   │            │
+│  └─────────────┘  └─────────────┘  └─────────────┘            │
+└─────────────────────────────────────────────────────────────────┘
+                                 │
+                    ┌────────────▼────────────┐
+                    │       API Gateway      │
+                    │     (Express.js)       │
+                    └────────────┬───────────┘
+                                 │
+                    ┌────────────▼────────────┐
+                    │    Business Logic      │
+                    │   (Services Layer)     │
+                    └────────────┬───────────┘
+                                 │
+          ┌──────────────────────┼──────────────────────┐
+          │                      │                      │
+┌─────────▼────────┐   ┌─────────▼────────┐   ┌─────────▼────────┐
+│   PostgreSQL     │   │     Redis        │   │   File Storage   │
+│  (Primary DB)    │   │  (Cache/Sessions)│   │   (AWS S3)       │
+└──────────────────┘   └──────────────────┘   └──────────────────┘
+```
+
+### Component Breakdown
+
+#### Frontend Layer
+- **Web Application**: React-based SPA for family members, doctors, staff, and pharmacists
+- **Mobile Application**: React Native app for elders and on-the-go access
+- **Admin Dashboard**: Comprehensive management interface for system administrators
+
+#### Backend Layer
+- **API Server**: RESTful API built with Express.js and Node.js
+- **Authentication**: JWT-based authentication with role-based access control
+- **Real-time Communication**: Socket.IO for instant notifications and updates
+- **External Integrations**: Zoom API, Stripe payments, email services
+
+#### Data Layer
+- **Primary Database**: PostgreSQL with Sequelize ORM
+- **Caching**: Redis for session management and performance optimization
+- **File Storage**: AWS S3 or local storage for documents and images
+
+#### Infrastructure
+- **Containerization**: Docker for consistent deployment
+- **Orchestration**: Docker Compose for multi-service management
+- **Process Management**: PM2 for production server management
+
+### Data Flow
+
+1. **User Authentication**: JWT tokens issued and validated
+2. **API Requests**: RESTful endpoints with proper authorization
+3. **Business Logic**: Services handle complex operations
+4. **Database Operations**: CRUD operations with data validation
+5. **Real-time Updates**: WebSocket connections for live data
+6. **External APIs**: Integration with Zoom, Stripe, and notification services
+
+## 🔒 Security Considerations
+
+### Authentication & Authorization
+
+#### JWT Implementation
+- **Token Expiration**: 7-day expiration for access tokens
+- **Refresh Tokens**: Secure token rotation mechanism
+- **Password Security**: bcrypt hashing with salt rounds
+- **Role-Based Access**: Admin, Doctor, Staff, Family, Elder, Pharmacist roles
+
+#### Security Headers
+```javascript
+// Backend security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));
+```
+
+### Data Protection
+
+#### Encryption
+- **Database**: Sensitive data encrypted at rest
+- **Transmission**: HTTPS/TLS 1.3 for all communications
+- **API Keys**: Environment variables, never in code
+- **File Storage**: Encrypted uploads to cloud storage
+
+#### Privacy Compliance
+- **GDPR**: Data minimization and user consent
+- **HIPAA**: Healthcare data protection standards
+- **Data Retention**: Configurable data lifecycle management
+- **Audit Logging**: Comprehensive activity tracking
+
+### Security Best Practices
+
+#### Input Validation
+- **Sanitization**: All user inputs sanitized
+- **Validation**: Joi/Yup schemas for data validation
+- **SQL Injection**: Parameterized queries only
+- **XSS Protection**: Content Security Policy headers
+
+#### Rate Limiting
+```javascript
+// API rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+});
+```
+
+#### Monitoring & Logging
+- **Security Events**: Failed login attempts logged
+- **Intrusion Detection**: Suspicious activity monitoring
+- **Regular Audits**: Security assessments and penetration testing
+- **Incident Response**: Defined procedures for security breaches
+
+## ⚡ Performance & Scalability
+
+### Performance Optimization
+
+#### Backend Optimization
+- **Database Indexing**: Optimized queries with proper indexes
+- **Caching Strategy**: Redis caching for frequently accessed data
+- **Compression**: Gzip compression for API responses
+- **Connection Pooling**: Database connection pooling
+
+#### Frontend Optimization
+- **Code Splitting**: Dynamic imports for route-based splitting
+- **Image Optimization**: WebP format with lazy loading
+- **Bundle Analysis**: Webpack bundle analyzer for size optimization
+- **CDN Integration**: Static assets served via CDN
+
+### Scalability Features
+
+#### Horizontal Scaling
+- **Load Balancing**: Nginx reverse proxy for distribution
+- **Microservices Ready**: Modular architecture for service separation
+- **Database Sharding**: Support for database partitioning
+- **Caching Layers**: Multi-level caching strategy
+
+#### Monitoring & Metrics
+```javascript
+// Performance monitoring
+const responseTime = require('response-time');
+app.use(responseTime((req, res, time) => {
+  console.log(`${req.method} ${req.url} took ${time}ms`);
+}));
+```
+
+### Resource Management
+
+#### Memory Management
+- **Garbage Collection**: Node.js optimization
+- **Memory Leaks**: Regular monitoring and fixes
+- **Connection Limits**: Database connection pooling
+- **File Upload Limits**: Configurable size restrictions
+
+#### Database Optimization
+- **Query Optimization**: EXPLAIN ANALYZE for slow queries
+- **Connection Pooling**: Efficient database connections
+- **Read Replicas**: Separate read/write databases
+- **Backup Strategy**: Automated daily backups
+
+## ❓ FAQ
+
+### General Questions
+
+**Q: What is ElderLink?**
+A: ElderLink is a comprehensive elder care management platform that connects immigrant families with healthcare providers through technology, enabling remote monitoring and care coordination.
+
+**Q: Who can use ElderLink?**
+A: ElderLink supports multiple user roles: Administrators, Family Members, Doctors, Staff, Elders, and Pharmacists, each with role-specific features and permissions.
+
+**Q: Is ElderLink HIPAA compliant?**
+A: Yes, ElderLink implements HIPAA-compliant security measures including data encryption, access controls, and audit logging.
+
+### Technical Questions
+
+**Q: What technologies does ElderLink use?**
+A: ElderLink uses Node.js/Express for backend, React for web frontend, React Native for mobile, PostgreSQL for database, and integrates with Zoom, Stripe, and other services.
+
+**Q: Can ElderLink be deployed on-premises?**
+A: Yes, ElderLink can be deployed on-premises or in the cloud. Docker containers make deployment flexible across different environments.
+
+**Q: How does real-time communication work?**
+A: ElderLink uses Socket.IO for real-time notifications, enabling instant alerts for health monitoring, emergency responses, and system updates.
+
+### Usage Questions
+
+**Q: How do family members monitor their elders?**
+A: Family members can access real-time health dashboards, receive notifications about vital signs, schedule appointments, and communicate with healthcare providers.
+
+**Q: What emergency features are available?**
+A: The system includes 24/7 emergency alerts, GPS location sharing, automated staff notifications, and rapid response coordination.
+
+**Q: How does prescription management work?**
+A: Doctors create digital prescriptions, which are routed to pharmacies, prepared, and delivered monthly to elders' locations with tracking and confirmation.
+
+### Support Questions
+
+**Q: What if I forget my password?**
+A: Use the "Forgot Password" link on the login page. A reset link will be sent to your registered email address.
+
+**Q: How do I report a bug or request a feature?**
+A: Use GitHub Issues for bug reports and feature requests, or contact our support team at support@elderlink.com.
+
+**Q: Is training available for new users?**
+A: Yes, we provide comprehensive documentation, video tutorials, and onboarding support for all user roles.
+
+## 🔧 Troubleshooting Guide
+
+### Common Issues & Solutions
+
+#### Backend Issues
+
+**Issue: Database Connection Failed**
+```
+Error: connect ECONNREFUSED 127.0.0.1:5432
+```
+**Solutions:**
+```bash
+# Check if PostgreSQL is running
+sudo systemctl status postgresql
+
+# Start PostgreSQL service
+sudo systemctl start postgresql
+
+# Verify connection
+psql -U elderlink -d elderlink -h localhost
+
+# Check environment variables
+cat backend/.env | grep DATABASE_URL
+```
+
+**Issue: JWT Token Invalid**
+```
+Error: JsonWebTokenError: invalid signature
+```
+**Solutions:**
+```bash
+# Check JWT secret in environment
+echo $JWT_SECRET
+
+# Regenerate JWT secret
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+
+# Update .env file and restart server
+```
+
+#### Frontend Issues
+
+**Issue: Build Fails with Module Not Found**
+```
+Module not found: Can't resolve 'axios'
+```
+**Solutions:**
+```bash
+# Clear node_modules and reinstall
+cd frontend
+rm -rf node_modules package-lock.json
+npm install
+
+# Check package.json for missing dependencies
+npm ls axios
+
+# Install missing package
+npm install axios
+```
+
+**Issue: CORS Errors in Development**
+```
+Access to XMLHttpRequest blocked by CORS policy
+```
+**Solutions:**
+```javascript
+// Add to backend server.js
+const cors = require('cors');
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? 'https://yourdomain.com'
+    : 'http://localhost:3000',
+  credentials: true
+}));
+```
+
+#### Mobile Issues
+
+**Issue: Metro Bundler Not Starting**
+```
+error: bundler: Error: EMFILE: too many open files
+```
+**Solutions:**
+```bash
+# Increase file watcher limit
+echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+
+# Clear Metro cache
+cd ElderlinkMobile
+npx react-native start --reset-cache
+```
+
+**Issue: Android Build Fails**
+```
+> Task :app:mergeDebugResources FAILED
+```
+**Solutions:**
+```bash
+# Clean Gradle cache
+cd ElderlinkMobile/android
+./gradlew clean
+
+# Clear Android cache
+rm -rf ~/.gradle/caches/
+
+# Rebuild
+cd ..
+npx react-native run-android
+```
+
+#### Database Issues
+
+**Issue: Migration Fails**
+```
+ERROR: relation "users" already exists
+```
+**Solutions:**
+```bash
+# Check migration status
+cd backend
+npx sequelize-cli db:migrate:status
+
+# Undo last migration
+npx sequelize-cli db:migrate:undo
+
+# Reset all migrations
+npx sequelize-cli db:migrate:undo:all
+
+# Fresh start
+npx sequelize-cli db:drop
+npx sequelize-cli db:create
+npx sequelize-cli db:migrate
+```
+
+**Issue: Seeder Data Not Loading**
+```
+No seeders found
+```
+**Solutions:**
+```bash
+# Check seeder files
+ls backend/seeders/
+
+# Run specific seeder
+npx sequelize-cli db:seed --seed 20240101120000-demo-users.js
+
+# Run all seeders
+npx sequelize-cli db:seed:all
+```
+
+#### Docker Issues
+
+**Issue: Container Won't Start**
+```
+ERROR: Couldn't connect to Docker daemon
+```
+**Solutions:**
+```bash
+# Start Docker service
+sudo systemctl start docker
+
+# Add user to docker group
+sudo usermod -aG docker $USER
+
+# Restart Docker
+sudo systemctl restart docker
+```
+
+**Issue: Port Already in Use**
+```
+ERROR: Port 5000 is already allocated
+```
+**Solutions:**
+```bash
+# Find process using port
+lsof -i :5000
+
+# Kill process
+kill -9 <PID>
+
+# Or change port in docker-compose.yml
+ports:
+  - "5001:5000"
+```
+
+### Performance Issues
+
+**Issue: Slow API Response Times**
+**Solutions:**
+```bash
+# Check database indexes
+psql -d elderlink -c "SELECT * FROM pg_indexes WHERE tablename = 'users';"
+
+# Enable query logging
+# Add to .env: DEBUG=sequelize:*
+
+# Check Redis connection
+redis-cli ping
+```
+
+**Issue: Memory Usage High**
+**Solutions:**
+```bash
+# Monitor memory usage
+pm2 monit
+
+# Check for memory leaks
+node --inspect --expose-gc server.js
+
+# Restart PM2 process
+pm2 restart all
+```
+
+### Getting Help
+
+If you encounter issues not covered here:
+
+1. **Check Logs**: Review application and server logs
+2. **GitHub Issues**: Search existing issues or create new ones
+3. **Documentation**: Refer to our detailed API documentation
+4. **Community**: Join our Discord server for community support
+5. **Professional Support**: Contact support@elderlink.com for enterprise support
+
 ## 📱 Usage Guide
 
 ### User Roles & Access
