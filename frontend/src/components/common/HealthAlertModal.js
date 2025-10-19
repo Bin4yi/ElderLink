@@ -1,8 +1,8 @@
 // frontend/src/components/common/HealthAlertModal.js
 import React from 'react';
-import { X, AlertTriangle, Heart, Activity, Thermometer, Wind, Phone, UserCheck } from 'lucide-react';
+import { X, AlertTriangle, Heart, Activity, Thermometer, Wind, UserCheck } from 'lucide-react';
 
-const HealthAlertModal = ({ alert, onClose, onAcknowledge, onResolve, onEmergencyContact }) => {
+const HealthAlertModal = ({ alert, onClose, onAcknowledge, onResolve }) => {
 
   const getAlertIcon = () => {
     switch (alert.alertType) {
@@ -46,12 +46,6 @@ const HealthAlertModal = ({ alert, onClose, onAcknowledge, onResolve, onEmergenc
       await onResolve(alert.id);
     }
     onClose();
-  };
-
-  const handleEmergencyContact = async () => {
-    if (onEmergencyContact) {
-      await onEmergencyContact(alert.id);
-    }
   };
 
   return (
@@ -122,7 +116,7 @@ const HealthAlertModal = ({ alert, onClose, onAcknowledge, onResolve, onEmergenc
           </div>
 
           {/* Footer Actions */}
-          <div className="p-6 bg-gray-50 border-t space-y-3">
+          <div className="p-6 bg-gray-50 border-t">
             <div className="flex gap-3">
               {alert.status === 'active' && (
                 <button
@@ -143,22 +137,6 @@ const HealthAlertModal = ({ alert, onClose, onAcknowledge, onResolve, onEmergenc
                 </button>
               )}
             </div>
-
-            {alert.severity === 'critical' && !alert.emergencyContacted && (
-              <button
-                onClick={handleEmergencyContact}
-                className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2"
-              >
-                <Phone className="w-4 h-4" />
-                Contact Emergency Services
-              </button>
-            )}
-
-            {alert.emergencyContacted && (
-              <div className="text-center text-sm text-green-600 font-medium">
-                ✓ Emergency Services Contacted
-              </div>
-            )}
           </div>
         </div>
       </div>

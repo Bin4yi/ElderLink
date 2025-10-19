@@ -104,16 +104,7 @@ const AlertsManagement = () => {
     }
   };
 
-  const handleEmergencyContact = async (alertId) => {
-    try {
-      await healthAlertService.markEmergencyContacted(alertId);
-      toast.success('Emergency services contacted');
-      loadAlerts();
-    } catch (error) {
-      console.error('Failed to mark emergency contacted:', error);
-      toast.error('Failed to update alert');
-    }
-  };
+  // REMOVED: handleEmergencyContact function - emergency services button removed from UI
 
   const getSeverityColor = (severity) => {
     switch (severity) {
@@ -381,7 +372,6 @@ const AlertsManagement = () => {
             onClose={() => setSelectedAlert(null)}
             onAcknowledge={handleAcknowledge}
             onResolve={handleResolve}
-            onEmergencyContact={handleEmergencyContact}
           />
         )}
       </>
