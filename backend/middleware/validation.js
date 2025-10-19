@@ -92,14 +92,17 @@ const validateElderWithAuth = (req, res, next) => {
     doctorPhone: Joi.string().optional().allow(''),
     insuranceProvider: Joi.string().optional().allow(''),
     insuranceNumber: Joi.string().optional().allow(''),
-    enableLogin: Joi.boolean().optional(),
+    enableLogin: Joi.alternatives().try(
+      Joi.boolean(),
+      Joi.string().valid('true', 'false')
+    ).optional(),
     email: Joi.when('enableLogin', {
-      is: true,
+      is: Joi.alternatives().try(true, 'true'),
       then: Joi.string().email().required(),
       otherwise: Joi.string().email().optional().allow('', null)
     }),
     password: Joi.when('enableLogin', {
-      is: true,
+      is: Joi.alternatives().try(true, 'true'),
       then: Joi.string().min(6).required(),
       otherwise: Joi.string().optional().allow('', null)
     }),
