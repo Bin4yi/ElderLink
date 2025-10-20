@@ -10,7 +10,7 @@ import DoctorCalendarModal from './DoctorCalendarModal';
 import AppointmentPaymentForm from './AppointmentPaymentForm';
 import { appointmentService } from '../../../services/appointment';
 import { elderService } from '../../../services/elder';
-import { useNavigate } from 'react-router-dom'; // <-- Move this import up here
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here');
@@ -18,6 +18,7 @@ const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY ||
 
 const AppointmentBooking = ({ onBack, onSuccess }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState(1);
   const [selectedElder, setSelectedElder] = useState(null);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -44,6 +45,30 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
     loadElders();
     loadDoctors();
   }, []);
+
+  // Handle pre-selected data from navigation state
+  useEffect(() => {
+    if (location.state) {
+      const { preSelectedElder, preSelectedDoctor, fromMonthlySession } = location.state;
+      
+      if (preSelectedElder) {
+        setSelectedElder(preSelectedElder);
+        console.log('✅ Pre-selected elder:', preSelectedElder);
+      }
+      
+      if (preSelectedDoctor) {
+        setSelectedDoctor(preSelectedDoctor);
+        console.log('✅ Pre-selected doctor:', preSelectedDoctor);
+      }
+
+      if (fromMonthlySession) {
+        toast.success('Elder and Doctor pre-selected from Monthly Session', {
+          icon: '📋',
+          duration: 4000
+        });
+      }
+    }
+  }, [location.state]);
 
   // Countdown timer effect
   useEffect(() => {
