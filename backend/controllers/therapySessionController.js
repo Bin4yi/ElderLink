@@ -450,6 +450,102 @@ const getElderSessions = async (req, res) => {
   }
 };
 
+// Create Zoom meeting for a therapy session
+const createZoomMeeting = async (req, res) => {
+  try {
+    console.log(
+      "📹 Creating Zoom meeting for therapy session:",
+      req.params.sessionId
+    );
+
+    const sessionId = req.params.sessionId;
+    const specialistId = req.user.id;
+    const zoomService = require("../services/zoomService");
+
+    // Get therapy session with elder and specialist details
+    const session = await TherapySession.findOne({
+      where: {
+        id: sessionId,
+        specialistId,
+      },
+      include: [
+        {
+          model: Elder,
+          as: "elder",
+          attributes: ["id", "firstName", "lastName"],
+        },
+        {
+          model: User,
+          as: "specialist",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+      ],
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Therapy session not found or you are not authorized",
+      });
+    }
+
+    // Check if Zoom meeting already exists
+    if (session.zoomLink && session.zoomLink.includes("zoom.us")) {
+      return res.status(400).json({
+        success: false,
+        message: "Zoom meeting already exists for this session",
+        data: {
+          joinUrl: session.zoomLink,
+        },
+      });
+    }
+
+    // Create Zoom meeting
+    const meetingTopic = `Therapy Session with ${session.specialist.firstName} ${session.specialist.lastName} - ${session.elder.firstName} ${session.elder.lastName}`;
+    const meetingStartTime = new Date(
+      `${session.scheduledDate}T${session.scheduledTime}`
+    );
+
+    const meeting = await zoomService.createMeeting({
+      topic: meetingTopic,
+      startTime: zoomService.formatDateForZoom(meetingStartTime),
+      duration: session.duration || 60,
+      agenda: session.sessionNotes || "Mental Health Therapy Session",
+      waitingRoom: true,
+      joinBeforeHost: false,
+      autoRecording: "none",
+    });
+
+    // Update session with Zoom details
+    await session.update({
+      zoomLink: meeting.joinUrl,
+    });
+
+    console.log("✅ Zoom meeting created and saved:", meeting.meetingId);
+
+    res.json({
+      success: true,
+      message: "Zoom meeting created successfully",
+      data: {
+        sessionId: session.id,
+        meetingId: meeting.meetingId,
+        joinUrl: meeting.joinUrl,
+        startUrl: meeting.startUrl,
+        password: meeting.password,
+        topic: meeting.topic,
+        startTime: meeting.startTime,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error creating Zoom meeting:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create Zoom meeting",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createSession,
   getSpecialistSessions,
@@ -458,4 +554,5 @@ module.exports = {
   cancelSession,
   getSessionStatistics,
   getElderSessions,
+  createZoomMeeting,
 };
