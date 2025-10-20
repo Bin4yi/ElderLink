@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../services/api';
 import toast from 'react-hot-toast';
 import { 
   CreditCard, 
@@ -24,8 +24,6 @@ import {
 import RoleLayout from '../../common/RoleLayout';
 import Loading from '../../common/Loading';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
 const FamilySubscriptions = () => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -44,10 +42,7 @@ const FamilySubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/subscriptions`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/subscriptions');
       console.log('Subscriptions:', response.data.subscriptions);
       setSubscriptions(response.data.subscriptions || []);
     } catch (error) {
@@ -60,10 +55,7 @@ const FamilySubscriptions = () => {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/subscriptions/stats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/subscriptions/stats');
       console.log('Subscription stats:', response.data.stats);
       setStats(response.data.stats);
     } catch (error) {
@@ -73,10 +65,7 @@ const FamilySubscriptions = () => {
 
   const fetchHistory = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/subscriptions/history`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/subscriptions/history');
       console.log('Subscription history:', response.data.history);
       setHistory(response.data.history || []);
     } catch (error) {
@@ -238,11 +227,9 @@ const FamilySubscriptions = () => {
 
   const processRenewal = async (duration, paymentMethodId) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${API_BASE_URL}/subscriptions/${renewingSubscription.id}/renew`,
-        { duration, paymentMethodId },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const response = await api.post(
+        `/subscriptions/${renewingSubscription.id}/renew`,
+        { duration, paymentMethodId }
       );
 
       if (response.data.success) {

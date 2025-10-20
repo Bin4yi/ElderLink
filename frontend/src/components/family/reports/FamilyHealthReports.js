@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../services/api';
 import toast from 'react-hot-toast';
 import { Line } from 'react-chartjs-2';
 import {
@@ -49,8 +49,6 @@ ChartJS.register(
   Filler
 );
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
 const FamilyHealthReports = () => {
   // State for filters
   const [selectedElder, setSelectedElder] = useState('all');
@@ -73,11 +71,8 @@ const FamilyHealthReports = () => {
   // Fetch assigned elders
   const fetchElders = async () => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Fetching elders with token:', token ? 'Token exists' : 'No token');
-      const response = await axios.get(`${API_BASE_URL}/elders`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      console.log('Fetching elders...');
+      const response = await api.get('/elders');
       console.log('Elders response:', response.data);
       const eldersList = response.data.elders || response.data || [];
       console.log('Setting elders:', eldersList);
@@ -95,23 +90,22 @@ const FamilyHealthReports = () => {
   // Fetch health reports based on period
   const fetchHealthReports = async () => {
     try {
-      const token = localStorage.getItem('token');
       let endpoint = '';
       let params = {};
 
       const today = new Date();
       
       if (selectedPeriod === 'day') {
-        endpoint = `${API_BASE_URL}/health-reports/daily`;
+        endpoint = '/health-reports/daily';
         params.date = today.toISOString().split('T')[0];
       } else if (selectedPeriod === 'week') {
-        endpoint = `${API_BASE_URL}/health-reports/weekly`;
+        endpoint = '/health-reports/weekly';
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
         params.startDate = weekAgo.toISOString().split('T')[0];
         params.endDate = today.toISOString().split('T')[0];
       } else {
-        endpoint = `${API_BASE_URL}/health-reports/monthly`;
+        endpoint = '/health-reports/monthly';
         params.year = today.getFullYear();
         params.month = today.getMonth() + 1;
       }
@@ -120,10 +114,7 @@ const FamilyHealthReports = () => {
         params.elderId = selectedElder;
       }
 
-      const response = await axios.get(endpoint, {
-        headers: { Authorization: `Bearer ${token}` },
-        params
-      });
+      const response = await api.get(endpoint, { params });
 
       setReportSummary(response.data.data?.summary || null);
     } catch (err) {
@@ -149,9 +140,7 @@ const FamilyHealthReports = () => {
       }
 
       const vitalsPromises = eldersToFetch.map(elder =>
-        axios.get(`${API_BASE_URL}/health-reports/summary/${elder.id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        api.get(`/health-reports/summary/${elder.id}`)
       );
 
       const results = await Promise.all(vitalsPromises);
@@ -314,23 +303,22 @@ const FamilyHealthReports = () => {
   // Export PDF
   const handleExportPDF = async () => {
     try {
-      const token = localStorage.getItem('token');
       let endpoint = '';
       const params = {};
 
       const today = new Date();
       
       if (selectedPeriod === 'day') {
-        endpoint = `${API_BASE_URL}/health-reports/daily/pdf`;
+        endpoint = '/health-reports/daily/pdf';
         params.date = today.toISOString().split('T')[0];
       } else if (selectedPeriod === 'week') {
-        endpoint = `${API_BASE_URL}/health-reports/weekly/pdf`;
+        endpoint = '/health-reports/weekly/pdf';
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
         params.startDate = weekAgo.toISOString().split('T')[0];
         params.endDate = today.toISOString().split('T')[0];
       } else {
-        endpoint = `${API_BASE_URL}/health-reports/monthly/pdf`;
+        endpoint = '/health-reports/monthly/pdf';
         params.year = today.getFullYear();
         params.month = today.getMonth() + 1;
       }
@@ -339,8 +327,7 @@ const FamilyHealthReports = () => {
         params.elderId = selectedElder;
       }
 
-      const response = await axios.get(endpoint, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await api.get(endpoint, {
         params,
         responseType: 'blob'
       });

@@ -365,27 +365,49 @@ const PORT = process.env.PORT || 5000;
 // Database connection and server start
 const startServer = async () => {
   try {
-    await sequelize.authenticate();
-    console.log("✅ Database connected successfully");
+    // Try to connect to database
+    try {
+      await sequelize.authenticate();
+      console.log("✅ Database connected successfully");
+      console.log("✅ Database models synchronized (sync skipped)");
+    } catch (dbError) {
+      console.error("❌ Database connection failed:", dbError.message);
+      console.warn("⚠️  Server will start without database connection.");
+      console.warn("⚠️  Please check your DATABASE_URL and network connection.");
+      console.warn("⚠️  Tip: Use local PostgreSQL for development - see README.md");
+    }
 
-    // await sequelize.sync({ alter: true }); // Commented out to prevent hanging
-    console.log("✅ Database models synchronized (sync skipped)");
+    // Start optional services (don't let them crash the server)
+    try {
+      // Start reservation cleanup task
+      const { startReservationCleanup } = require("./utils/reservationCleanup");
+      startReservationCleanup();
+    } catch (error) {
+      console.warn("⚠️  Reservation cleanup not started:", error.message);
+    }
 
-    // Start reservation cleanup task
-    const { startReservationCleanup } = require("./utils/reservationCleanup");
-    startReservationCleanup();
+    try {
+      // Start subscription scheduler
+      const { initSubscriptionScheduler } = require("./schedulers/subscriptionScheduler");
+      initSubscriptionScheduler();
+    } catch (error) {
+      console.warn("⚠️  Subscription scheduler not started:", error.message);
+    }
 
-    // Start subscription scheduler
-    const { initSubscriptionScheduler } = require("./schedulers/subscriptionScheduler");
-    initSubscriptionScheduler();
-
+    // Always start the server (even if database connection fails)
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
       console.log(`🔗 API base URL: http://localhost:${PORT}/api`);
+      console.log(`\n💡 If you see database/email errors above:`);
+      console.log(`   1. Check your .env file configuration`);
+      console.log(`   2. Use local PostgreSQL for development`);
+      console.log(`   3. Set EMAIL_ENABLED=false to disable email`);
+      console.log(`   4. See TROUBLESHOOTING_FLOWCHART.md for help\n`);
     });
   } catch (error) {
-    console.error("❌ Unable to start server:", error);
+    console.error("❌ Fatal error starting server:", error);
+    console.error("⚠️  Server could not start. Check the error above.");
     process.exit(1);
   }
 };

@@ -38,7 +38,9 @@ class EmailService {
       await this.transporter.verify();
       console.log('✅ Email service connection verified successfully');
     } catch (error) {
-      console.error('❌ Email service connection failed:', error);
+      console.error('❌ Email service connection failed:', error.message);
+      console.warn('⚠️  Email functionality will be disabled. Server will continue without email service.');
+      // Don't throw error - allow server to start without email
     }
   }
 
