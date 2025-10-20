@@ -30,6 +30,7 @@ router.get('/', authenticate, AppointmentController.getAppointments);
 router.get('/:id', authenticate, AppointmentController.getAppointmentById);
 router.put('/:id/cancel', authenticate, AppointmentController.cancelAppointment);
 router.put('/:id/reschedule', authenticate, AppointmentController.rescheduleAppointment);
+router.patch('/:id/mark-completed', authenticate, AppointmentController.markAsCompleted);
 router.post('/:id/confirm-payment', authenticate, AppointmentController.confirmPayment);
 
 // Elder summary route

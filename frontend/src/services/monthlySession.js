@@ -74,6 +74,26 @@ const monthlySessionService = {
   },
 
   /**
+   * Get monthly sessions for elder (their own sessions)
+   * @param {Object} filters - { status, startDate, endDate }
+   * @returns {Promise} Response with sessions array
+   */
+  getElderMonthlySessions: async (filters = {}) => {
+    try {
+      const params = new URLSearchParams();
+      if (filters.status) params.append('status', filters.status);
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+
+      const response = await api.get(`/monthly-sessions/elder/sessions?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching elder monthly sessions:', error);
+      throw error.response?.data || error;
+    }
+  },
+
+  /**
    * Get single monthly session details
    * @param {string} sessionId - Session ID
    * @returns {Promise} Response with session details
@@ -134,6 +154,21 @@ const monthlySessionService = {
       return response.data;
     } catch (error) {
       console.error('Error rescheduling monthly session:', error);
+      throw error.response?.data || error;
+    }
+  },
+
+  /**
+   * Mark monthly session as completed (simple status update)
+   * @param {string} sessionId - Session ID
+   * @returns {Promise} Response with updated session
+   */
+  markAsCompleted: async (sessionId) => {
+    try {
+      const response = await api.patch(`/monthly-sessions/${sessionId}/mark-completed`);
+      return response.data;
+    } catch (error) {
+      console.error('Error marking monthly session as completed:', error);
       throw error.response?.data || error;
     }
   },

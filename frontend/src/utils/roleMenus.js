@@ -88,6 +88,7 @@ export const getRoleMenuItems = (role) => {
         { path: '/elder/dashboard', icon: Home, label: 'Dashboard' },
         { path: '/elder/health-reports', icon: Heart, label: 'My Health' },
         { path: '/elder/appointments', icon: Calendar, label: 'Appointments' },
+        { path: '/elder/sessions', icon: Calendar, label: 'Monthly Sessions' },
         { path: '/elder/medications', icon: Pill, label: 'Medications' },
         { path: '/elder/mental-wellness', icon: Brain, label: 'Mental Wellness' }, // NEW!
         { path: '/elder/profile', icon: User, label: 'Profile' }

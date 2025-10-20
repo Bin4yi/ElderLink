@@ -15,6 +15,14 @@ router.get(
   monthlySessionController.getDoctorMonthlySessions
 );
 
+// Elder routes (must be before /:sessionId)
+router.get(
+  '/elder/sessions',
+  auth,
+  authorize(['elder']),
+  monthlySessionController.getElderMonthlySessions
+);
+
 // Statistics route (must be before /:sessionId)
 router.get(
   '/stats',
@@ -76,6 +84,12 @@ router.post(
   auth,
   authorize(['family_member', 'doctor', 'admin']),
   monthlySessionController.cancelMonthlySession
+);
+
+router.patch(
+  '/:sessionId/mark-completed',
+  auth,
+  monthlySessionController.markAsCompleted
 );
 
 router.post(

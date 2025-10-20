@@ -88,6 +88,7 @@ import HealthReports from "./components/staff/reports/HealthReports";
 import ElderDashboard from "./components/Elder/dashboard/Elder";
 import ElderHealthReports from "./components/Elder/dashboard/ElderHealthReports";
 import ElderAppointmentList from "./components/Elder/appointments/ElderAppointmentList";
+import ElderMonthlySessions from "./components/Elder/sessions/ElderMonthlySessions";
 import ElderMedications from "./components/Elder/dashboard/ElderMedications";
 import ElderMentalWellness from "./components/Elder/dashboard/ElderMentalWellness";
 import ElderEmergency from "./components/Elder/dashboard/ElderEmergency";
@@ -254,6 +255,10 @@ function App() {
                   <Route
                     path="/elder/appointments"
                     element={<ElderAppointmentList />}
+                  />
+                  <Route
+                    path="/elder/sessions"
+                    element={<ElderMonthlySessions />}
                   />
                   <Route
                     path="/elder/medications"

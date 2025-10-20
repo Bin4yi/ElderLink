@@ -222,10 +222,20 @@ const MonthlySessions = () => {
 
   // Filter sessions based on selected filters
   const getFilteredSessions = () => {
+    // Get today's date at midnight for comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     return sessions.filter(session => {
+      // Hide past sessions (sessions before today)
+      const sessionDate = new Date(session.date);
+      sessionDate.setHours(0, 0, 0, 0);
+      if (sessionDate < today) {
+        return false;
+      }
+
       // Month filter
       if (filters.month) {
-        const sessionDate = new Date(session.date);
         const sessionMonth = `${sessionDate.getFullYear()}-${String(sessionDate.getMonth() + 1).padStart(2, '0')}`;
         if (sessionMonth !== filters.month) return false;
       }
@@ -538,7 +548,7 @@ const MonthlySessions = () => {
 
   return (
     <RoleLayout>
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-6 max-w-[95%] mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex justify-between items-start">
@@ -834,7 +844,7 @@ const MonthlySessions = () => {
         {/* Session Detail Modal */}
         {selectedSession && selectedSession.doctor && selectedDoctor && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex items-start justify-between mb-6">
                   <div>
