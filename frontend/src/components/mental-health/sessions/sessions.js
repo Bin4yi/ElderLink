@@ -11,6 +11,7 @@ import {
   CheckCircle,
   AlertCircle,
   Plus,
+  X,
 } from "lucide-react";
 import RoleLayout from "../../common/RoleLayout";
 import mentalHealthService from "../../../services/mentalHealthService";
@@ -22,10 +23,35 @@ const TherapySessions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
+  const [assignedElders, setAssignedElders] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [sessionForm, setSessionForm] = useState({
+    elderId: "",
+    sessionType: "individual",
+    therapyType: "Cognitive Behavioral Therapy",
+    scheduledDate: "",
+    scheduledTime: "",
+    duration: 60,
+    location: "video_call",
+    zoomLink: "",
+    sessionGoals: "",
+    notes: "",
+    isFirstSession: false,
+  });
 
   useEffect(() => {
     loadSessions();
+    loadAssignedElders();
   }, [selectedFilter]);
+
+  const loadAssignedElders = async () => {
+    try {
+      const response = await mentalHealthService.getAssignedElders();
+      setAssignedElders(response.elders || []);
+    } catch (error) {
+      console.error("Error loading assigned elders:", error);
+    }
+  };
 
   const loadSessions = async () => {
     try {
@@ -54,6 +80,67 @@ const TherapySessions = () => {
       console.error("Error completing session:", error);
       toast.error("Failed to complete session");
     }
+  };
+
+  const handleCreateSession = async (e) => {
+    e.preventDefault();
+
+    if (!sessionForm.elderId) {
+      toast.error("Please select a client");
+      return;
+    }
+
+    if (!sessionForm.scheduledDate || !sessionForm.scheduledTime) {
+      toast.error("Please select date and time");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      // Convert sessionGoals string to array
+      const goalsArray = sessionForm.sessionGoals
+        .split("\n")
+        .filter((goal) => goal.trim() !== "");
+
+      const sessionData = {
+        ...sessionForm,
+        sessionGoals: goalsArray.length > 0 ? goalsArray : [],
+      };
+
+      await mentalHealthService.createSession(sessionData);
+
+      toast.success("Session scheduled successfully!");
+      setShowNewSessionModal(false);
+
+      // Reset form
+      setSessionForm({
+        elderId: "",
+        sessionType: "individual",
+        therapyType: "Cognitive Behavioral Therapy",
+        scheduledDate: "",
+        scheduledTime: "",
+        duration: 60,
+        location: "video_call",
+        zoomLink: "",
+        sessionGoals: "",
+        notes: "",
+        isFirstSession: false,
+      });
+
+      loadSessions();
+    } catch (error) {
+      console.error("Error creating session:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to schedule session"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFormChange = (field, value) => {
+    setSessionForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const filteredSessions = sessions.filter((session) => {
@@ -332,6 +419,270 @@ const TherapySessions = () => {
           </div>
         </div>
       </div>
+
+      {/* Schedule Session Modal */}
+      {showNewSessionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 rounded-t-2xl sticky top-0 z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">
+                    Schedule New Session
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowNewSessionModal(false)}
+                  className="text-white/80 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateSession} className="p-6 space-y-6">
+              {/* Client Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Select Client *
+                </label>
+                <select
+                  value={sessionForm.elderId}
+                  onChange={(e) => handleFormChange("elderId", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Choose a client...</option>
+                  {assignedElders.map((elder) => (
+                    <option key={elder.id} value={elder.id}>
+                      {elder.firstName} {elder.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Session Type and Therapy Type */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Session Type *
+                  </label>
+                  <select
+                    value={sessionForm.sessionType}
+                    onChange={(e) =>
+                      handleFormChange("sessionType", e.target.value)
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="individual">Individual</option>
+                    <option value="group">Group</option>
+                    <option value="family">Family</option>
+                    <option value="crisis">Crisis</option>
+                    <option value="assessment">Assessment</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Therapy Type *
+                  </label>
+                  <select
+                    value={sessionForm.therapyType}
+                    onChange={(e) =>
+                      handleFormChange("therapyType", e.target.value)
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="Cognitive Behavioral Therapy">
+                      Cognitive Behavioral Therapy
+                    </option>
+                    <option value="Dialectical Behavior Therapy">
+                      Dialectical Behavior Therapy
+                    </option>
+                    <option value="Psychodynamic Therapy">
+                      Psychodynamic Therapy
+                    </option>
+                    <option value="Humanistic Therapy">
+                      Humanistic Therapy
+                    </option>
+                    <option value="Mindfulness-Based Therapy">
+                      Mindfulness-Based Therapy
+                    </option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Date and Time */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={sessionForm.scheduledDate}
+                    onChange={(e) =>
+                      handleFormChange("scheduledDate", e.target.value)
+                    }
+                    min={new Date().toISOString().split("T")[0]}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={sessionForm.scheduledTime}
+                    onChange={(e) =>
+                      handleFormChange("scheduledTime", e.target.value)
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Duration and Location */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Duration (minutes) *
+                  </label>
+                  <select
+                    value={sessionForm.duration}
+                    onChange={(e) =>
+                      handleFormChange("duration", parseInt(e.target.value))
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  >
+                    <option value={30}>30 minutes</option>
+                    <option value={45}>45 minutes</option>
+                    <option value={60}>60 minutes</option>
+                    <option value={90}>90 minutes</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Location *
+                  </label>
+                  <select
+                    value={sessionForm.location}
+                    onChange={(e) =>
+                      handleFormChange("location", e.target.value)
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="video_call">Video Call</option>
+                    <option value="in_person">In Person</option>
+                    <option value="phone_call">Phone Call</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Zoom Link (if video call) */}
+              {sessionForm.location === "video_call" && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Zoom/Meeting Link
+                  </label>
+                  <input
+                    type="url"
+                    value={sessionForm.zoomLink}
+                    onChange={(e) =>
+                      handleFormChange("zoomLink", e.target.value)
+                    }
+                    placeholder="https://zoom.us/j/..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+              )}
+
+              {/* Session Goals */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Session Goals
+                </label>
+                <textarea
+                  value={sessionForm.sessionGoals}
+                  onChange={(e) =>
+                    handleFormChange("sessionGoals", e.target.value)
+                  }
+                  rows="3"
+                  placeholder="Enter each goal on a new line..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter each goal on a new line
+                </p>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Additional Notes
+                </label>
+                <textarea
+                  value={sessionForm.notes}
+                  onChange={(e) => handleFormChange("notes", e.target.value)}
+                  rows="3"
+                  placeholder="Add any additional notes or preparation details..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* First Session Checkbox */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isFirstSession"
+                  checked={sessionForm.isFirstSession}
+                  onChange={(e) =>
+                    handleFormChange("isFirstSession", e.target.checked)
+                  }
+                  className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                />
+                <label
+                  htmlFor="isFirstSession"
+                  className="ml-2 text-sm text-gray-700"
+                >
+                  This is the first session with this client
+                </label>
+              </div>
+
+              {/* Form Actions */}
+              <div className="flex gap-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => setShowNewSessionModal(false)}
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? "Scheduling..." : "Schedule Session"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </RoleLayout>
   );
 };

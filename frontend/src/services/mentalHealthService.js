@@ -47,6 +47,17 @@ const mentalHealthService = {
     return response.data;
   },
 
+  getAssignedElders: async () => {
+    const response = await api.get(
+      "/mental-health/assignments/clients?status=active"
+    );
+    // Map clients to elders format
+    return {
+      elders:
+        response.data.clients?.map((assignment) => assignment.elder) || [],
+    };
+  },
+
   getAvailableSpecialists: async () => {
     const response = await api.get(
       "/mental-health/assignments/specialists/available"
