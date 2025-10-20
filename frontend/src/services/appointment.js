@@ -135,6 +135,19 @@ class AppointmentService {
     }
   }
 
+  // Elder Appointment Services
+  
+  // Get elder's appointments (for elder role)
+  async getElderAppointments(params = {}) {
+    try {
+      // Use the main appointments endpoint which already handles elder role
+      const response = await api.get('/appointments', { params });
+      return response.data.appointments || response.data || [];
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Doctor Appointment Services
   
   // Get doctor's appointments
@@ -387,6 +400,7 @@ export const {
   cancelAppointment,
   rescheduleAppointment,
   getElderSummary,
+  getElderAppointments,
   getDoctorAppointments,
   reviewAppointment,
   getElderMedicalSummary,
