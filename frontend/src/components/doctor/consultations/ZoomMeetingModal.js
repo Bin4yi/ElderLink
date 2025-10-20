@@ -1,11 +1,14 @@
 // src/components/doctor/consultations/ZoomMeetingModal.js
 import React, { useState } from 'react';
 import Modal from '../../common/Modal';
-import { Video, Calendar, Clock, User, Link as LinkIcon, Copy, CheckCircle, ExternalLink } from 'lucide-react';
+import { Video, Calendar, Clock, User, Link as LinkIcon, Copy, CheckCircle, ExternalLink, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
-const ZoomMeetingModal = ({ consultation, isOpen, onClose, onStartMeeting }) => {
+const ZoomMeetingModal = ({ consultation, isOpen, onClose, onStartMeeting, isMonthlySession = false }) => {
   const [copied, setCopied] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [zoomData, setZoomData] = useState(null);
 
   if (!consultation) return null;
 
@@ -16,15 +19,69 @@ const ZoomMeetingModal = ({ consultation, isOpen, onClose, onStartMeeting }) => 
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const createZoomMeeting = async () => {
+    try {
+      setCreating(true);
+      const token = localStorage.getItem('token');
+      
+      // Determine the endpoint based on whether this is a monthly session or appointment
+      const endpoint = isMonthlySession 
+        ? `http://localhost:5000/api/monthly-sessions/${consultation.id}/create-zoom`
+        : `http://localhost:5000/api/doctor/appointments/${consultation.id}/create-zoom`;
+      
+      const response = await axios.post(
+        endpoint,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        toast.success('Zoom meeting created successfully!');
+        // Update local zoom data
+        setZoomData({
+          zoomJoinUrl: response.data.data.joinUrl,
+          zoomPassword: response.data.data.password,
+          zoomMeetingId: response.data.data.meetingId,
+          zoomStartUrl: response.data.data.startUrl
+        });
+        
+        // Update consultation object
+        consultation.zoomJoinUrl = response.data.data.joinUrl;
+        consultation.zoomPassword = response.data.data.password;
+        consultation.zoomMeetingId = response.data.data.meetingId;
+      } else {
+        toast.error(response.data.message || 'Failed to create Zoom meeting');
+      }
+    } catch (error) {
+      console.error('Error creating Zoom meeting:', error);
+      toast.error(error.response?.data?.message || 'Failed to create Zoom meeting');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const handleStartMeeting = () => {
-    if (consultation.zoomJoinUrl) {
-      window.open(consultation.zoomJoinUrl, '_blank');
+    const joinUrl = zoomData?.zoomJoinUrl || consultation.zoomJoinUrl;
+    if (joinUrl) {
+      window.open(joinUrl, '_blank');
       if (onStartMeeting) {
         onStartMeeting(consultation);
       }
     } else {
       toast.error('No Zoom meeting link available');
     }
+  };
+
+  // Use either the newly created zoom data or the existing consultation data
+  const currentZoomData = zoomData || {
+    zoomJoinUrl: consultation.zoomJoinUrl,
+    zoomPassword: consultation.zoomPassword,
+    zoomMeetingId: consultation.zoomMeetingId
   };
 
   return (
@@ -76,12 +133,22 @@ const ZoomMeetingModal = ({ consultation, isOpen, onClose, onStartMeeting }) => 
         </div>
 
         {/* Zoom Meeting Details */}
-        {consultation.zoomJoinUrl ? (
+        {currentZoomData.zoomJoinUrl ? (
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
             <div className="flex items-center gap-2 text-green-600">
               <Video className="w-5 h-5" />
               <span className="font-semibold">Zoom Meeting Ready</span>
             </div>
+
+            {/* Mock Meeting Warning (if it's a development mock) */}
+            {currentZoomData.zoomJoinUrl?.includes('mock') || currentZoomData.zoomMeetingId?.length === 10 ? (
+              <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ <strong>Development Mode:</strong> This is a mock Zoom meeting for testing. 
+                  Configure real Zoom credentials in production.
+                </p>
+              </div>
+            ) : null}
 
             {/* Meeting Link */}
             <div>
@@ -91,12 +158,12 @@ const ZoomMeetingModal = ({ consultation, isOpen, onClose, onStartMeeting }) => 
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  value={consultation.zoomJoinUrl}
+                  value={currentZoomData.zoomJoinUrl}
                   readOnly
                   className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm"
                 />
                 <button
-                  onClick={() => copyToClipboard(consultation.zoomJoinUrl)}
+                  onClick={() => copyToClipboard(currentZoomData.zoomJoinUrl)}
                   className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2"
                 >
                   {copied ? (
@@ -115,7 +182,7 @@ const ZoomMeetingModal = ({ consultation, isOpen, onClose, onStartMeeting }) => 
             </div>
 
             {/* Meeting Password */}
-            {consultation.zoomPassword && (
+            {currentZoomData.zoomPassword && (
               <div>
                 <label className="text-sm font-semibold text-gray-600 mb-2 block">
                   Meeting Password
@@ -123,12 +190,12 @@ const ZoomMeetingModal = ({ consultation, isOpen, onClose, onStartMeeting }) => 
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
-                    value={consultation.zoomPassword}
+                    value={currentZoomData.zoomPassword}
                     readOnly
                     className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm font-mono"
                   />
                   <button
-                    onClick={() => copyToClipboard(consultation.zoomPassword)}
+                    onClick={() => copyToClipboard(currentZoomData.zoomPassword)}
                     className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
                   >
                     <Copy className="w-4 h-4" />
@@ -138,33 +205,52 @@ const ZoomMeetingModal = ({ consultation, isOpen, onClose, onStartMeeting }) => 
             )}
 
             {/* Meeting ID */}
-            {consultation.zoomMeetingId && (
+            {currentZoomData.zoomMeetingId && (
               <div>
                 <label className="text-sm font-semibold text-gray-600 mb-2 block">
                   Meeting ID
                 </label>
-                <p className="text-gray-900 font-mono text-lg">{consultation.zoomMeetingId}</p>
+                <p className="text-gray-900 font-mono text-lg">{currentZoomData.zoomMeetingId}</p>
               </div>
             )}
           </div>
         ) : (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5">
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 mb-4">
               <Video className="w-5 h-5 text-yellow-600 mt-0.5" />
               <div>
                 <p className="font-semibold text-yellow-800 mb-1">No Zoom Meeting Scheduled</p>
                 <p className="text-sm text-yellow-700">
                   A Zoom meeting link has not been created for this consultation yet. 
-                  Please contact support or schedule a meeting manually.
+                  Click the button below to create one now.
                 </p>
               </div>
             </div>
+
+            {/* Create Zoom Meeting Button */}
+            <button
+              onClick={createZoomMeeting}
+              disabled={creating}
+              className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creating ? (
+                <>
+                  <Loader className="w-5 h-5 animate-spin" />
+                  Creating Meeting...
+                </>
+              ) : (
+                <>
+                  <Video className="w-5 h-5" />
+                  Create Zoom Meeting
+                </>
+              )}
+            </button>
           </div>
         )}
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          {consultation.zoomJoinUrl && (
+          {currentZoomData.zoomJoinUrl && (
             <button
               onClick={handleStartMeeting}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"

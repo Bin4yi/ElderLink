@@ -1,31 +1,23 @@
-// frontend/src/components/family/appointments/AppointmentList.js
+// frontend/src/components/Elder/appointments/ElderAppointmentList.js
 import React, { useState, useEffect } from 'react';
 import { 
-  CalendarCheck, Clock, Repeat, User, MapPin, Phone, Mail, 
-  Calendar, ChevronLeft, ChevronRight, Video, FileText, AlertCircle,
-  CheckCircle, XCircle, Plus, Filter, Search, Bell, X as CloseIcon, Activity
+  CalendarCheck, Clock, User, FileText, AlertCircle,
+  CheckCircle, XCircle, Calendar, ChevronLeft, ChevronRight, 
+  Video, Bell, X as CloseIcon, Search, Filter
 } from 'lucide-react';
 import { appointmentService } from '../../../services/appointment';
 import toast from 'react-hot-toast';
 import RoleLayout from '../../common/RoleLayout';
-import { useNavigate } from 'react-router-dom';
 
-
-const AppointmentList = () => {
+const ElderAppointmentList = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
-  const [rescheduleDate, setRescheduleDate] = useState('');
-  const [rescheduleTime, setRescheduleTime] = useState('');
-  const [rescheduleReason, setRescheduleReason] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'upcoming', 'today', 'completed'
   const [searchQuery, setSearchQuery] = useState('');
   const [showReminder, setShowReminder] = useState(true);
   const [todayAppointments, setTodayAppointments] = useState([]);
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAppointments();
@@ -49,42 +41,27 @@ const AppointmentList = () => {
 
   const fetchAppointments = async () => {
     try {
-      const response = await appointmentService.getAppointments();
+      setLoading(true);
+      const response = await appointmentService.getElderAppointments();
+      console.log('📋 Elder appointments response:', response);
+      
       if (Array.isArray(response)) {
         setAppointments(response);
+      } else if (response.data && Array.isArray(response.data)) {
+        setAppointments(response.data);
+      } else if (response.appointments && Array.isArray(response.appointments)) {
+        setAppointments(response.appointments);
       } else {
+        console.warn('Unexpected response format:', response);
+        setAppointments([]);
         toast.error('No appointments found or response format invalid.');
       }
     } catch (error) {
+      console.error('❌ Error fetching elder appointments:', error);
       toast.error('Failed to fetch appointments.');
+      setAppointments([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const openRescheduleModal = (id) => {
-    setSelectedAppointmentId(id);
-    setRescheduleModalOpen(true);
-  };
-
-  const handleRescheduleSubmit = async () => {
-    if (!rescheduleDate || !rescheduleTime) {
-      toast.error('Date and time are required');
-      return;
-    }
-
-    const datetime = `${rescheduleDate}T${rescheduleTime}`;
-
-    try {
-      await appointmentService.reschedule(selectedAppointmentId, {
-        newDateTime: datetime,
-        reason: rescheduleReason,
-      });
-      toast.success('Appointment rescheduled successfully');
-      setRescheduleModalOpen(false);
-      fetchAppointments();
-    } catch (error) {
-      toast.error('Failed to reschedule appointment');
     }
   };
 
@@ -139,7 +116,7 @@ const AppointmentList = () => {
     if (diffDays < 0) {
       return 'completed'; // Past appointments
     } else if (diffDays === 0) {
-      return 'today'; // Today's appointments
+      return 'today'; // Today's appointments (In Progress)
     } else {
       return 'upcoming'; // Future appointments
     }
@@ -168,6 +145,16 @@ const AppointmentList = () => {
       cancelled: <XCircle className="w-4 h-4" />
     };
     return icons[status] || <AlertCircle className="w-4 h-4" />;
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      upcoming: 'Upcoming',
+      today: 'In Progress',
+      completed: 'Completed',
+      cancelled: 'Cancelled'
+    };
+    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   // Helper function to get doctor name
@@ -226,91 +213,83 @@ const AppointmentList = () => {
             </div>
             <div className={`px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide flex items-center gap-1.5 ${getStatusColor(calculatedStatus)}`}>
               {getStatusIcon(calculatedStatus)}
-              <span>{calculatedStatus.charAt(0).toUpperCase() + calculatedStatus.slice(1)}</span>
+              <span>{getStatusLabel(calculatedStatus)}</span>
             </div>
           </div>
         </div>
 
-      {/* Body - Compact */}
-      <div className="px-4 py-3 space-y-2.5">
-        {/* Date & Time - Inline */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center gap-2">
-            <div className="bg-blue-100 p-1.5 rounded">
-              <CalendarCheck className="w-4 h-4 text-blue-600" />
+        {/* Body - Compact */}
+        <div className="px-4 py-3 space-y-2.5">
+          {/* Date & Time - Inline */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-100 p-1.5 rounded">
+                <CalendarCheck className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Date</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Date</p>
-              <p className="text-sm font-semibold text-gray-800">
-                {new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="bg-green-100 p-1.5 rounded">
-              <Clock className="w-4 h-4 text-green-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Time</p>
-              <p className="text-sm font-semibold text-gray-800">
-                {new Date(appointment.appointmentDate).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Reason - Compact */}
-        {appointment.reason && (
-          <div className="bg-gray-50 p-2.5 rounded-lg">
-            <div className="flex items-start gap-2">
-              <FileText className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 uppercase">Reason</p>
-                <p className="text-sm text-gray-800 line-clamp-2">{appointment.reason}</p>
+            <div className="flex items-center gap-2">
+              <div className="bg-green-100 p-1.5 rounded">
+                <Clock className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Time</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {new Date(appointment.appointmentDate).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Duration - Inline if exists */}
-        {appointment.duration && (
-          <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded">
-            <Clock className="w-3.5 h-3.5" />
-            <span>{appointment.duration} minutes</span>
+          {/* Reason - Compact */}
+          {appointment.reason && (
+            <div className="bg-gray-50 p-2.5 rounded-lg">
+              <div className="flex items-start gap-2">
+                <FileText className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-500 uppercase">Reason</p>
+                  <p className="text-sm text-gray-800 line-clamp-2">{appointment.reason}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Duration - Inline if exists */}
+          {appointment.duration && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded">
+              <Clock className="w-3.5 h-3.5" />
+              <span>{appointment.duration} minutes</span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer - Actions - Compact */}
+        {appointment.zoomJoinUrl && (
+          <div className="px-4 py-2.5 bg-green-50 border-t border-green-200">
+            <a
+              href={appointment.zoomJoinUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+            >
+              <Video className="w-4 h-4" />
+              Join Video Call
+            </a>
           </div>
         )}
       </div>
-
-      {/* Footer - Actions - Compact */}
-      {appointment.zoomJoinUrl ? (
-        <div className="px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 border-t border-green-200">
-          <a
-            href={appointment.zoomJoinUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-base font-semibold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
-          >
-            <Video className="w-5 h-5" />
-            <span>Join Video Consultation</span>
-            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Ready</span>
-          </a>
-        </div>
-      ) : appointment.status === 'scheduled' && (
-        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
-          <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
-            <Video className="w-4 h-4" />
-            <span>Video link will be available soon</span>
-          </div>
-        </div>
-      )}
-    </div>
     );
   };
 
@@ -328,15 +307,8 @@ const AppointmentList = () => {
                   </div>
                   My Appointments
                 </h1>
-                <p className="text-gray-600 mt-1 text-sm">Manage and track your healthcare appointments</p>
+                <p className="text-gray-600 mt-1 text-sm">View and manage your healthcare appointments</p>
               </div>
-              <button
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-semibold flex items-center gap-2 shadow-md hover:shadow-lg text-sm"
-                onClick={() => navigate('/appointment-booking')}
-              >
-                <Plus className="w-4 h-4" />
-                Book New Appointment
-              </button>
             </div>
 
             {/* Stats Cards */}
@@ -359,13 +331,13 @@ const AppointmentList = () => {
                   <Clock className="w-8 h-8 text-yellow-200" />
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg p-3 text-white shadow-md">
+              <div className="bg-gradient-to-br from-red-500 to-pink-500 rounded-lg p-3 text-white shadow-md">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-xs">Today</p>
+                    <p className="text-red-100 text-xs">In Progress</p>
                     <p className="text-2xl font-bold mt-0.5">{stats.today}</p>
                   </div>
-                  <AlertCircle className="w-8 h-8 text-purple-200" />
+                  <AlertCircle className="w-8 h-8 text-red-200" />
                 </div>
               </div>
               <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg p-3 text-white shadow-md">
@@ -382,10 +354,10 @@ const AppointmentList = () => {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-full mx-auto py-6">
+        <div className="max-w-full mx-auto px-4 py-6">
           {/* Today's Appointment Reminder */}
           {showReminder && todayAppointments.length > 0 && (
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg p-4 mb-4 text-white relative animate-pulse">
+            <div className="bg-gradient-to-r from-red-500 to-pink-600 rounded-xl shadow-lg p-4 mb-4 text-white relative animate-pulse">
               <button
                 onClick={() => setShowReminder(false)}
                 className="absolute top-2 right-2 p-1 hover:bg-white/20 rounded-full transition-colors"
@@ -398,7 +370,7 @@ const AppointmentList = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-lg mb-2">📅 Today's Appointment Reminder!</h3>
-                  <p className="text-blue-50 mb-3">You have {todayAppointments.length} appointment{todayAppointments.length > 1 ? 's' : ''} scheduled for today:</p>
+                  <p className="text-red-50 mb-3">You have {todayAppointments.length} appointment{todayAppointments.length > 1 ? 's' : ''} scheduled for today:</p>
                   <div className="space-y-2">
                     {todayAppointments.map(apt => {
                       const doctorName = getDoctorName(apt);
@@ -407,7 +379,7 @@ const AppointmentList = () => {
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="font-semibold">Dr. {doctorName}</p>
-                              <p className="text-sm text-blue-50">
+                              <p className="text-sm text-red-50">
                                 {new Date(apt.appointmentDate).toLocaleTimeString('en-US', {
                                   hour: '2-digit',
                                   minute: '2-digit'
@@ -420,10 +392,10 @@ const AppointmentList = () => {
                                 href={apt.zoomJoinUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-sm font-semibold flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105"
+                                className="bg-white text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium flex items-center gap-1"
                               >
-                                <Video className="w-5 h-5" />
-                                <span>Join Now</span>
+                                <Video className="w-4 h-4" />
+                                Join
                               </a>
                             )}
                           </div>
@@ -475,14 +447,14 @@ const AppointmentList = () => {
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
                   />
                 </div>
-                  <select
+                <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">All Status</option>
                   <option value="upcoming">Upcoming</option>
-                  <option value="today">Today</option>
+                  <option value="today">In Progress (Today)</option>
                   <option value="completed">Completed</option>
                 </select>
               </div>
@@ -500,15 +472,8 @@ const AppointmentList = () => {
               <p className="text-gray-500 mb-4 text-sm">
                 {searchQuery || filterStatus !== 'all'
                   ? 'Try adjusting your search or filters'
-                  : "You haven't booked any appointments yet"}
+                  : "You don't have any appointments yet"}
               </p>
-              <button
-                onClick={() => navigate('/appointment-booking')}
-                className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium inline-flex items-center gap-2 text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Book Your First Appointment
-              </button>
             </div>
           ) : viewMode === 'list' ? (
             <>
@@ -629,12 +594,4 @@ const AppointmentList = () => {
   );
 };
 
-export default AppointmentList;
-
-
-
-
-
-
-
-
+export default ElderAppointmentList;

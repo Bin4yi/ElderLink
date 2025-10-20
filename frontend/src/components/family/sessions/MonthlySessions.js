@@ -74,6 +74,9 @@ const MonthlySessions = () => {
             duration: session.duration || 45,
             type: 'health',
             status: session.status,
+            zoomJoinUrl: session.zoomJoinUrl || null,
+            zoomMeetingId: session.zoomMeetingId || null,
+            zoomPassword: session.zoomPassword || null,
             doctor: doctorUser ? {
               id: doctorUser.id,
               name: `${doctorUser.firstName} ${doctorUser.lastName}`,
@@ -352,6 +355,42 @@ const MonthlySessions = () => {
           View More
         </button>
       </div>
+
+      {/* Join Zoom Button */}
+      {session.zoomJoinUrl ? (
+        <div className="mb-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">Video Consultation Ready</span>
+            <span className="flex items-center gap-1 text-xs text-green-600">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              Active
+            </span>
+          </div>
+          <a
+            href={session.zoomJoinUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold transform hover:scale-105"
+          >
+            <Video className="w-5 h-5" />
+            <span className="text-base">Join Monthly Session</span>
+          </a>
+          {session.zoomPassword && (
+            <div className="mt-2 text-xs text-gray-600 bg-white px-3 py-1.5 rounded border border-green-200">
+              <span className="font-medium">Meeting Password:</span> 
+              <span className="ml-2 font-mono bg-gray-100 px-2 py-0.5 rounded">{session.zoomPassword}</span>
+            </div>
+          )}
+        </div>
+      ) : session.status === 'scheduled' && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
+          <div className="flex items-center gap-2 text-gray-500">
+            <Video className="w-4 h-4" />
+            <span className="text-sm">Waiting for doctor to create video link...</span>
+          </div>
+        </div>
+      )}
 
       {/* Timer Section */}
       {session.status === 'in-progress' && (

@@ -21,12 +21,12 @@ const createZoomMeeting = async (req, res) => {
         {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'firstName', 'lastName', 'dateOfBirth', 'photo']
         },
         {
           model: User,
           as: 'familyMember',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
         },
         {
           model: Doctor,
@@ -123,12 +123,12 @@ const sendMeetingLinks = async (req, res) => {
         {
           model: Elder,
           as: 'elder',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'firstName', 'lastName', 'dateOfBirth']
         },
         {
           model: User,
           as: 'familyMember',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
         },
         {
           model: Doctor,

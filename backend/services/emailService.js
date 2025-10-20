@@ -167,6 +167,169 @@ class EmailService {
   }
 
   /**
+   * Send appointment confirmation email to family member
+   */
+  async sendAppointmentConfirmationEmail(appointmentDetails) {
+    console.log('📧 Attempting to send appointment confirmation email');
+    
+    const {
+      familyMemberEmail,
+      familyMemberName,
+      elderName,
+      doctorName,
+      appointmentDate,
+      appointmentTime,
+      reason,
+      type,
+      duration,
+      zoomJoinUrl
+    } = appointmentDetails;
+
+    const emailTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Appointment Confirmation - ElderLink</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+        .appointment-card { background: white; border: 2px solid #667eea; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .detail-row { display: flex; padding: 10px 0; border-bottom: 1px solid #e0e0e0; }
+        .detail-label { font-weight: bold; color: #667eea; width: 40%; }
+        .detail-value { width: 60%; }
+        .zoom-button { display: inline-block; background: #25d366; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold; text-align: center; }
+        .info-box { background: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .footer { text-align: center; color: #666; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>✅ Appointment Confirmed!</h1>
+        <p>Your appointment has been successfully scheduled</p>
+    </div>
+    
+    <div class="content">
+        <h2>Hello ${familyMemberName}!</h2>
+        
+        <p>Great news! An appointment has been scheduled for <strong>${elderName}</strong>.</p>
+        
+        <div class="appointment-card">
+            <h3 style="color: #667eea; margin-top: 0;">📅 Appointment Details</h3>
+            
+            <div class="detail-row">
+                <div class="detail-label">👤 Patient:</div>
+                <div class="detail-value">${elderName}</div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-label">👨‍⚕️ Doctor:</div>
+                <div class="detail-value">Dr. ${doctorName}</div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-label">📅 Date:</div>
+                <div class="detail-value">${appointmentDate}</div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-label">🕐 Time:</div>
+                <div class="detail-value">${appointmentTime}</div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-label">⏱️ Duration:</div>
+                <div class="detail-value">${duration} minutes</div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-label">📋 Type:</div>
+                <div class="detail-value" style="text-transform: capitalize;">${type}</div>
+            </div>
+            
+            <div class="detail-row" style="border-bottom: none;">
+                <div class="detail-label">💬 Reason:</div>
+                <div class="detail-value">${reason}</div>
+            </div>
+        </div>
+        
+        ${zoomJoinUrl ? `
+        <div style="text-align: center; margin: 30px 0;">
+            <p><strong>🎥 This is a Virtual Appointment</strong></p>
+            <a href="${zoomJoinUrl}" class="zoom-button">
+                Join Video Call
+            </a>
+            <p style="font-size: 12px; color: #666;">Click the button above to join the video consultation at the scheduled time</p>
+        </div>
+        ` : `
+        <div class="info-box">
+            <strong>📍 In-Person Appointment</strong><br>
+            Please arrive 10 minutes before your scheduled time.
+        </div>
+        `}
+        
+        <div class="info-box">
+            <strong>⚠️ Important Reminders:</strong>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Your appointment is currently <strong>pending approval</strong> by the doctor</li>
+                <li>You will receive a notification once the doctor confirms</li>
+                <li>Please keep this email for your records</li>
+                <li>If you need to reschedule, please contact us at least 24 hours in advance</li>
+            </ul>
+        </div>
+        
+        <h3>📱 What's Next?</h3>
+        <ol>
+            <li>Wait for doctor confirmation (you'll receive an email)</li>
+            <li>Prepare any medical records or questions</li>
+            <li>Join the consultation at the scheduled time</li>
+        </ol>
+        
+        <p>You can view and manage your appointments in the ElderLink app.</p>
+        
+        <p>If you have any questions, please don't hesitate to contact us.</p>
+        
+        <p>Best regards,<br><strong>ElderLink Health Team</strong></p>
+    </div>
+    
+    <div class="footer">
+        <p>© 2025 ElderLink System. All rights reserved.</p>
+        <p>This email was sent to ${familyMemberEmail}</p>
+        <p>If you didn't book this appointment, please contact support immediately.</p>
+    </div>
+</body>
+</html>
+    `;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: familyMemberEmail,
+      subject: `✅ Appointment Confirmed for ${elderName} - ${appointmentDate}`,
+      html: emailTemplate
+    };
+
+    try {
+      console.log('📤 Sending appointment confirmation email to:', familyMemberEmail);
+
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('✅ Appointment confirmation email sent successfully:', {
+        messageId: info.messageId,
+        to: familyMemberEmail
+      });
+      
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      console.error('❌ Appointment confirmation email failed:', {
+        error: error.message,
+        to: familyMemberEmail
+      });
+      // Don't throw error - appointment should still be created even if email fails
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Send password reset email
    */
   async sendPasswordResetEmail(userDetails, resetToken) {

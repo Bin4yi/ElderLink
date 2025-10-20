@@ -77,23 +77,49 @@ exports.createFirstMonthlySession = async (req, res) => {
       where: {
         elderId,
         familyMemberId,
+        doctorId: doctorProfile.id, // Check for same doctor
         sessionDate: {
           [Op.gte]: new Date(year, month, 1),
           [Op.lt]: new Date(year, month + 1, 1)
         },
         status: { [Op.notIn]: ['cancelled', 'missed'] }
-      }
+      },
+      include: [
+        {
+          model: Doctor,
+          as: 'doctor',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['firstName', 'lastName']
+            }
+          ]
+        }
+      ]
     });
 
     if (existingSession) {
+      const doctorName = existingSession.doctor?.user 
+        ? `Dr. ${existingSession.doctor.user.firstName} ${existingSession.doctor.user.lastName}`
+        : 'this doctor';
+      
+      const monthYear = sessionDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const existingDate = new Date(existingSession.sessionDate).toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric',
+        year: 'numeric' 
+      });
+      
       return res.status(400).json({
         success: false,
-        message: 'You Already Created Session for This Month',
+        message: `You Already Created a Session for ${monthYear} with ${doctorName} on ${existingDate} at ${existingSession.sessionTime}. For additional sessions, please book a regular appointment with payment.`,
         existingSession: {
           id: existingSession.id,
           sessionDate: existingSession.sessionDate,
           sessionTime: existingSession.sessionTime,
-          status: existingSession.status
+          status: existingSession.status,
+          doctor: existingSession.doctor
         }
       });
     }
@@ -991,7 +1017,7 @@ exports.getMonthlySessionStats = async (req, res) => {
  */
 exports.checkMonthlySessionExists = async (req, res) => {
   try {
-    const { elderId, year, month } = req.query;
+    const { elderId, year, month, doctorId } = req.query;
     const familyMemberId = req.user.id;
 
     if (!elderId || !year || !month) {
@@ -1001,17 +1027,31 @@ exports.checkMonthlySessionExists = async (req, res) => {
       });
     }
 
+    // Build where clause - optionally filter by doctor if provided
+    const whereClause = {
+      elderId,
+      familyMemberId,
+      sessionDate: {
+        [Op.gte]: new Date(year, month - 1, 1),
+        [Op.lt]: new Date(year, month, 1)
+      },
+      status: { [Op.notIn]: ['cancelled', 'missed'] }
+    };
+
+    // If doctorId is provided, check for same doctor
+    if (doctorId) {
+      // Get doctor profile ID from user ID
+      const doctorProfile = await Doctor.findOne({
+        where: { userId: doctorId }
+      });
+      if (doctorProfile) {
+        whereClause.doctorId = doctorProfile.id;
+      }
+    }
+
     // Check if session exists for the specified month
     const existingSession = await MonthlySession.findOne({
-      where: {
-        elderId,
-        familyMemberId,
-        sessionDate: {
-          [Op.gte]: new Date(year, month - 1, 1),
-          [Op.lt]: new Date(year, month, 1)
-        },
-        status: { [Op.notIn]: ['cancelled', 'missed'] }
-      },
+      where: whereClause,
       include: [
         {
           model: Doctor,
@@ -1028,10 +1068,20 @@ exports.checkMonthlySessionExists = async (req, res) => {
     });
 
     if (existingSession) {
+      const doctorName = existingSession.doctor?.user 
+        ? `Dr. ${existingSession.doctor.user.firstName} ${existingSession.doctor.user.lastName}`
+        : 'this doctor';
+      
+      const existingDate = new Date(existingSession.sessionDate).toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric',
+        year: 'numeric' 
+      });
+
       return res.status(200).json({
         success: true,
         exists: true,
-        message: 'You Already Created Session for This Month',
+        message: `You Already Created a Session with ${doctorName} on ${existingDate} at ${existingSession.sessionTime}. For additional sessions, please book a regular appointment with payment.`,
         session: {
           id: existingSession.id,
           sessionDate: existingSession.sessionDate,

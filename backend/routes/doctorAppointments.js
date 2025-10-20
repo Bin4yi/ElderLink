@@ -194,4 +194,7 @@ router.post('/schedule/exceptions', authenticate, authorize('doctor'), async (re
   }
 });
 
+// Create Zoom meeting for appointment - USE CONTROLLER
+router.post('/appointments/:appointmentId/create-zoom', authenticate, authorize('doctor'), DoctorAppointmentController.createZoomMeeting);
+
 module.exports = router;

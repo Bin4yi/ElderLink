@@ -90,7 +90,6 @@ export const getRoleMenuItems = (role) => {
         { path: '/elder/appointments', icon: Calendar, label: 'Appointments' },
         { path: '/elder/medications', icon: Pill, label: 'Medications' },
         { path: '/elder/mental-wellness', icon: Brain, label: 'Mental Wellness' }, // NEW!
-        { path: '/elder/emergency', icon: AlertTriangle, label: 'Emergency' },
         { path: '/elder/profile', icon: User, label: 'Profile' }
       ];
 

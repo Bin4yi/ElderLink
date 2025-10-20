@@ -610,6 +610,109 @@ class DoctorAppointmentController {
       });
     }
   }
+
+  // Create Zoom meeting for an appointment
+  static async createZoomMeeting(req, res) {
+    try {
+      console.log('📹 Creating Zoom meeting for appointment:', req.params.appointmentId);
+
+      const appointmentId = req.params.appointmentId;
+      const zoomService = require('../services/zoomService');
+
+      // Get doctor profile
+      const doctor = await Doctor.findOne({
+        where: { userId: req.user.id },
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email']
+        }]
+      });
+
+      if (!doctor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Doctor profile not found'
+        });
+      }
+
+      // Get appointment with elder details
+      const appointment = await Appointment.findOne({
+        where: {
+          id: appointmentId,
+          doctorId: doctor.id
+        },
+        include: [{
+          model: Elder,
+          as: 'elder',
+          attributes: ['id', 'firstName', 'lastName']
+        }]
+      });
+
+      if (!appointment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Appointment not found or you are not authorized'
+        });
+      }
+
+      // Check if Zoom meeting already exists
+      if (appointment.zoomMeetingId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Zoom meeting already exists for this appointment',
+          data: {
+            meetingId: appointment.zoomMeetingId,
+            joinUrl: appointment.zoomJoinUrl
+          }
+        });
+      }
+
+      // Create Zoom meeting
+      const meetingTopic = `Consultation with Dr. ${doctor.user.firstName} ${doctor.user.lastName} - ${appointment.elder.firstName} ${appointment.elder.lastName}`;
+      const meetingStartTime = new Date(appointment.appointmentDate);
+
+      const meeting = await zoomService.createMeeting({
+        topic: meetingTopic,
+        startTime: zoomService.formatDateForZoom(meetingStartTime),
+        duration: appointment.duration || 30,
+        agenda: appointment.reason || 'Medical Consultation',
+        waitingRoom: true,
+        joinBeforeHost: false,
+        autoRecording: 'none'
+      });
+
+      // Update appointment with Zoom details
+      await appointment.update({
+        zoomMeetingId: meeting.meetingId,
+        zoomJoinUrl: meeting.joinUrl,
+        zoomPassword: meeting.password
+      });
+
+      console.log('✅ Zoom meeting created and saved:', meeting.meetingId);
+
+      res.json({
+        success: true,
+        message: 'Zoom meeting created successfully',
+        data: {
+          appointmentId: appointment.id,
+          meetingId: meeting.meetingId,
+          joinUrl: meeting.joinUrl,
+          startUrl: meeting.startUrl,
+          password: meeting.password,
+          topic: meeting.topic,
+          startTime: meeting.startTime
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error creating Zoom meeting:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create Zoom meeting',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = DoctorAppointmentController;
