@@ -124,6 +124,13 @@ const mentalHealthService = {
     return response.data;
   },
 
+  createZoomMeeting: async (sessionId) => {
+    const response = await api.post(
+      `/mental-health/sessions/${sessionId}/create-zoom`
+    );
+    return response.data;
+  },
+
   // ============= ASSESSMENTS =============
   createAssessment: async (assessmentData) => {
     const response = await api.post(

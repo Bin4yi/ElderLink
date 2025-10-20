@@ -28,6 +28,8 @@ const TherapySessions = () => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [assignedElders, setAssignedElders] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [creatingZoom, setCreatingZoom] = useState(false);
+  const [zoomMeetingData, setZoomMeetingData] = useState(null);
   const [sessionForm, setSessionForm] = useState({
     elderId: "",
     sessionType: "individual",
@@ -144,6 +146,30 @@ const TherapySessions = () => {
 
   const handleFormChange = (field, value) => {
     setSessionForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreateZoomMeeting = async (sessionId) => {
+    try {
+      setCreatingZoom(true);
+      const response = await mentalHealthService.createZoomMeeting(sessionId);
+
+      if (response.success) {
+        setZoomMeetingData(response.data);
+        toast.success("Zoom meeting created successfully!");
+
+        // Reload sessions to show updated zoom link
+        loadSessions();
+      } else {
+        toast.error(response.message || "Failed to create Zoom meeting");
+      }
+    } catch (error) {
+      console.error("Error creating Zoom meeting:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to create Zoom meeting"
+      );
+    } finally {
+      setCreatingZoom(false);
+    }
   };
 
   const handleViewSession = (session) => {
@@ -481,6 +507,20 @@ const TherapySessions = () => {
 
                     {/* Actions */}
                     <div className="flex flex-col gap-3">
+                      {session.location === "video_call" &&
+                        !session.zoomLink &&
+                        session.status === "scheduled" && (
+                          <button
+                            onClick={() => handleCreateZoomMeeting(session.id)}
+                            disabled={creatingZoom}
+                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Video className="w-4 h-4" />
+                            {creatingZoom
+                              ? "Creating..."
+                              : "Create Zoom Meeting"}
+                          </button>
+                        )}
                       {session.zoomLink && session.status === "scheduled" && (
                         <button
                           onClick={() => handleJoinCall(session.zoomLink)}
@@ -558,6 +598,24 @@ const TherapySessions = () => {
             </div>
 
             <form onSubmit={handleCreateSession} className="p-6 space-y-6">
+              {/* Info Banner - Zoom Meeting */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Video className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-blue-900 mb-1">
+                      📹 Automatic Zoom Meeting Creation
+                    </p>
+                    <p className="text-xs text-blue-800">
+                      After scheduling a video call session, you can
+                      automatically create a Zoom meeting by clicking the
+                      "Create Zoom Meeting" button on the session card. No need
+                      to manually create or paste links!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Client Selection */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -705,24 +763,6 @@ const TherapySessions = () => {
                   </select>
                 </div>
               </div>
-
-              {/* Zoom Link (if video call) */}
-              {sessionForm.location === "video_call" && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Zoom/Meeting Link
-                  </label>
-                  <input
-                    type="url"
-                    value={sessionForm.zoomLink}
-                    onChange={(e) =>
-                      handleFormChange("zoomLink", e.target.value)
-                    }
-                    placeholder="https://zoom.us/j/..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-              )}
 
               {/* Session Goals */}
               <div>
@@ -1015,6 +1055,50 @@ const TherapySessions = () => {
                 </p>
               </div>
 
+              {/* Zoom Meeting Info */}
+              {selectedSession.location === "video_call" &&
+                !selectedSession.zoomLink && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Video className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-blue-900 mb-1">
+                          No Zoom Meeting Yet
+                        </p>
+                        <p className="text-xs text-blue-800">
+                          After updating this session, you can create a Zoom
+                          meeting automatically by clicking the "Create Zoom
+                          Meeting" button on the session card.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              {selectedSession.zoomLink && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Video className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-green-900 mb-2">
+                        Zoom Meeting Active
+                      </p>
+                      <div className="bg-white rounded p-2 mb-2">
+                        <p className="text-xs text-gray-600 mb-1">
+                          Meeting Link:
+                        </p>
+                        <p className="text-xs text-gray-900 break-all font-mono">
+                          {selectedSession.zoomLink}
+                        </p>
+                      </div>
+                      <p className="text-xs text-green-800">
+                        The Zoom meeting link is already set for this session.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Date and Time */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -1088,24 +1172,6 @@ const TherapySessions = () => {
                   </select>
                 </div>
               </div>
-
-              {/* Zoom Link (if video call) */}
-              {sessionForm.location === "video_call" && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Zoom/Meeting Link
-                  </label>
-                  <input
-                    type="url"
-                    value={sessionForm.zoomLink}
-                    onChange={(e) =>
-                      handleFormChange("zoomLink", e.target.value)
-                    }
-                    placeholder="https://zoom.us/j/..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-              )}
 
               {/* Session Goals */}
               <div>
