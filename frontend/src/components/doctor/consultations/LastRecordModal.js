@@ -1,11 +1,13 @@
 // src/components/doctor/consultations/LastRecordModal.js
 import React, { useState, useEffect } from 'react';
-import { X, FileText, Calendar, Clock, User, Activity, Loader, AlertCircle } from 'lucide-react';
+import { X, FileText, Calendar, Clock, User, Activity, Loader, AlertCircle, Heart, Droplet, Thermometer, Wind } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { consultationService } from '../../../services/consultation';
 
 const LastRecordModal = ({ isOpen, onClose, elderId, elderName }) => {
   const [loading, setLoading] = useState(false);
-  const [records, setRecords] = useState([]);
+  const [lastConsultation, setLastConsultation] = useState(null);
+  const [latestVitals, setLatestVitals] = useState(null);
 
   useEffect(() => {
     if (isOpen && elderId) {
@@ -16,31 +18,12 @@ const LastRecordModal = ({ isOpen, onClose, elderId, elderName }) => {
   const loadLastRecords = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await consultationService.getElderRecords(elderId);
+      const response = await consultationService.getElderLastRecordWithVitals(elderId);
       
-      // Mock data for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setRecords([
-        {
-          id: 1,
-          date: '2025-10-15',
-          time: '10:00 AM',
-          type: 'Consultation',
-          diagnosis: 'Routine checkup - All vitals normal',
-          prescription: 'Vitamin D supplement, 1000 IU daily',
-          notes: 'Patient is doing well. Continue current medication.'
-        },
-        {
-          id: 2,
-          date: '2025-09-20',
-          time: '02:30 PM',
-          type: 'Follow-up',
-          diagnosis: 'Blood pressure slightly elevated',
-          prescription: 'Amlodipine 5mg once daily',
-          notes: 'Monitor blood pressure daily. Return in 2 weeks.'
-        }
-      ]);
+      if (response.success) {
+        setLastConsultation(response.data.lastConsultation);
+        setLatestVitals(response.data.latestVitals);
+      }
     } catch (error) {
       console.error('Error loading records:', error);
       toast.error('Failed to load records');
@@ -82,7 +65,7 @@ const LastRecordModal = ({ isOpen, onClose, elderId, elderName }) => {
               <Loader className="w-12 h-12 animate-spin text-blue-600 mb-4" />
               <p className="text-gray-600">Loading records...</p>
             </div>
-          ) : records.length === 0 ? (
+          ) : !lastConsultation ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertCircle className="w-8 h-8 text-gray-400" />
@@ -91,51 +74,179 @@ const LastRecordModal = ({ isOpen, onClose, elderId, elderName }) => {
               <p className="text-sm text-gray-500 mt-1">This will be the first consultation for this patient</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {records.map((record, index) => (
-                <div
-                  key={record.id}
-                  className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-3 text-gray-700">
-                          <Calendar className="w-4 h-4" />
-                          <span className="font-semibold">{new Date(record.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-gray-600 text-sm mt-1">
-                          <Clock className="w-4 h-4" />
-                          <span>{record.time}</span>
-                        </div>
-                      </div>
+            <div className="space-y-6">
+              {/* Last Consultation Record */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">
+                      <FileText className="w-5 h-5" />
                     </div>
-                    <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-semibold">
-                      {record.type}
-                    </span>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">Last Consultation</h3>
+                      <div className="flex items-center gap-3 text-gray-700">
+                        <Calendar className="w-4 h-4" />
+                        <span className="font-semibold">
+                          {new Date(lastConsultation.sessionDate).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </span>
+                      </div>
+                      {lastConsultation.doctor && (
+                        <div className="flex items-center gap-2 text-gray-600 text-sm mt-1">
+                          <User className="w-4 h-4" />
+                          <span>
+                            Dr. {lastConsultation.doctor.user?.firstName} {lastConsultation.doctor.user?.lastName}
+                            {lastConsultation.doctor.specialization && ` - ${lastConsultation.doctor.specialization}`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                  <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-semibold">
+                    {lastConsultation.appointment?.type || 'Consultation'}
+                  </span>
+                </div>
 
-                  <div className="space-y-3">
+                <div className="space-y-3">
+                  {lastConsultation.symptoms && (
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm font-bold text-gray-700 uppercase mb-1">Symptoms</p>
+                      <p className="text-gray-900">{lastConsultation.symptoms}</p>
+                    </div>
+                  )}
+                  
+                  {lastConsultation.diagnosis && (
                     <div className="bg-white rounded-lg p-4">
                       <p className="text-sm font-bold text-gray-700 uppercase mb-1">Diagnosis</p>
-                      <p className="text-gray-900">{record.diagnosis}</p>
+                      <p className="text-gray-900">{lastConsultation.diagnosis}</p>
                     </div>
-                    
-                    <div className="bg-white rounded-lg p-4">
-                      <p className="text-sm font-bold text-gray-700 uppercase mb-1">Prescription</p>
-                      <p className="text-gray-900">{record.prescription}</p>
-                    </div>
+                  )}
 
+                  {lastConsultation.treatment && (
                     <div className="bg-white rounded-lg p-4">
-                      <p className="text-sm font-bold text-gray-700 uppercase mb-1">Doctor's Notes</p>
-                      <p className="text-gray-900">{record.notes}</p>
+                      <p className="text-sm font-bold text-gray-700 uppercase mb-1">Treatment</p>
+                      <p className="text-gray-900">{lastConsultation.treatment}</p>
+                    </div>
+                  )}
+
+                  {lastConsultation.recommendations && (
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm font-bold text-gray-700 uppercase mb-1">Recommendations</p>
+                      <p className="text-gray-900">{lastConsultation.recommendations}</p>
+                    </div>
+                  )}
+
+                  {lastConsultation.sessionSummary && (
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm font-bold text-gray-700 uppercase mb-1">Session Summary</p>
+                      <p className="text-gray-900">{lastConsultation.sessionSummary}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Latest Vitals */}
+              {latestVitals && (
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center">
+                      <Activity className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">Latest Vital Signs</h3>
+                      <div className="flex items-center gap-2 text-gray-600 text-sm">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                          {new Date(latestVitals.monitoringDate).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </span>
+                      </div>
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {latestVitals.heartRate && (
+                      <div className="bg-white rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Heart className="w-5 h-5 text-red-500" />
+                          <p className="text-sm font-bold text-gray-700">Heart Rate</p>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{latestVitals.heartRate}</p>
+                        <p className="text-xs text-gray-500">bpm</p>
+                      </div>
+                    )}
+
+                    {latestVitals.bloodPressure && (
+                      <div className="bg-white rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Droplet className="w-5 h-5 text-blue-500" />
+                          <p className="text-sm font-bold text-gray-700">Blood Pressure</p>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{latestVitals.bloodPressure}</p>
+                        <p className="text-xs text-gray-500">mmHg</p>
+                      </div>
+                    )}
+
+                    {latestVitals.temperature && (
+                      <div className="bg-white rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Thermometer className="w-5 h-5 text-orange-500" />
+                          <p className="text-sm font-bold text-gray-700">Temperature</p>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{latestVitals.temperature}</p>
+                        <p className="text-xs text-gray-500">°F</p>
+                      </div>
+                    )}
+
+                    {latestVitals.respiratoryRate && (
+                      <div className="bg-white rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Wind className="w-5 h-5 text-cyan-500" />
+                          <p className="text-sm font-bold text-gray-700">Respiratory Rate</p>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{latestVitals.respiratoryRate}</p>
+                        <p className="text-xs text-gray-500">breaths/min</p>
+                      </div>
+                    )}
+
+                    {latestVitals.oxygenSaturation && (
+                      <div className="bg-white rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Activity className="w-5 h-5 text-purple-500" />
+                          <p className="text-sm font-bold text-gray-700">Oxygen Saturation</p>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{latestVitals.oxygenSaturation}</p>
+                        <p className="text-xs text-gray-500">%</p>
+                      </div>
+                    )}
+
+                    {latestVitals.bloodSugar && (
+                      <div className="bg-white rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Droplet className="w-5 h-5 text-pink-500" />
+                          <p className="text-sm font-bold text-gray-700">Blood Sugar</p>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{latestVitals.bloodSugar}</p>
+                        <p className="text-xs text-gray-500">mg/dL</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {latestVitals.notes && (
+                    <div className="bg-white rounded-lg p-4 mt-4">
+                      <p className="text-sm font-bold text-gray-700 uppercase mb-1">Monitoring Notes</p>
+                      <p className="text-gray-900">{latestVitals.notes}</p>
+                    </div>
+                  )}
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
