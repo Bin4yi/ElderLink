@@ -21,7 +21,8 @@ import {
   ArrowUp,
   ArrowDown,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Phone
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import doctorDashboardService from '../../../services/doctorDashboard';

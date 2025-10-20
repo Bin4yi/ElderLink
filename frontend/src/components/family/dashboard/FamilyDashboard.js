@@ -33,11 +33,15 @@ const FamilyDashboard = () => {
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    console.log('FamilyDashboard - User from context:', user);
+    console.log('FamilyDashboard - User structure:', JSON.stringify(user, null, 2));
+    console.log('FamilyDashboard - User firstName:', user?.firstName);
+    console.log('FamilyDashboard - Token exists:', !!localStorage.getItem('token'));
     loadDashboardData();
-  }, []);
+  }, [user]);
 
   const loadDashboardData = async () => {
     try {
@@ -171,7 +175,7 @@ const FamilyDashboard = () => {
     );
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return <Loading text="Loading dashboard..." />;
   }
 
@@ -277,227 +281,255 @@ const FamilyDashboard = () => {
       default:
         return (
           <div className="space-y-8">
-            {/* Welcome Section */}
-            <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-xl shadow-sm p-8">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <Users className="w-7 h-7 text-white" />
+            {/* Welcome Section - Soft Gradient */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 rounded-2xl shadow-lg border border-rose-100 p-8">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-rose-200/20 to-purple-200/20 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-pink-200/20 to-rose-200/20 rounded-full -ml-24 -mb-24 blur-2xl"></div>
+              
+              <div className="relative flex items-center space-x-5">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-400 flex items-center justify-center shadow-lg">
+                  <Users className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-white">
-                    Welcome back, {user?.firstName || user?.name || 'User'}
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
+                    Welcome back, {user?.firstName || 'Loading...'}
                   </h1>
-                  <p className="text-white/90 text-sm">
-                    Monitor and manage care for your loved ones
+                  <p className="text-gray-600 mt-1">
+                    Monitor and manage care for your loved ones with ease
                   </p>
+                  {/* Debug info - remove later */}
+                  {!user && <p className="text-xs text-red-500 mt-1">User object is null/undefined</p>}
+                  {user && !user.firstName && <p className="text-xs text-orange-500 mt-1">User exists but firstName is missing. User keys: {Object.keys(user).join(', ')}</p>}
                 </div>
               </div>
             </div>
 
-            {/* Quick Stats */}
+            {/* Quick Stats - Soft Pastel Colors */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Total Elders Card */}
-              <div className="relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-red-500 via-red-600 to-pink-600"></div>
-                <div className="relative p-6 text-white">
+              {/* Total Elders Card - Soft Blue */}
+              <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/20 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-blue-300/30 transition-all"></div>
+                <div className="relative p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center shadow-lg">
                       <Users className="w-7 h-7 text-white" />
                     </div>
-                    <div className="w-20 h-20 rounded-full bg-white/10 absolute -top-6 -right-6"></div>
                   </div>
                   <div>
-                    <p className="text-white/80 text-sm font-medium mb-1">Total Elders</p>
-                    <p className="text-4xl font-bold text-white">{elders.length}</p>
+                    <p className="text-blue-600 text-sm font-medium mb-1">Total Elders</p>
+                    <p className="text-4xl font-bold text-blue-700">{elders.length}</p>
+                    <p className="text-blue-500 text-xs mt-2">Under your care</p>
                   </div>
                 </div>
               </div>
               
-              {/* Active Plans Card */}
-              <div className="relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-pink-600 to-red-600"></div>
-                <div className="relative p-6 text-white">
+              {/* Active Plans Card - Soft Pink */}
+              <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-50 to-rose-50 border border-pink-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-pink-200/20 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-pink-300/30 transition-all"></div>
+                <div className="relative p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center shadow-lg">
                       <CreditCard className="w-7 h-7 text-white" />
                     </div>
-                    <div className="w-20 h-20 rounded-full bg-white/10 absolute -top-6 -right-6"></div>
                   </div>
                   <div>
-                    <p className="text-white/80 text-sm font-medium mb-1">Active Plans</p>
-                    <p className="text-4xl font-bold text-white">{getActiveSubscriptions().length}</p>
+                    <p className="text-pink-600 text-sm font-medium mb-1">Active Plans</p>
+                    <p className="text-4xl font-bold text-pink-700">{getActiveSubscriptions().length}</p>
+                    <p className="text-pink-500 text-xs mt-2">Subscription packages</p>
                   </div>
                 </div>
               </div>
               
-              {/* Available Plans Card */}
-              <div className="relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-rose-500 via-pink-500 to-pink-600"></div>
-                <div className="relative p-6 text-white">
+              {/* Available Plans Card - Soft Purple */}
+              <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/20 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-purple-300/30 transition-all"></div>
+                <div className="relative p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-indigo-400 flex items-center justify-center shadow-lg">
                       <Bell className="w-7 h-7 text-white" />
                     </div>
-                    <div className="w-20 h-20 rounded-full bg-white/10 absolute -top-6 -right-6"></div>
                   </div>
                   <div>
-                    <p className="text-white/80 text-sm font-medium mb-1">Available Plans</p>
-                    <p className="text-4xl font-bold text-white">{getSubscriptionsWithoutElders().length}</p>
+                    <p className="text-purple-600 text-sm font-medium mb-1">Available Plans</p>
+                    <p className="text-4xl font-bold text-purple-700">{getSubscriptionsWithoutElders().length}</p>
+                    <p className="text-purple-500 text-xs mt-2">Ready for assignment</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Subscription Status Warning */}
+            {/* Subscription Status Warning - Soft Alert */}
             {!hasValidSubscription() && (
-              <div className="bg-red-50 border border-red-100 rounded-xl p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <Bell className="w-5 h-5 text-red-500" />
+              <div className="relative overflow-hidden bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-400 rounded-2xl p-6 shadow-lg">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-amber-200/20 rounded-full -mr-20 -mt-20 blur-2xl"></div>
+                <div className="relative flex items-start space-x-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <Bell className="w-6 h-6 text-amber-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-red-900 mb-1">No Active Subscription</h3>
-                    <p className="text-red-700 text-sm mb-4">Subscribe to a care package to access all premium features</p>
+                    <h3 className="text-lg font-semibold text-amber-900 mb-1">No Active Subscription</h3>
+                    <p className="text-amber-700 text-sm mb-4">Subscribe to a care package to access all premium features and start caring for your loved ones</p>
                     <button
                       onClick={() => setCurrentView('packages')}
-                      className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:from-red-600 hover:to-pink-600 transition-all font-medium shadow-sm"
+                      className="bg-gradient-to-r from-amber-400 to-orange-400 text-white px-6 py-2.5 rounded-xl hover:from-amber-500 hover:to-orange-500 transition-all font-medium shadow-md hover:shadow-lg"
                     >
-                      Choose Package
+                      Choose Package →
                     </button>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Doctor Assignment Prompt */}
+            {/* Doctor Assignment Prompt - Soft Medical Theme */}
             {elders.length > 0 && hasValidSubscription() && (
-              <div className="bg-white border-l-4 border-red-500 rounded-xl shadow-sm p-6">
-                <div className="flex items-center justify-between">
+              <div className="relative overflow-hidden bg-gradient-to-r from-teal-50 to-cyan-50 border-l-4 border-teal-400 rounded-2xl shadow-lg p-6">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-teal-200/20 rounded-full -mr-20 -mt-20 blur-2xl"></div>
+                <div className="relative flex items-center justify-between">
                   <div className="flex items-start space-x-4">
-                    <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
-                      <Stethoscope className="w-5 h-5 text-red-500" />
+                    <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center flex-shrink-0">
+                      <Stethoscope className="w-6 h-6 text-teal-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">Medical Care Assignment</h3>
-                      <p className="text-gray-600 text-sm">
+                      <h3 className="text-lg font-semibold text-teal-900 mb-1">Medical Care Assignment</h3>
+                      <p className="text-teal-700 text-sm">
                         Ensure all your elders have dedicated doctors for their medical care
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={handleDoctorAssignment}
-                    className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2.5 rounded-lg font-medium hover:from-red-600 hover:to-pink-600 transition-all shadow-sm whitespace-nowrap ml-4"
+                    className="bg-gradient-to-r from-teal-400 to-cyan-400 text-white px-6 py-2.5 rounded-xl font-medium hover:from-teal-500 hover:to-cyan-500 transition-all shadow-md hover:shadow-lg whitespace-nowrap ml-4"
                   >
-                    Assign Doctors
+                    Assign Doctors →
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Quick Actions */}
+            {/* Quick Actions - Elegant Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <button
                 onClick={handleAddNewPackage}
-                className="bg-white border border-gray-100 p-6 rounded-xl shadow-sm hover:shadow-md transition-all text-left group"
+                className="group relative overflow-hidden bg-white border border-gray-100 p-6 rounded-2xl shadow-md hover:shadow-xl transition-all text-left"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <Plus className="w-6 h-6 text-white" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-100/50 to-pink-100/50 rounded-full -mr-16 -mt-16 blur-2xl group-hover:from-rose-200/50 group-hover:to-pink-200/50 transition-all"></div>
+                <div className="relative">
+                  <div className="w-14 h-14 bg-gradient-to-br from-rose-400 to-pink-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
+                    <Plus className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Subscribe to New Plan</h3>
+                  <p className="text-gray-600 text-sm">Add another care package for your loved ones</p>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Subscribe to New Plan</h3>
-                <p className="text-gray-600 text-sm">Add another care package for your loved ones</p>
               </button>
 
               {getSubscriptionsWithoutElders().length > 0 && (
-                <div className="bg-white border border-gray-100 p-6 rounded-xl shadow-sm">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-12 h-12 bg-pink-50 rounded-lg flex items-center justify-center">
-                      <Users className="w-6 h-6 text-pink-500" />
+                <div className="relative overflow-hidden bg-white border border-gray-100 p-6 rounded-2xl shadow-md">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100/50 to-cyan-100/50 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                  <div className="relative">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg">
+                        <Users className="w-7 h-7 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Add Elder to Plan</h3>
+                        <p className="text-sm text-gray-500">{getSubscriptionsWithoutElders().length} plan(s) available</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Add Elder to Plan</h3>
-                      <p className="text-sm text-gray-500">{getSubscriptionsWithoutElders().length} plan(s) available</p>
+                    <div className="space-y-2">
+                      {getSubscriptionsWithoutElders().map(subscription => (
+                        <button
+                          key={subscription.id}
+                          onClick={() => handleAddElderToSubscription(subscription)}
+                          className="w-full text-left p-3 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all"
+                        >
+                          <div className="font-medium text-gray-900 capitalize">{subscription.plan} Plan</div>
+                          <div className="text-sm text-gray-600">${subscription.amount} - Click to add elder</div>
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    {getSubscriptionsWithoutElders().map(subscription => (
-                      <button
-                        key={subscription.id}
-                        onClick={() => handleAddElderToSubscription(subscription)}
-                        className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-red-300 hover:bg-red-50 transition-all"
-                      >
-                        <div className="font-medium text-gray-900 capitalize">{subscription.plan} Plan</div>
-                        <div className="text-sm text-gray-600">${subscription.amount} - Click to add elder</div>
-                      </button>
-                    ))}
                   </div>
                 </div>
               )}
 
               <button 
                 onClick={handleDoctorAssignment}
-                className={`bg-white border border-gray-100 p-6 rounded-xl shadow-sm hover:shadow-md transition-all text-left group ${
+                className={`group relative overflow-hidden bg-white border border-gray-100 p-6 rounded-2xl shadow-md hover:shadow-xl transition-all text-left ${
                   !hasValidSubscription() ? 'opacity-50' : ''
                 }`}
               >
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                    <Stethoscope className="w-6 h-6 text-red-500" />
-                  </div>
-                  {!hasValidSubscription() && (
-                    <div className="ml-2 text-xs bg-red-50 text-red-600 px-2 py-1 rounded-full font-medium">
-                      Subscription Required
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-teal-100/50 to-cyan-100/50 rounded-full -mr-16 -mt-16 blur-2xl group-hover:from-teal-200/50 group-hover:to-cyan-200/50 transition-all"></div>
+                <div className="relative">
+                  <div className="flex items-center mb-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-teal-400 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg">
+                      <Stethoscope className="w-7 h-7 text-white" />
                     </div>
-                  )}
+                    {!hasValidSubscription() && (
+                      <div className="ml-2 text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-medium border border-amber-200">
+                        Subscription Required
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Assign Doctor</h3>
+                  <p className="text-gray-600 text-sm">Assign doctors to provide medical care for your elders</p>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Assign Doctor</h3>
-                <p className="text-gray-600 text-sm">Assign doctors to provide medical care for your elders</p>
               </button>
 
               <button 
                 onClick={handleStaffAssignment}
-                className={`bg-white border border-gray-100 p-6 rounded-xl shadow-sm hover:shadow-md transition-all text-left group ${
+                className={`group relative overflow-hidden bg-white border border-gray-100 p-6 rounded-2xl shadow-md hover:shadow-xl transition-all text-left ${
                   !hasValidSubscription() ? 'opacity-50' : ''
                 }`}
               >
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-pink-50 rounded-lg flex items-center justify-center group-hover:bg-pink-100 transition-colors">
-                    <UserCheck className="w-6 h-6 text-pink-500" />
-                  </div>
-                  {!hasValidSubscription() && (
-                    <div className="ml-2 text-xs bg-red-50 text-red-600 px-2 py-1 rounded-full font-medium">
-                      Subscription Required
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-100/50 to-indigo-100/50 rounded-full -mr-16 -mt-16 blur-2xl group-hover:from-purple-200/50 group-hover:to-indigo-200/50 transition-all"></div>
+                <div className="relative">
+                  <div className="flex items-center mb-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-purple-400 to-indigo-400 rounded-xl flex items-center justify-center shadow-lg">
+                      <UserCheck className="w-7 h-7 text-white" />
                     </div>
-                  )}
+                    {!hasValidSubscription() && (
+                      <div className="ml-2 text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-medium border border-amber-200">
+                        Subscription Required
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Assign Care Staff</h3>
+                  <p className="text-gray-600 text-sm">Assign dedicated staff members to your elders</p>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Assign Care Staff</h3>
-                <p className="text-gray-600 text-sm">Assign dedicated staff members to your elders</p>
               </button>
 
               <button
                 onClick={() => setCurrentView('mentalhealth-assignment')}
-                className={`bg-white border border-gray-100 p-6 rounded-xl shadow-sm hover:shadow-md transition-all text-left group ${
+                className={`group relative overflow-hidden bg-white border border-gray-100 p-6 rounded-2xl shadow-md hover:shadow-xl transition-all text-left ${
                   !hasValidSubscription() ? 'opacity-50' : ''
                 }`}
               >
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                    <Brain className="w-6 h-6 text-red-400" />
-                  </div>
-                  {!hasValidSubscription() && (
-                    <div className="ml-2 text-xs bg-red-50 text-red-600 px-2 py-1 rounded-full font-medium">
-                      Subscription Required
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-100/50 to-purple-100/50 rounded-full -mr-16 -mt-16 blur-2xl group-hover:from-violet-200/50 group-hover:to-purple-200/50 transition-all"></div>
+                <div className="relative">
+                  <div className="flex items-center mb-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-violet-400 to-purple-400 rounded-xl flex items-center justify-center shadow-lg">
+                      <Brain className="w-7 h-7 text-white" />
                     </div>
-                  )}
+                    {!hasValidSubscription() && (
+                      <div className="ml-2 text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-medium border border-amber-200">
+                        Subscription Required
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Mental Health Coordinator</h3>
+                  <p className="text-gray-600 text-sm">Assign mental health coordinators to support your elders</p>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Mental Health Coordinator</h3>
-                <p className="text-gray-600 text-sm">Assign mental health coordinators to support your elders</p>
               </button>
             </div>
 
-            {/* Active Subscriptions */}
+            {/* Active Subscriptions - Soft Card */}
             {subscriptions.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Your Subscriptions</h2>
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-rose-400 rounded-lg flex items-center justify-center">
+                    <CreditCard className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Your Subscriptions</h2>
+                </div>
                 <div className="space-y-3">
                   {subscriptions.map(subscription => (
                     <SubscriptionStatus
@@ -510,30 +542,40 @@ const FamilyDashboard = () => {
               </div>
             )}
 
-            {/* Elders List */}
+            {/* Elders List - Soft Card */}
             {elders.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Your Elders</h2>
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-lg flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Your Elders</h2>
+                </div>
                 <ElderList elders={elders} onSelectElder={handleSelectElder} />
               </div>
             )}
 
-            {/* Empty State */}
+            {/* Empty State - Elegant */}
             {subscriptions.length === 0 && elders.length === 0 && (
-              <div className="text-center py-16 bg-white rounded-xl border border-gray-100">
-                <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Users className="w-10 h-10 text-red-400" />
+              <div className="relative overflow-hidden text-center py-20 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl border border-gray-100">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-purple-200/20 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-pink-200/20 to-rose-200/20 rounded-full -ml-24 -mb-24 blur-2xl"></div>
+                
+                <div className="relative">
+                  <div className="w-24 h-24 bg-gradient-to-br from-rose-400 to-pink-400 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+                    <Users className="w-12 h-12 text-white" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-3">Get Started with ElderLink</h2>
+                  <p className="text-gray-600 mb-8 max-w-md mx-auto text-lg">
+                    Subscribe to a care package to start monitoring and caring for your loved ones
+                  </p>
+                  <button
+                    onClick={handleAddNewPackage}
+                    className="bg-gradient-to-r from-rose-400 to-pink-400 text-white text-lg px-10 py-4 rounded-xl hover:from-rose-500 hover:to-pink-500 transition-all shadow-lg hover:shadow-xl font-medium"
+                  >
+                    Choose Your Package →
+                  </button>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Get Started with ElderLink</h2>
-                <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                  Subscribe to a care package to start monitoring and caring for your loved ones
-                </p>
-                <button
-                  onClick={handleAddNewPackage}
-                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-lg px-8 py-3 rounded-lg hover:from-red-600 hover:to-pink-600 transition-all shadow-sm font-medium"
-                >
-                  Choose Your Package
-                </button>
               </div>
             )}
           </div>
@@ -564,7 +606,7 @@ const FamilyDashboard = () => {
       ]}
       currentView={currentView}
     >
-      <div className="bg-gray-50 min-h-screen -m-6 p-6">
+      <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen -m-6 p-6">
         {renderContent()}
       </div>
     </RoleLayout>

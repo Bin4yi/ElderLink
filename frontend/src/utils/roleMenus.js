@@ -43,7 +43,7 @@ export const getRoleMenuItems = (role) => {
         { path: '/doctor/patients', icon: Users, label: 'Patients' },
         { path: '/doctor/consultations', icon: Stethoscope, label: 'Consultations' },
         { path: '/doctor/appointments', icon: Calendar, label: 'Appointments' },
-        { path: '/doctor/prescriptions', icon: Pill, label: 'Prescriptions [TEST]' }, // TEMPORARY - For testing prescription system
+        
         { path: '/doctor/records', icon: FileText, label: 'Medical Records' },
         { path: '/doctor/profile', icon: User, label: 'Profile' }
       ];
