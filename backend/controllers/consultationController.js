@@ -1,5 +1,5 @@
 // backend/controllers/consultationController.js
-const { ConsultationRecord, Appointment, Elder, Doctor, User } = require('../models');
+const { ConsultationRecord, Appointment, Elder, Doctor, User, HealthMonitoring } = require('../models');
 const { Op } = require('sequelize');
 
 // Create a new consultation record
@@ -435,11 +435,64 @@ const deleteConsultationRecord = async (req, res) => {
   }
 };
 
+// Get elder's last consultation record with latest vitals
+const getElderLastRecordWithVitals = async (req, res) => {
+  try {
+    const { elderId } = req.params;
+
+    // Get the most recent consultation record
+    const lastConsultation = await ConsultationRecord.findOne({
+      where: { elderId },
+      include: [
+        {
+          model: Doctor,
+          as: 'doctor',
+          include: [{
+            model: User,
+            as: 'user',
+            attributes: ['firstName', 'lastName']
+          }],
+          attributes: ['id', 'specialization']
+        },
+        {
+          model: Appointment,
+          as: 'appointment',
+          attributes: ['id', 'appointmentDate', 'type']
+        }
+      ],
+      order: [['sessionDate', 'DESC']]
+    });
+
+    // Get the most recent vitals
+    const latestVitals = await HealthMonitoring.findOne({
+      where: { elderId },
+      order: [['monitoringDate', 'DESC']]
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        lastConsultation,
+        latestVitals
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching elder last record with vitals:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch elder last record with vitals',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createConsultationRecord,
   getDoctorConsultationRecords,
   getElderConsultationRecords,
   getConsultationRecordById,
   updateConsultationRecord,
-  deleteConsultationRecord
+  deleteConsultationRecord,
+  getElderLastRecordWithVitals
 };

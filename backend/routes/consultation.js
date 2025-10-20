@@ -47,4 +47,12 @@ router.get(
   consultationController.getElderConsultationRecords
 );
 
+// Get elder's last consultation record with latest vitals
+router.get(
+  '/elder/:elderId/last-record-with-vitals',
+  auth,
+  checkRole(['doctor', 'family_member', 'elder']),
+  consultationController.getElderLastRecordWithVitals
+);
+
 module.exports = router;
