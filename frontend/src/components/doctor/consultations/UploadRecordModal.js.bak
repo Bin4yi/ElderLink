@@ -2096,7 +2096,6 @@ const ConsultationHistory = () => {
           consultation={selectedConsultation}
           isOpen={showZoomModal}
           onClose={closeAllModals}
-          isMonthlySession={selectedConsultation?.sessionDate !== undefined}
           onStartMeeting={(consultation) => {
             console.log('Starting meeting for:', consultation);
             // You can add additional logic here if needed

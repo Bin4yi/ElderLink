@@ -1,6 +1,7 @@
 // backend/controllers/appointmentController.js
 const { Appointment, User, Doctor, Elder, FamilyMember, DoctorSchedule } = require('../models');
 const { Op } = require('sequelize');
+const emailService = require('../services/emailService');
 
 class AppointmentController {
   
@@ -489,9 +490,50 @@ class AppointmentController {
                 attributes: ['firstName', 'lastName', 'email']
               }
             ]
+          },
+          {
+            model: User,
+            as: 'familyMember',
+            attributes: ['id', 'firstName', 'lastName', 'email']
           }
         ]
       });
+
+      // Send appointment confirmation email to family member
+      try {
+        console.log('📧 Sending appointment confirmation email...');
+        
+        const appointmentDate = new Date(completeAppointment.appointmentDate);
+        const emailData = {
+          familyMemberEmail: completeAppointment.familyMember?.email || req.user.email,
+          familyMemberName: completeAppointment.familyMember 
+            ? `${completeAppointment.familyMember.firstName} ${completeAppointment.familyMember.lastName}`
+            : `${req.user.firstName} ${req.user.lastName}`,
+          elderName: `${completeAppointment.elder.firstName} ${completeAppointment.elder.lastName}`,
+          doctorName: `${completeAppointment.doctor.user.firstName} ${completeAppointment.doctor.user.lastName}`,
+          appointmentDate: appointmentDate.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          }),
+          appointmentTime: appointmentDate.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true
+          }),
+          reason: completeAppointment.reason,
+          type: completeAppointment.type || 'consultation',
+          duration: completeAppointment.duration || 30,
+          zoomJoinUrl: completeAppointment.zoomJoinUrl
+        };
+
+        await emailService.sendAppointmentConfirmationEmail(emailData);
+        console.log('✅ Appointment confirmation email sent');
+      } catch (emailError) {
+        console.error('⚠️ Failed to send appointment confirmation email:', emailError);
+        // Don't fail the appointment creation if email fails
+      }
 
       res.json({
         success: true,
