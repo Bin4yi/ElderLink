@@ -715,6 +715,88 @@ class DoctorAppointmentController {
       });
     }
   }
+
+  // Postpone appointment (clear date/time, let family member reschedule)
+  static async postponeAppointment(req, res) {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+
+      console.log('⏸️  Postponing appointment:', { id, reason });
+
+      // Get doctor profile
+      const doctor = await Doctor.findOne({
+        where: { userId: req.user.id }
+      });
+
+      if (!doctor) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Doctor profile not found' 
+        });
+      }
+
+      // Find the appointment
+      const appointment = await Appointment.findOne({
+        where: {
+          id: id,
+          doctorId: doctor.id
+        },
+        include: [
+          {
+            model: User,
+            as: 'familyMember',
+            attributes: ['id', 'firstName', 'lastName', 'email']
+          },
+          {
+            model: Elder,
+            as: 'elder',
+            attributes: ['id', 'firstName', 'lastName']
+          }
+        ]
+      });
+
+      if (!appointment) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Appointment not found or access denied' 
+        });
+      }
+
+      // Save old date for notification
+      const oldDate = appointment.appointmentDate;
+
+      // Clear the appointment date/time (set to null)
+      // This releases the time slot and requires family member to reschedule
+      appointment.appointmentDate = null;
+      appointment.status = 'pending'; // Set back to pending
+      appointment.doctorNotes = appointment.doctorNotes 
+        ? `${appointment.doctorNotes}\n\nPostponed by doctor: ${reason || 'No reason provided'}`
+        : `Postponed by doctor: ${reason || 'No reason provided'}`;
+
+      await appointment.save();
+
+      console.log('✅ Appointment postponed, date cleared, awaiting family member to reschedule');
+
+      res.json({
+        success: true,
+        message: 'Appointment postponed. Family member will be notified to reschedule.',
+        appointment: {
+          id: appointment.id,
+          status: appointment.status,
+          appointmentDate: appointment.appointmentDate,
+          needsRescheduling: true
+        }
+      });
+    } catch (error) {
+      console.error('❌ Postpone appointment error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to postpone appointment',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
 module.exports = DoctorAppointmentController;

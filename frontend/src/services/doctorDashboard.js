@@ -62,6 +62,19 @@ const doctorDashboardService = {
       console.error('Error fetching upcoming appointments:', error);
       throw error;
     }
+  },
+
+  // Get revenue history for chart
+  getRevenueHistory: async (days = 7) => {
+    try {
+      const response = await api.get('/doctor/dashboard/revenue-history', {
+        params: { days }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching revenue history:', error);
+      throw error;
+    }
   }
 };
 

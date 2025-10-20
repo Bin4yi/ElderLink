@@ -585,6 +585,67 @@ class DoctorDashboardController {
       });
     }
   }
+
+  // Get revenue history for chart (last 7 days)
+  static async getRevenueHistory(req, res) {
+    try {
+      console.log('🔄 Getting revenue history for user:', req.user.id);
+
+      // Get doctor profile
+      const doctor = await Doctor.findOne({
+        where: { userId: req.user.id }
+      });
+
+      if (!doctor) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Doctor profile not found' 
+        });
+      }
+
+      const days = parseInt(req.query.days) || 7;
+      const revenueData = [];
+
+      // Get revenue for each of the last N days
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+
+        const dailyRevenue = await Appointment.sum('consultationFee', {
+          where: {
+            doctorId: doctor.id,
+            status: 'completed',
+            appointmentDate: { [Op.between]: [startOfDay, endOfDay] }
+          }
+        });
+
+        revenueData.push({
+          date: startOfDay.toISOString().split('T')[0],
+          day: startOfDay.toLocaleDateString('en-US', { weekday: 'short' }),
+          revenue: parseFloat(dailyRevenue || 0).toFixed(2)
+        });
+      }
+
+      const totalRevenue = revenueData.reduce((sum, day) => sum + parseFloat(day.revenue), 0);
+
+      res.json({
+        success: true,
+        message: 'Revenue history retrieved successfully',
+        revenueData,
+        totalRevenue: totalRevenue.toFixed(2),
+        days
+      });
+    } catch (error) {
+      console.error('❌ Get revenue history error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to retrieve revenue history',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
 module.exports = DoctorDashboardController;

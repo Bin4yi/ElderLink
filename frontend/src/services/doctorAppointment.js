@@ -51,6 +51,21 @@ export const doctorAppointmentService = {
     }
   },
 
+  // Postpone appointment (clear date, let family member reschedule)
+  async postponeAppointment(appointmentId, reason = '') {
+    try {
+      console.log('⏸️  Postponing appointment:', { appointmentId, reason });
+      const response = await api.patch(`/doctor/appointments/${appointmentId}/postpone`, {
+        reason
+      });
+      console.log('✅ Postpone response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error postponing appointment:', error);
+      throw error;
+    }
+  },
+
   // Get elder's medical summary
   async getElderMedicalSummary(elderId) {
     try {

@@ -22,6 +22,9 @@ router.get('/appointments', authenticate, authorize('doctor'), DoctorAppointment
 // Reschedule appointment - USE CONTROLLER
 router.patch('/appointments/:id/reschedule', authenticate, authorize('doctor'), DoctorAppointmentController.rescheduleAppointment);
 
+// Postpone appointment (clear date, let family reschedule) - USE CONTROLLER
+router.patch('/appointments/:id/postpone', authenticate, authorize('doctor'), DoctorAppointmentController.postponeAppointment);
+
 // Complete appointment - USE CONTROLLER
 router.patch('/appointments/:id/complete', authenticate, authorize('doctor'), DoctorAppointmentController.completeAppointment);
 
