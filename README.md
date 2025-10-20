@@ -1,104 +1,544 @@
-# ElderLink - Smart Elder Care Platform
+<div align="center">
+
+# 🏥 ElderLink - Smart Elder Care Platform
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-16+-green.svg)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12+-blue.svg)](https://www.postgresql.org/)
+[![Express.js](https://img.shields.io/badge/Express.js-4.18+-lightgrey.svg)](https://expressjs.com/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.7+-black.svg)](https://socket.io/)
 
-A comprehensive elder care management platform that connects immigrant families with their elderly parents through technology and healthcare services. Built with modern web technologies and designed for scalability and ease of use.
+**A comprehensive elder care management platform connecting immigrant families with their elderly parents through technology and professional healthcare services.**
 
-![ElderLink Banner](https://via.placeholder.com/800x200/3B82F6/FFFFFF?text=ElderLink+-+Smart+Elder+Care+Platform)
+[Features](#-key-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Architecture](#-system-architecture) • [API](#-api-documentation) • [Contributing](#-contributing)
 
-## 🌟 Features
+![ElderLink Banner](https://via.placeholder.com/1200x300/3B82F6/FFFFFF?text=ElderLink+-+Connecting+Families+%7C+Caring+for+Elders)
 
-### Core Functionality
-- **Multi-Role User System**: Admin, Family Members, Doctors, Staff, Elders, Pharmacists
-- **Health Monitoring**: Real-time vital signs tracking and health alerts
-- **Appointment Management**: Schedule and manage doctor appointments
-- **Prescription Management**: Digital prescriptions with pharmacy integration
-- **Medicine Delivery**: Monthly prescription delivery and smart pill dispensers
-- **Emergency Response**: 24/7 emergency alerts and rapid response system
+</div>
 
-### Advanced Features
-- **Zoom Integration**: Video consultations for monthly health sessions
-- **Real-time Notifications**: Socket.IO powered instant alerts
-- **Payment Processing**: Stripe integration for subscription management
-- **Mobile Application**: React Native app for on-the-go access
-- **Analytics Dashboard**: Comprehensive reporting and analytics
-- **File Upload**: Document and image management system
+---
 
-### Communication & Collaboration
-- **Family Connection**: Real-time health dashboard for remote family members
-- **Staff Coordination**: Multi-role staff management and assignment
-- **Doctor Portal**: Patient management and session scheduling
-- **Pharmacy Integration**: Prescription fulfillment and delivery tracking
+## 🚀 Quick Start Commands
+
+```bash
+# 1. Clone and install
+git clone https://github.com/Bin4yi/ElderLink.git && cd ElderLink
+npm install && cd backend && npm install && cd ../frontend && npm install
+
+# 2. Setup environment (copy and edit .env files)
+cp backend/.env.example backend/.env && cp frontend/.env.example frontend/.env.local
+
+# 3. Setup database
+createdb elderlink
+cd backend && npm run db:migrate && npm run db:seed
+
+# 4. Start servers (in separate terminals)
+cd backend && npm run dev     # Terminal 1: Backend on :5000
+cd frontend && npm start       # Terminal 2: Frontend on :3000
+```
+
+**Default Login**: admin@elderlink.com / Admin@123
+
+---
+
+
+## 📖 Table of Contents
+
+- [Overview](#-overview)
+- [Key Features](#-key-features)
+- [Technology Stack](#-technology-stack)
+- [System Architecture](#-system-architecture)
+- [Prerequisites](#-prerequisites)
+- [Quick Start](#-quick-start)
+- [Environment Configuration](#-environment-configuration)
+- [Database Setup](#-database-setup)
+- [Running the Application](#-running-the-application)
+- [Building for Production](#-building-for-production)
+- [Project Structure](#-project-structure)
+- [User Roles & Access](#-user-roles--access)
+- [API Documentation](#-api-documentation)
+- [Testing](#-testing)
+- [Troubleshooting](#-troubleshooting)
+- [Security](#-security)
+- [Performance & Scalability](#-performance--scalability)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Support](#-support)
+
+---
+
+## 🎯 Overview
+
+**ElderLink** is a full-stack healthcare platform designed to bridge the gap between immigrant families and their elderly parents. The platform provides comprehensive elder care management through:
+
+- 🏥 **Remote Health Monitoring**: Real-time vital signs tracking with intelligent alerts
+- 👨‍⚕️ **Telemedicine Integration**: Video consultations via Zoom API
+- 💊 **Smart Pharmacy**: Digital prescriptions with automated monthly delivery
+- 🚑 **Emergency Response**: 24/7 SOS system with GPS-based ambulance dispatch
+- 👪 **Family Portal**: Real-time health dashboards for remote family members
+- 📊 **Advanced Analytics**: Comprehensive reporting for administrators and doctors
+
+### Why ElderLink?
+
+ElderLink addresses the critical need for accessible, technology-driven elder care, especially for families separated by distance. Our platform ensures:
+
+- ✅ **Peace of Mind**: Real-time health monitoring and instant emergency alerts
+- ✅ **Professional Care**: Integrated network of doctors, nurses, and healthcare staff
+- ✅ **Convenience**: Automated prescription delivery and appointment management
+- ✅ **Accessibility**: Multi-platform support (Web, iOS, Android)
+- ✅ **Compliance**: HIPAA-compliant security and data protection
+
+---
+
+## 🌟 Key Features
+
+
+### 🏥 Healthcare Management
+
+| Feature | Description | User Roles |
+|---------|-------------|------------|
+| **Health Monitoring** | Real-time vital signs tracking (BP, heart rate, temperature, oxygen saturation) | Staff, Doctors, Family |
+| **Appointment Scheduling** | Smart booking system with doctor availability and Zoom integration | All Users |
+| **Prescription Management** | Digital prescriptions with pharmacy integration and tracking | Doctors, Pharmacists |
+| **Monthly Health Sessions** | Automated Zoom consultations with assigned doctors | Doctors, Elders, Family |
+| **Emergency Alerts** | 24/7 SOS system with GPS tracking and rapid response | All Users |
+| **Health Analytics** | Comprehensive health reports and trend analysis | Doctors, Family |
+
+### 💻 Technical Features
+
+- **Multi-Role Authentication**: JWT-based authentication with role-based access control (RBAC)
+- **Real-time Communication**: Socket.IO for instant notifications and live updates
+- **Video Consultations**: Zoom API integration for seamless telemedicine
+- **Payment Processing**: Stripe integration for subscription and payment management
+- **File Management**: Secure document and image upload system
+- **Mobile Application**: React Native app for iOS and Android
+- **Email Notifications**: Automated email alerts for appointments, prescriptions, and emergencies
+- **Data Export**: PDF generation for health reports and prescriptions
+
+### 🚀 Advanced Capabilities
+
+- **Intelligent Alerting**: Configurable health thresholds with automatic alerts
+- **Ambulance Dispatch**: GPS-based emergency response coordination
+- **Delivery Tracking**: Real-time prescription delivery status updates
+- **Multi-language Support**: Internationalization ready
+- **Responsive Design**: Mobile-first UI with Tailwind CSS
+- **Dark Mode**: User preference-based theme switching
+- **Progressive Web App**: Installable web application
+- **Offline Support**: Service worker implementation for offline functionality
+
+---
+
 
 ## 🛠️ Technology Stack
 
-### Backend
-- **Runtime**: Node.js 16+
-- **Framework**: Express.js
-- **Database**: PostgreSQL with Sequelize ORM
-- **Authentication**: JWT (JSON Web Tokens)
-- **Real-time**: Socket.IO
-- **File Upload**: Multer
-- **Email**: Nodemailer
-- **Payments**: Stripe
-- **Video**: Zoom API Integration
+### Backend Technologies
 
-### Frontend
-- **Framework**: React 18 with Hooks
-- **Routing**: React Router v6
-- **Styling**: Tailwind CSS
-- **Charts**: Chart.js & Recharts
-- **Icons**: Lucide React
-- **HTTP Client**: Axios
-- **State Management**: React Context + Hooks
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **Node.js** | 16+ | JavaScript runtime environment |
+| **Express.js** | 4.18.2 | Web application framework |
+| **PostgreSQL** | 12+ | Primary relational database |
+| **Sequelize** | 6.35.0 | ORM for database operations |
+| **JWT** | 9.0.2 | Authentication and authorization |
+| **Socket.IO** | 4.7.4 | Real-time bidirectional communication |
+| **Bcrypt.js** | 2.4.3 | Password hashing and security |
+| **Nodemailer** | 6.10.1 | Email service integration |
+| **Multer** | 1.4.5 | File upload handling |
+| **Stripe** | 14.5.0 | Payment processing |
+| **Axios** | 1.12.2 | HTTP client for external APIs |
+| **Node-Cron** | 4.2.1 | Task scheduling |
+| **Joi** | 17.11.0 | Data validation |
+| **PDFKit** | 0.17.2 | PDF document generation |
 
-### Mobile
-- **Framework**: React Native with Expo
-- **Navigation**: React Navigation
-- **Storage**: AsyncStorage
-- **Maps**: React Native Maps
-- **Camera**: Expo Camera
-- **Notifications**: Expo Notifications
+### Frontend Technologies
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **React** | 18.3.1 | UI framework |
+| **React Router** | 6.30.1 | Client-side routing |
+| **Tailwind CSS** | 3.3.0 | Utility-first CSS framework |
+| **Material-UI** | 7.2.0 | React component library |
+| **Axios** | 1.9.0 | HTTP client |
+| **Chart.js** | 4.5.1 | Data visualization |
+| **Recharts** | 3.3.0 | React chart library |
+| **Socket.IO Client** | 4.7.4 | Real-time client |
+| **React Toastify** | 11.0.5 | Notification system |
+| **Lucide React** | 0.263.1 | Icon library |
+| **GSAP** | 3.13.0 | Animation library |
+| **jsPDF** | 3.0.3 | PDF generation |
+| **Date-fns** | 2.30.0 | Date manipulation |
+| **Stripe React** | 2.9.0 | Payment UI components |
+
+### Mobile Technologies
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **React Native** | Latest | Mobile app framework |
+| **Expo** | Latest | React Native toolchain |
+| **React Navigation** | Latest | Mobile navigation |
+| **AsyncStorage** | Latest | Local data persistence |
+| **Expo Camera** | Latest | Camera integration |
+| **Expo Notifications** | Latest | Push notifications |
+| **React Native Maps** | Latest | GPS and mapping |
 
 ### DevOps & Tools
-- **Containerization**: Docker & Docker Compose
-- **Process Management**: PM2 (production)
-- **Testing**: Jest
-- **Linting**: ESLint
-- **Version Control**: Git
+
+| Tool | Purpose |
+|------|---------|
+| **Docker** | Containerization |
+| **Docker Compose** | Multi-container orchestration |
+| **PM2** | Production process management |
+| **Nodemon** | Development auto-restart |
+| **Jest** | Testing framework |
+| **Supertest** | API testing |
+| **ESLint** | Code linting |
+| **Git** | Version control |
+
+### External Integrations
+
+- **Zoom API**: Video consultation platform
+- **Stripe**: Payment and subscription management
+- **Gmail SMTP**: Email notifications
+- **Neon (PostgreSQL)**: Cloud database hosting
+- **AWS S3**: File storage (optional)
+
+---
+
 
 ## 📋 Prerequisites
 
-Before running ElderLink, ensure you have the following installed:
+Before starting with ElderLink, ensure you have the following installed on your system:
 
-- **Node.js** (v16 or higher) - [Download here](https://nodejs.org/)
-- **PostgreSQL** (v12 or higher) - [Download here](https://www.postgresql.org/download/)
-- **Git** - [Download here](https://git-scm.com/)
-- **Docker** (optional, for containerized deployment) - [Download here](https://www.docker.com/)
+### Required Software
 
-## 🚀 Installation & Setup
+| Software | Minimum Version | Purpose | Download Link |
+|----------|----------------|---------|---------------|
+| **Node.js** | 16.0.0+ | JavaScript runtime | [Download](https://nodejs.org/) |
+| **npm** | 8.0.0+ | Package manager | Included with Node.js |
+| **PostgreSQL** | 12.0+ | Database server | [Download](https://www.postgresql.org/download/) |
+| **Git** | 2.30+ | Version control | [Download](https://git-scm.com/) |
+
+### Optional Software
+
+| Software | Purpose | Download Link |
+|----------|---------|---------------|
+| **Docker** | Containerization | [Download](https://www.docker.com/) |
+| **Docker Compose** | Multi-container management | Included with Docker Desktop |
+| **VS Code** | Recommended IDE | [Download](https://code.visualstudio.com/) |
+| **Postman** | API testing | [Download](https://www.postman.com/) |
+| **pgAdmin** | PostgreSQL GUI | [Download](https://www.pgadmin.org/) |
+
+### System Requirements
+
+#### Development Environment
+- **OS**: Windows 10+, macOS 10.15+, or Ubuntu 20.04+
+- **RAM**: Minimum 8GB (16GB recommended)
+- **Storage**: 10GB free space
+- **Network**: Stable internet connection for API integrations
+
+#### Production Environment
+- **Server**: Linux (Ubuntu 20.04+ LTS recommended)
+- **RAM**: Minimum 4GB (8GB+ recommended)
+- **CPU**: 2+ cores
+- **Storage**: 50GB+ SSD storage
+- **Network**: Static IP with HTTPS support
+
+### External Accounts Required
+
+To fully utilize ElderLink's features, you'll need accounts for:
+
+1. **PostgreSQL Database** (Local or Cloud)
+   - Option A: Local PostgreSQL installation
+   - Option B: [Neon](https://neon.tech/) - Serverless PostgreSQL (recommended)
+   - Option C: [AWS RDS](https://aws.amazon.com/rds/postgresql/) - Managed PostgreSQL
+
+2. **Email Service** (for notifications)
+   - Gmail with [App Password](https://support.google.com/accounts/answer/185833)
+   - Or any SMTP email service
+
+3. **Zoom Account** (for video consultations) - Optional
+   - Create a Zoom account at [Zoom Marketplace](https://marketplace.zoom.us/)
+   - Register a Server-to-Server OAuth app
+
+4. **Stripe Account** (for payments) - Optional
+   - Sign up at [Stripe](https://stripe.com/)
+   - Get your API keys from the dashboard
+
+### Knowledge Prerequisites
+
+- Basic understanding of JavaScript/Node.js
+- Familiarity with React.js and React Hooks
+- Understanding of RESTful APIs
+- Basic knowledge of PostgreSQL and SQL
+- Experience with command line/terminal
+
+---
+
+## 🚀 Quick Start
+
+Get ElderLink running on your local machine in under 10 minutes!
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/elderlink.git
-cd elderlink
+# Clone via HTTPS
+git clone https://github.com/Bin4yi/ElderLink.git
+
+# Or clone via SSH
+git clone git@github.com:Bin4yi/ElderLink.git
+
+# Navigate to project directory
+cd ElderLink
 ```
 
-### 2. Environment Configuration
+### 2. Install Dependencies
 
-#### Backend Configuration
 ```bash
+# Install root dependencies
+npm install
+
+# Install backend dependencies
+cd backend
+npm install
+
+# Install frontend dependencies
+cd ../frontend
+npm install
+
+# Install mobile dependencies (optional)
+cd ../ElderlinkMobile
+npm install
+```
+
+### 3. Setup Environment Variables
+
+```bash
+# Backend environment
 cd backend
 cp .env.example .env
+
+# Frontend environment
+cd ../frontend
+cp .env.example .env.local
 ```
 
-Edit `backend/.env` with your configuration:
+**Edit the `.env` files with your configuration** (see [Environment Configuration](#-environment-configuration) section).
+
+### 4. Setup Database
+
+```bash
+# Create PostgreSQL database
+createdb elderlink
+
+# Or using psql
+psql -U postgres -c "CREATE DATABASE elderlink;"
+
+# Run migrations
+cd backend
+npm run db:migrate
+
+# Seed initial data (optional)
+npm run db:seed
+```
+
+### 5. Start the Application
+
+Open three terminal windows:
+
+```bash
+# Terminal 1 - Backend Server
+cd backend
+npm run dev
+# Server runs on http://localhost:5000
+
+# Terminal 2 - Frontend Application
+cd frontend
+npm start
+# App runs on http://localhost:3000
+
+# Terminal 3 - Mobile App (optional)
+cd ElderlinkMobile
+npm start
+# Expo DevTools opens
+```
+
+### 6. Access the Application
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:5000/api
+- **API Docs**: http://localhost:5000/api-docs (if configured)
+
+### Default Login Credentials
+
+After running the seed script, use these credentials:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@elderlink.com | Admin@123 |
+| Doctor | doctor@elderlink.com | Doctor@123 |
+| Staff | staff@elderlink.com | Staff@123 |
+| Family | family@elderlink.com | Family@123 |
+| Pharmacist | pharmacist@elderlink.com | Pharmacy@123 |
+
+**⚠️ Important**: Change these default passwords immediately in production!
+
+---
+
+## ⚙️ Environment Configuration
+
+### Backend Environment Variables (`backend/.env`)
 
 ```env
+# ============================================
+# SERVER CONFIGURATION
+# ============================================
+NODE_ENV=development
+PORT=5000
+HOST=localhost
+
+# ============================================
+# DATABASE CONFIGURATION
+# ============================================
+# Option 1: Local PostgreSQL
+DATABASE_URL=postgresql://username:password@localhost:5432/elderlink
+
+# Option 2: Neon (Cloud PostgreSQL)
+# DATABASE_URL=postgresql://user:pass@ep-nameless-band-a1ky2sck-pooler.ap-southeast-1.aws.neon.tech/elderlink?sslmode=require
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=elderlink
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_SSL=false
+
+# ============================================
+# AUTHENTICATION
+# ============================================
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_EXPIRE=7d
+JWT_REFRESH_EXPIRE=30d
+
+# ============================================
+# EMAIL CONFIGURATION (Gmail)
+# ============================================
+EMAIL_SERVICE=gmail
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-gmail-app-password
+EMAIL_FROM=ElderLink <noreply@elderlink.com>
+
+# ============================================
+# ZOOM INTEGRATION (Optional)
+# ============================================
+ZOOM_ACCOUNT_ID=your_zoom_account_id
+ZOOM_CLIENT_ID=your_zoom_client_id
+ZOOM_CLIENT_SECRET=your_zoom_client_secret
+
+# ============================================
+# STRIPE PAYMENT (Optional)
+# ============================================
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+
+# ============================================
+# FILE UPLOAD
+# ============================================
+MAX_FILE_SIZE=10485760
+UPLOAD_PATH=./uploads
+
+# ============================================
+# CORS CONFIGURATION
+# ============================================
+CORS_ORIGIN=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# ============================================
+# RATE LIMITING
+# ============================================
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# ============================================
+# LOGGING
+# ============================================
+LOG_LEVEL=info
+LOG_FILE=./logs/app.log
+```
+
+### Frontend Environment Variables (`frontend/.env.local`)
+
+```env
+# ============================================
+# API CONFIGURATION
+# ============================================
+# Development
+REACT_APP_API_URL=http://localhost:5000
+
+# Production
+# REACT_APP_API_URL=https://api.elderlink.com
+
+# ============================================
+# STRIPE CONFIGURATION
+# ============================================
+REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+
+# ============================================
+# APPLICATION CONFIGURATION
+# ============================================
+REACT_APP_NAME=ElderLink
+REACT_APP_VERSION=1.0.0
+REACT_APP_ENVIRONMENT=development
+
+# ============================================
+# FEATURE FLAGS
+# ============================================
+REACT_APP_ENABLE_ZOOM=true
+REACT_APP_ENABLE_PAYMENTS=true
+REACT_APP_ENABLE_NOTIFICATIONS=true
+
+# ============================================
+# SOCKET.IO
+# ============================================
+REACT_APP_SOCKET_URL=http://localhost:5000
+```
+
+### Mobile Environment Variables (`ElderlinkMobile/.env`)
+
+```env
+# ============================================
+# API CONFIGURATION
+# ============================================
+# Replace YOUR_LOCAL_IP with your computer's IP address
+# Find it using: ipconfig (Windows) or ifconfig (Mac/Linux)
+API_URL=http://YOUR_LOCAL_IP:5000/api
+
+# Example:
+# API_URL=http://192.168.1.100:5000/api
+
+# ============================================
+# ENVIRONMENT
+# ============================================
+NODE_ENV=development
+```
+
+### Important Notes
+
+1. **Never commit `.env` files** to version control
+2. **Use strong passwords** for JWT_SECRET (minimum 64 characters)
+3. **Generate JWT_SECRET** using:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+   ```
+4. **Gmail App Password**: Enable 2FA and generate an app-specific password
+5. **Database SSL**: Enable `sslmode=require` for cloud databases like Neon
+6. **CORS Origins**: Update for production domains
+
+---
 # Database Configuration
 DATABASE_URL=postgresql://username:password@localhost:5432/elderlink
 
@@ -922,6 +1362,157 @@ A: Yes, we provide comprehensive documentation, video tutorials, and onboarding 
 
 ### Common Issues & Solutions
 
+#### Network & Connectivity Issues
+
+**Issue: Email Service Connection Failed**
+```
+Error: getaddrinfo ENOTFOUND smtp.gmail.com
+```
+**Root Cause**: Network connectivity issue or firewall blocking SMTP connection
+
+**Solutions:**
+```bash
+# 1. Check internet connectivity
+ping smtp.gmail.com
+
+# 2. Check if firewall is blocking port 587
+telnet smtp.gmail.com 587
+
+# 3. Temporary Solution - Disable email verification in development
+# In backend/.env, comment out or set:
+EMAIL_ENABLED=false
+
+# 4. Use alternative SMTP service
+# Try using a different email service provider
+
+# 5. Windows Firewall - Allow Node.js
+# Go to: Windows Firewall > Allow an app through firewall
+# Enable Node.js for both Private and Public networks
+
+# 6. Check DNS resolution
+nslookup smtp.gmail.com
+```
+
+**Development Workaround**:
+```javascript
+// In backend/server.js or email configuration
+// Wrap email service initialization in try-catch
+try {
+  await emailService.verify();
+  console.log('✅ Email service connected');
+} catch (error) {
+  console.warn('⚠️ Email service unavailable - continuing without email functionality');
+  // Don't stop server startup
+}
+```
+
+**Issue: Database Connection Failed (Neon/Cloud)**
+```
+Error: getaddrinfo ENOTFOUND ep-nameless-band-a1ky2sck-pooler.ap-southeast-1.aws.neon.tech
+```
+**Root Cause**: Network connectivity issue, DNS resolution failure, or firewall blocking database connection
+
+**Solutions:**
+```bash
+# 1. Check internet connectivity
+ping 8.8.8.8
+
+# 2. Test DNS resolution
+nslookup ep-nameless-band-a1ky2sck-pooler.ap-southeast-1.aws.neon.tech
+
+# 3. Use Local PostgreSQL for Development
+# In backend/.env, change to local database:
+DATABASE_URL=postgresql://postgres:password@localhost:5432/elderlink
+
+# 4. Check VPN or Proxy Settings
+# Disable VPN and try again
+
+# 5. Flush DNS Cache (Windows)
+ipconfig /flushdns
+
+# 6. Use alternative DNS servers
+# Change DNS to Google DNS: 8.8.8.8, 8.8.4.4
+# Or Cloudflare DNS: 1.1.1.1, 1.0.0.1
+
+# 7. Check firewall rules for port 5432
+netsh advfirewall firewall add rule name="PostgreSQL" dir=in action=allow protocol=TCP localport=5432
+```
+
+**Recommended for Development**:
+```env
+# backend/.env - Use Local PostgreSQL
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/elderlink
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=elderlink
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_SSL=false
+```
+
+**Issue: API Endpoints Returning 404 (Route Not Found)**
+```
+GET http://localhost:5000/drivers 404 (Not Found)
+Error: Route /drivers not found
+```
+**Root Cause**: Missing `/api` prefix in API calls
+
+**Solutions:**
+```bash
+# 1. Verify API Base URL Configuration
+# In frontend/.env.local:
+REACT_APP_API_URL=http://localhost:5000
+# Note: Do NOT include /api suffix here
+
+# 2. Check axios instance configuration
+# All service files should use shared api instance:
+# frontend/src/services/api.js should have:
+baseURL: `${process.env.REACT_APP_API_URL}/api`
+
+# 3. Restart frontend server after changes
+cd frontend
+npm start
+
+# 4. Check backend routes are registered
+# In backend/server.js, verify:
+app.use('/api/drivers', driverRoutes);
+app.use('/api/ambulance', ambulanceRoutes);
+app.use('/api/coordinator', coordinatorRoutes);
+
+# 5. Restart backend server
+cd backend
+npm run dev
+```
+
+**Fix for Service Files**:
+```javascript
+// frontend/src/services/driver.js
+// frontend/src/services/ambulance.js
+// WRONG - Custom axios instance:
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const api = axios.create({ baseURL: API_URL });
+
+// CORRECT - Use shared api instance:
+import api from './api';
+```
+
+**Issue: Cannot Start Backend Server**
+```
+Error: listen EADDRINUSE: address already in use :::5000
+```
+**Solutions:**
+```bash
+# Windows - Find and kill process using port 5000
+netstat -ano | findstr :5000
+taskkill /PID <PID> /F
+
+# Or change port in backend/.env
+PORT=5001
+
+# Then update frontend/.env.local
+REACT_APP_API_URL=http://localhost:5001
+```
+
 #### Backend Issues
 
 **Issue: Database Connection Failed**
@@ -930,16 +1521,25 @@ Error: connect ECONNREFUSED 127.0.0.1:5432
 ```
 **Solutions:**
 ```bash
-# Check if PostgreSQL is running
-sudo systemctl status postgresql
+# Windows - Check if PostgreSQL is running
+sc query postgresql-x64-14
+# Or open Services app and look for PostgreSQL
 
-# Start PostgreSQL service
+# Start PostgreSQL service (Windows)
+net start postgresql-x64-14
+
+# Linux/Mac
+sudo systemctl status postgresql
 sudo systemctl start postgresql
 
 # Verify connection
-psql -U elderlink -d elderlink -h localhost
+psql -U postgres -d elderlink -h localhost
 
 # Check environment variables
+# Windows PowerShell:
+Get-Content backend\.env | Select-String DATABASE_URL
+
+# Linux/Mac:
 cat backend/.env | grep DATABASE_URL
 ```
 
@@ -3253,24 +3853,133 @@ When reporting bugs, please include:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for complete details.
+
+```
+MIT License
+
+Copyright (c) 2025 ElderLink
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+```
 
 ## 🙏 Acknowledgments
 
-- **React Team** for the amazing frontend library
-- **Express.js Community** for the robust backend framework
-- **Sequelize Team** for the excellent ORM
-- **PostgreSQL** for the reliable database
-- **Open Source Community** for endless learning resources
+Special thanks to the open-source community and these amazing projects:
 
-## 📞 Support
+- **[React](https://reactjs.org/)** - The foundation of our frontend
+- **[Express.js](https://expressjs.com/)** - Powering our backend API
+- **[Sequelize](https://sequelize.org/)** - Making database operations elegant
+- **[PostgreSQL](https://www.postgresql.org/)** - The world's most advanced open source database
+- **[Socket.IO](https://socket.io/)** - Enabling real-time communication
+- **[Tailwind CSS](https://tailwindcss.com/)** - Beautiful, responsive UI framework
+- **[Stripe](https://stripe.com/)** - Secure payment processing
+- **[Zoom](https://zoom.us/)** - Video consultation platform
+- **All Contributors** - Thank you for making ElderLink better!
 
-For support and questions:
+## 📞 Support & Contact
 
-- **Documentation**: Check our [Wiki](https://github.com/your-username/elderlink/wiki)
-- **Issues**: [GitHub Issues](https://github.com/your-username/elderlink/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/elderlink/discussions)
-- **Email**: support@elderlink.com
+### Getting Help
+
+| Channel | Purpose | Response Time |
+|---------|---------|---------------|
+| 📖 **[Documentation](https://github.com/Bin4yi/ElderLink/wiki)** | Comprehensive guides | Instant |
+| 🐛 **[GitHub Issues](https://github.com/Bin4yi/ElderLink/issues)** | Bug reports & feature requests | 24-48 hours |
+| 💬 **[Discussions](https://github.com/Bin4yi/ElderLink/discussions)** | Community Q&A | Community-driven |
+| 📧 **Email**: support@elderlink.com | General inquiries | 24-48 hours |
+| 📱 **Twitter**: [@ElderLinkApp](https://twitter.com/elderlinkapp) | Updates & announcements | Follow for updates |
+
+### Community Guidelines
+
+- Be respectful and inclusive
+- Help others learn and grow
+- Share knowledge and experiences
+- Report security vulnerabilities responsibly
+- Follow our [Code of Conduct](CODE_OF_CONDUCT.md)
+
+### Commercial Support
+
+For enterprise deployments, custom features, and priority support:
+- 📧 Enterprise: enterprise@elderlink.com
+- 🌐 Website: https://elderlink.com
+- 📞 Phone: +1 (555) 123-4567
+
+## 🗺️ Roadmap
+
+### Version 2.0 (Q2 2025)
+
+- [ ] **AI-Powered Health Predictions**: Machine learning for early disease detection
+- [ ] **Voice Assistant Integration**: Alexa and Google Home support
+- [ ] **Wearable Device Integration**: Apple Watch, Fitbit connectivity
+- [ ] **Multi-language Support**: Spanish, Chinese, Arabic translations
+- [ ] **Advanced Analytics**: Predictive health analytics dashboard
+- [ ] **Blockchain Integration**: Secure health records on blockchain
+
+### Version 2.5 (Q3 2025)
+
+- [ ] **Telemedicine Expansion**: Multi-provider video calls
+- [ ] **Mental Health Module**: Depression and anxiety monitoring
+- [ ] **Nutrition Tracking**: Meal planning and diet recommendations
+- [ ] **Exercise Programs**: Tailored physical therapy routines
+- [ ] **Social Features**: Elder community forums and activities
+
+### Version 3.0 (Q4 2025)
+
+- [ ] **IoT Integration**: Smart home sensors and automation
+- [ ] **Advanced Robotics**: Care robot integration
+- [ ] **VR/AR Experiences**: Virtual reality therapy sessions
+- [ ] **Genomics Integration**: DNA-based health recommendations
+- [ ] **Global Expansion**: Multi-region deployment
+
+---
+
+<div align="center">
+
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Bin4yi/ElderLink&type=Date)](https://star-history.com/#Bin4yi/ElderLink&Date)
+
+## 📊 Project Status
+
+![GitHub last commit](https://img.shields.io/github/last-commit/Bin4yi/ElderLink)
+![GitHub issues](https://img.shields.io/github/issues/Bin4yi/ElderLink)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/Bin4yi/ElderLink)
+![GitHub stars](https://img.shields.io/github/stars/Bin4yi/ElderLink?style=social)
+![GitHub forks](https://img.shields.io/github/forks/Bin4yi/ElderLink?style=social)
+
+## 🤝 Contributors
+
+Thanks to all the amazing people who have contributed to ElderLink!
+
+<a href="https://github.com/Bin4yi/ElderLink/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Bin4yi/ElderLink" />
+</a>
+
+---
+
+### Built with ❤️ for Better Elder Care
+
+**ElderLink** - *Connecting Families, Caring for Elders*
+
+Made by [Bin4yi](https://github.com/Bin4yi) and [contributors](https://github.com/Bin4yi/ElderLink/graphs/contributors)
+
+---
+
+**[↑ Back to Top](#-elderlink---smart-elder-care-platform)**
+
+</div>
 
 ## 🔄 Version History
 
