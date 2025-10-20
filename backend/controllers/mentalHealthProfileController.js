@@ -1,5 +1,6 @@
 // backend/controllers/mentalHealthProfileController.js
 const { User } = require("../models");
+const { Op } = require("sequelize");
 const bcrypt = require("bcryptjs");
 
 // Get specialist profile
@@ -107,6 +108,12 @@ const updateProfileImage = async (req, res) => {
     }
 
     specialist.profileImage = profileImage;
+    // Save to both fields for backward compatibility (some records use 'photo')
+    specialist.profileImage = profileImage;
+    if (Object.prototype.hasOwnProperty.call(specialist, 'photo')) {
+      specialist.photo = profileImage;
+    }
+
     await specialist.save();
 
     res.status(200).json({
