@@ -23,6 +23,9 @@ const TherapySessions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
   const [assignedElders, setAssignedElders] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [sessionForm, setSessionForm] = useState({
@@ -141,6 +144,106 @@ const TherapySessions = () => {
 
   const handleFormChange = (field, value) => {
     setSessionForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleViewSession = (session) => {
+    setSelectedSession(session);
+    setShowViewModal(true);
+  };
+
+  const handleEditSession = (session) => {
+    // Only allow editing scheduled sessions
+    if (session.status !== "scheduled") {
+      toast.error("Only scheduled sessions can be edited");
+      return;
+    }
+
+    // Check if session date is in the future
+    const sessionDate = new Date(session.scheduledDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (sessionDate < today) {
+      toast.error("Cannot edit past sessions");
+      return;
+    }
+
+    setSelectedSession(session);
+    setSessionForm({
+      elderId: session.elderId,
+      sessionType: session.sessionType,
+      therapyType: session.therapyType,
+      scheduledDate: session.scheduledDate,
+      scheduledTime: session.scheduledTime,
+      duration: session.duration,
+      location: session.location,
+      zoomLink: session.zoomLink || "",
+      sessionGoals: session.sessionGoals?.join("\n") || "",
+      notes: session.sessionNotes || "",
+      isFirstSession: session.isFirstSession,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateSession = async (e) => {
+    e.preventDefault();
+
+    if (!selectedSession) return;
+
+    try {
+      setSubmitting(true);
+
+      // Convert sessionGoals string to array
+      const goalsArray = sessionForm.sessionGoals
+        .split("\n")
+        .filter((goal) => goal.trim() !== "");
+
+      const updateData = {
+        scheduledDate: sessionForm.scheduledDate,
+        scheduledTime: sessionForm.scheduledTime,
+        duration: sessionForm.duration,
+        location: sessionForm.location,
+        zoomLink: sessionForm.zoomLink,
+        sessionGoals: goalsArray,
+        sessionNotes: sessionForm.notes,
+      };
+
+      await mentalHealthService.updateSession(selectedSession.id, updateData);
+
+      toast.success("Session updated successfully!");
+      setShowEditModal(false);
+      setSelectedSession(null);
+
+      // Reset form
+      setSessionForm({
+        elderId: "",
+        sessionType: "individual",
+        therapyType: "Cognitive Behavioral Therapy",
+        scheduledDate: "",
+        scheduledTime: "",
+        duration: 60,
+        location: "video_call",
+        zoomLink: "",
+        sessionGoals: "",
+        notes: "",
+        isFirstSession: false,
+      });
+
+      loadSessions();
+    } catch (error) {
+      console.error("Error updating session:", error);
+      toast.error(error.response?.data?.message || "Failed to update session");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleJoinCall = (zoomLink) => {
+    if (zoomLink) {
+      window.open(zoomLink, "_blank", "noopener,noreferrer");
+    } else {
+      toast.error("No meeting link available");
+    }
   };
 
   const filteredSessions = sessions.filter((session) => {
@@ -379,7 +482,10 @@ const TherapySessions = () => {
                     {/* Actions */}
                     <div className="flex flex-col gap-3">
                       {session.zoomLink && session.status === "scheduled" && (
-                        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <button
+                          onClick={() => handleJoinCall(session.zoomLink)}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
                           <Video className="w-4 h-4" />
                           Join Call
                         </button>
@@ -393,14 +499,22 @@ const TherapySessions = () => {
                           Complete
                         </button>
                       )}
-                      <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                      <button
+                        onClick={() => handleViewSession(session)}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
                         <Eye className="w-4 h-4" />
                         View Details
                       </button>
-                      <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        <Edit className="w-4 h-4" />
-                        Edit Session
-                      </button>
+                      {session.status === "scheduled" && (
+                        <button
+                          onClick={() => handleEditSession(session)}
+                          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit Session
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -677,6 +791,373 @@ const TherapySessions = () => {
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? "Scheduling..." : "Schedule Session"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Session Details Modal */}
+      {showViewModal && selectedSession && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 rounded-t-2xl sticky top-0 z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                    <Eye className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">
+                    Session Details
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedSession(null);
+                  }}
+                  className="text-white/80 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Client Info */}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-5">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  Client Information
+                </h3>
+                <div className="space-y-2">
+                  <p className="text-gray-700">
+                    <span className="font-medium">Name:</span>{" "}
+                    {selectedSession.elder?.firstName}{" "}
+                    {selectedSession.elder?.lastName}
+                  </p>
+                  <p className="text-gray-700">
+                    <span className="font-medium">Session Number:</span> #
+                    {selectedSession.sessionNumber}
+                  </p>
+                  {selectedSession.isFirstSession && (
+                    <span className="inline-block bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">
+                      First Session
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Session Details */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  Session Details
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Session Type</p>
+                    <p className="font-semibold text-gray-900 capitalize">
+                      {selectedSession.sessionType}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Therapy Type</p>
+                    <p className="font-semibold text-gray-900">
+                      {selectedSession.therapyType}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Date</p>
+                    <p className="font-semibold text-gray-900">
+                      {selectedSession.scheduledDate}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Time</p>
+                    <p className="font-semibold text-gray-900">
+                      {selectedSession.scheduledTime}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Duration</p>
+                    <p className="font-semibold text-gray-900">
+                      {selectedSession.duration} minutes
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Location</p>
+                    <p className="font-semibold text-gray-900 capitalize">
+                      {selectedSession.location?.replace("_", " ")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Session Goals */}
+              {selectedSession.sessionGoals &&
+                selectedSession.sessionGoals.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                      Session Goals
+                    </h3>
+                    <ul className="space-y-2">
+                      {selectedSession.sessionGoals.map((goal, index) => (
+                        <li
+                          key={index}
+                          className="flex items-start gap-3 bg-purple-50 rounded-lg p-3"
+                        >
+                          <CheckCircle className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">{goal}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+              {/* Notes */}
+              {selectedSession.sessionNotes && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    Session Notes
+                  </h3>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-gray-700 whitespace-pre-wrap">
+                      {selectedSession.sessionNotes}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Homework */}
+              {selectedSession.homework && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    Homework
+                  </h3>
+                  <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-500">
+                    <p className="text-gray-700 whitespace-pre-wrap">
+                      {selectedSession.homework}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Zoom Link */}
+              {selectedSession.zoomLink && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    Meeting Link
+                  </h3>
+                  <button
+                    onClick={() => handleJoinCall(selectedSession.zoomLink)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <Video className="w-5 h-5" />
+                    Join Video Call
+                  </button>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <div className="pt-4 border-t">
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedSession(null);
+                  }}
+                  className="w-full px-6 py-3 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-all duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Session Modal */}
+      {showEditModal && selectedSession && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 rounded-t-2xl sticky top-0 z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                    <Edit className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">
+                    Edit Session
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedSession(null);
+                  }}
+                  className="text-white/80 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpdateSession} className="p-6 space-y-6">
+              {/* Client Info (Read-only) */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-600">Client</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {selectedSession.elder?.firstName}{" "}
+                  {selectedSession.elder?.lastName}
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedSession.sessionType} Session •{" "}
+                  {selectedSession.therapyType}
+                </p>
+              </div>
+
+              {/* Date and Time */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={sessionForm.scheduledDate}
+                    onChange={(e) =>
+                      handleFormChange("scheduledDate", e.target.value)
+                    }
+                    min={new Date().toISOString().split("T")[0]}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={sessionForm.scheduledTime}
+                    onChange={(e) =>
+                      handleFormChange("scheduledTime", e.target.value)
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Duration and Location */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Duration (minutes) *
+                  </label>
+                  <select
+                    value={sessionForm.duration}
+                    onChange={(e) =>
+                      handleFormChange("duration", parseInt(e.target.value))
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  >
+                    <option value={30}>30 minutes</option>
+                    <option value={45}>45 minutes</option>
+                    <option value={60}>60 minutes</option>
+                    <option value={90}>90 minutes</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Location *
+                  </label>
+                  <select
+                    value={sessionForm.location}
+                    onChange={(e) =>
+                      handleFormChange("location", e.target.value)
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="video_call">Video Call</option>
+                    <option value="in_person">In Person</option>
+                    <option value="phone_call">Phone Call</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Zoom Link (if video call) */}
+              {sessionForm.location === "video_call" && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Zoom/Meeting Link
+                  </label>
+                  <input
+                    type="url"
+                    value={sessionForm.zoomLink}
+                    onChange={(e) =>
+                      handleFormChange("zoomLink", e.target.value)
+                    }
+                    placeholder="https://zoom.us/j/..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+              )}
+
+              {/* Session Goals */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Session Goals
+                </label>
+                <textarea
+                  value={sessionForm.sessionGoals}
+                  onChange={(e) =>
+                    handleFormChange("sessionGoals", e.target.value)
+                  }
+                  rows="3"
+                  placeholder="Enter each goal on a new line..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter each goal on a new line
+                </p>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Session Notes
+                </label>
+                <textarea
+                  value={sessionForm.notes}
+                  onChange={(e) => handleFormChange("notes", e.target.value)}
+                  rows="3"
+                  placeholder="Add or update session notes..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Form Actions */}
+              <div className="flex gap-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedSession(null);
+                  }}
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? "Updating..." : "Update Session"}
                 </button>
               </div>
             </form>
