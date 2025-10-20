@@ -276,17 +276,25 @@ const ElderAppointmentList = () => {
         </div>
 
         {/* Footer - Actions - Compact */}
-        {appointment.zoomJoinUrl && (
-          <div className="px-4 py-2.5 bg-green-50 border-t border-green-200">
+        {appointment.zoomJoinUrl ? (
+          <div className="px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 border-t border-green-200">
             <a
               href={appointment.zoomJoinUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-base font-semibold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              <Video className="w-4 h-4" />
-              Join Video Call
+              <Video className="w-5 h-5" />
+              <span>Join Video Consultation</span>
+              <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Ready</span>
             </a>
+          </div>
+        ) : appointment.status === 'scheduled' && (
+          <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
+            <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
+              <Video className="w-4 h-4" />
+              <span>Video link will be available soon</span>
+            </div>
           </div>
         )}
       </div>
@@ -392,10 +400,10 @@ const ElderAppointmentList = () => {
                                 href={apt.zoomJoinUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="bg-white text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium flex items-center gap-1"
+                                className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-sm font-semibold flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105"
                               >
-                                <Video className="w-4 h-4" />
-                                Join
+                                <Video className="w-5 h-5" />
+                                <span>Join Now</span>
                               </a>
                             )}
                           </div>
