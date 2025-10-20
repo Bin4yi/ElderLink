@@ -1490,6 +1490,26 @@ Content-Type: application/json
 }
 ```
 
+**Response:**
+```json
+{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "role": "family_member"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid credentials
+- `401 Unauthorized`: Account not verified
+- `429 Too Many Requests`: Rate limit exceeded
+
 #### Register
 ```http
 POST /api/auth/register
@@ -1500,60 +1520,510 @@ Content-Type: application/json
   "lastName": "Doe",
   "email": "john@example.com",
   "password": "password123",
-  "role": "family_member"
+  "role": "family_member",
+  "phone": "+1234567890"
 }
 ```
 
-### Elder Management
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Registration successful. Please check your email for verification.",
+  "user": {
+    "id": "uuid",
+    "email": "john@example.com",
+    "firstName": "John",
+    "lastName": "Doe"
+  }
+}
+```
 
-#### Get All Elders
+#### Get Profile
 ```http
-GET /api/elders
+GET /api/auth/profile
 Authorization: Bearer <token>
 ```
 
-#### Create Elder Profile
+**Response:**
+```json
+{
+  "success": true,
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "role": "family_member",
+    "profile": {
+      "phone": "+1234567890",
+      "address": "123 Main St",
+      "emergencyContact": {
+        "name": "Jane Doe",
+        "phone": "+0987654321",
+        "relationship": "spouse"
+      }
+    }
+  }
+}
+```
+
+#### Change Password
 ```http
-POST /api/elders
+POST /api/auth/change-password
 Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "firstName": "Jane",
-  "lastName": "Smith",
-  "dateOfBirth": "1950-01-01",
-  "subscriptionId": "subscription-uuid"
+  "currentPassword": "oldpassword123",
+  "newPassword": "newpassword123"
 }
 ```
 
-### Health Monitoring
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Password changed successfully"
+}
+```
 
-#### Record Vital Signs
+#### Password Reset Request
 ```http
-POST /api/vitals
+POST /api/auth/password-reset/request
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+#### Password Reset Verify OTP
+```http
+POST /api/auth/password-reset/verify-otp
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "otp": "123456"
+}
+```
+
+#### Password Reset
+```http
+POST /api/auth/password-reset/reset
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "otp": "123456",
+  "newPassword": "newpassword123"
+}
+```
+
+### Admin Analytics Routes
+
+#### Get Dashboard Overview
+```http
+GET /api/admin/analytics/overview
+Authorization: Bearer <admin_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalUsers": 1250,
+    "activeUsers": 892,
+    "totalElders": 234,
+    "activeSubscriptions": 198,
+    "monthlyRevenue": 45678.90,
+    "systemHealth": "good"
+  }
+}
+```
+
+#### Get User Statistics
+```http
+GET /api/admin/analytics/users
+Authorization: Bearer <admin_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalUsers": 1250,
+    "usersByRole": {
+      "admin": 5,
+      "doctor": 45,
+      "staff": 120,
+      "family_member": 680,
+      "elder": 234,
+      "pharmacist": 15
+    },
+    "newUsersThisMonth": 67,
+    "activeUsersToday": 234
+  }
+}
+```
+
+#### Get Subscription Statistics
+```http
+GET /api/admin/analytics/subscriptions
+Authorization: Bearer <admin_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalSubscriptions": 198,
+    "activeSubscriptions": 189,
+    "cancelledSubscriptions": 9,
+    "revenueByPackage": {
+      "basic": 45000,
+      "premium": 89000,
+      "enterprise": 125000
+    },
+    "monthlyRecurringRevenue": 234000,
+    "churnRate": 0.045
+  }
+}
+```
+
+#### Get Revenue Statistics
+```http
+GET /api/admin/analytics/revenue
+Authorization: Bearer <admin_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalRevenue": 456789.50,
+    "monthlyRevenue": [
+      {"month": "2024-01", "revenue": 34567.89},
+      {"month": "2024-02", "revenue": 38901.23}
+    ],
+    "revenueBySource": {
+      "subscriptions": 389000,
+      "consultationFees": 45678,
+      "deliveryFees": 32111.50
+    },
+    "averageRevenuePerUser": 365.43
+  }
+}
+```
+
+### Admin Statistics Routes
+
+#### Get Admin Statistics
+```http
+GET /api/admin/stats
+Authorization: Bearer <admin_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalUsers": 1250,
+    "totalElders": 234,
+    "totalDoctors": 45,
+    "totalStaff": 120,
+    "systemUptime": "99.9%",
+    "activeSessions": 156,
+    "databaseConnections": 23
+  }
+}
+```
+
+#### Get System Activity
+```http
+GET /api/admin/stats/activity
+Authorization: Bearer <admin_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "recentLogins": [
+      {
+        "userId": "uuid",
+        "userName": "John Doe",
+        "loginTime": "2024-01-15T10:30:00Z",
+        "ipAddress": "192.168.1.100"
+      }
+    ],
+    "apiRequests": {
+      "total": 45678,
+      "successful": 45234,
+      "failed": 444
+    },
+    "errorRate": 0.0097
+  }
+}
+```
+
+### Admin User Management Routes
+
+#### Get All Non-Family Users
+```http
+GET /api/admin/users
+Authorization: Bearer <admin_token>
+Query Parameters:
+- page: 1
+- limit: 20
+- role: doctor
+- status: active
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "uuid",
+        "email": "doctor@example.com",
+        "firstName": "Dr. Smith",
+        "lastName": "Johnson",
+        "role": "doctor",
+        "isActive": true,
+        "createdAt": "2024-01-01T00:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 45,
+      "pages": 3
+    }
+  }
+}
+```
+
+#### Get User Statistics
+```http
+GET /api/admin/users/stats
+Authorization: Bearer <admin_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalUsers": 1250,
+    "activeUsers": 1189,
+    "inactiveUsers": 61,
+    "usersByRole": {
+      "admin": 5,
+      "doctor": 45,
+      "staff": 120,
+      "pharmacist": 15
+    },
+    "recentRegistrations": 23
+  }
+}
+```
+
+#### Create Non-Family User
+```http
+POST /api/admin/users
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "firstName": "Dr. Sarah",
+  "lastName": "Williams",
+  "email": "sarah.williams@hospital.com",
+  "password": "tempPassword123!",
+  "role": "doctor",
+  "specialization": "Geriatrics",
+  "licenseNumber": "MD123456",
+  "phone": "+1234567890"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "User created successfully",
+  "user": {
+    "id": "uuid",
+    "email": "sarah.williams@hospital.com",
+    "firstName": "Dr. Sarah",
+    "lastName": "Williams",
+    "role": "doctor"
+  }
+}
+```
+
+#### Update User
+```http
+PUT /api/admin/users/:id
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "firstName": "Dr. Sarah",
+  "lastName": "Williams-Smith",
+  "phone": "+1234567891",
+  "isActive": true
+}
+```
+
+#### Reset User Password
+```http
+POST /api/admin/users/:id/reset-password
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "newPassword": "newSecurePassword123!"
+}
+```
+
+### Appointment Routes
+
+#### Get Available Doctors
+```http
+GET /api/appointments/doctors
+Authorization: Bearer <token>
+Query Parameters:
+- specialization: geriatrics
+- location: New York
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "doctors": [
+      {
+        "id": "uuid",
+        "firstName": "Dr. John",
+        "lastName": "Smith",
+        "specialization": "Geriatrics",
+        "rating": 4.8,
+        "availability": "available",
+        "nextAvailableSlot": "2024-01-16T09:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+#### Get Doctor Availability
+```http
+GET /api/appointments/doctors/:doctorId/availability
+Authorization: Bearer <token>
+Query Parameters:
+- date: 2024-01-16
+- duration: 30
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "doctorId": "uuid",
+    "date": "2024-01-16",
+    "availableSlots": [
+      "09:00", "09:30", "10:00", "10:30", "14:00", "14:30"
+    ],
+    "bookedSlots": [
+      "11:00", "11:30", "15:00"
+    ]
+  }
+}
+```
+
+#### Get Doctor Available Dates
+```http
+GET /api/appointments/doctors/:doctorId/available-dates
+Authorization: Bearer <token>
+Query Parameters:
+- month: 2024-01
+- year: 2024
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "doctorId": "uuid",
+    "availableDates": [
+      "2024-01-16", "2024-01-17", "2024-01-18", "2024-01-22"
+    ],
+    "bookedDates": [
+      "2024-01-15", "2024-01-19"
+    ]
+  }
+}
+```
+
+#### Reserve Time Slot
+```http
+POST /api/appointments/reserve-slot
 Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "elderId": "elder-uuid",
-  "bloodPressure": "120/80",
-  "heartRate": 72,
-  "temperature": 98.6,
-  "oxygenSaturation": 98
+  "doctorId": "uuid",
+  "elderId": "uuid",
+  "date": "2024-01-16",
+  "time": "09:00",
+  "duration": 30,
+  "reason": "Regular checkup"
 }
 ```
 
-#### Get Health Alerts
-```http
-GET /api/health-alerts
-Authorization: Bearer <token>
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Time slot reserved successfully",
+  "reservation": {
+    "id": "uuid",
+    "doctorId": "uuid",
+    "elderId": "uuid",
+    "dateTime": "2024-01-16T09:00:00Z",
+    "expiresAt": "2024-01-16T09:15:00Z"
+  }
+}
 ```
 
-### Appointments
-
-#### Get Doctor Schedule
+#### Complete Reservation
 ```http
-GET /api/appointments/doctor/:doctorId
+POST /api/appointments/reservations/:reservationId/complete
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "paymentMethod": "stripe",
+  "consultationFee": 150.00
+}
+```
+
+#### Cancel Reservation
+```http
+DELETE /api/appointments/reservations/:reservationId
 Authorization: Bearer <token>
 ```
 
@@ -1564,54 +2034,900 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "doctorId": "doctor-uuid",
-  "elderId": "elder-uuid",
-  "appointmentDate": "2024-01-15T10:00:00Z",
-  "reason": "Regular checkup"
+  "doctorId": "uuid",
+  "elderId": "uuid",
+  "appointmentDate": "2024-01-16T09:00:00Z",
+  "duration": 30,
+  "appointmentType": "consultation",
+  "reason": "Regular health checkup",
+  "notes": "Patient has been experiencing fatigue"
 }
 ```
 
-### Zoom Integration
-
-#### Create Meeting
-```http
-POST /api/monthly-sessions/:sessionId/create-zoom
-Authorization: Bearer <doctor_token>
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Appointment booked successfully",
+  "appointment": {
+    "id": "uuid",
+    "doctorId": "uuid",
+    "elderId": "uuid",
+    "appointmentDate": "2024-01-16T09:00:00Z",
+    "status": "scheduled",
+    "zoomMeetingId": null,
+    "createdAt": "2024-01-15T14:30:00Z"
+  }
+}
 ```
 
-#### Send Meeting Links
+#### Get Appointments
 ```http
-POST /api/monthly-sessions/:sessionId/send-links
-Authorization: Bearer <doctor_token>
-```
-
-### Prescription Management
-
-#### Get Prescriptions
-```http
-GET /api/prescriptions
+GET /api/appointments
 Authorization: Bearer <token>
+Query Parameters:
+- status: scheduled
+- date: 2024-01-16
+- page: 1
+- limit: 10
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "appointments": [
+      {
+        "id": "uuid",
+        "doctor": {
+          "id": "uuid",
+          "firstName": "Dr. John",
+          "lastName": "Smith",
+          "specialization": "Geriatrics"
+        },
+        "elder": {
+          "id": "uuid",
+          "firstName": "Mary",
+          "lastName": "Johnson"
+        },
+        "appointmentDate": "2024-01-16T09:00:00Z",
+        "status": "scheduled",
+        "reason": "Regular checkup"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 25,
+      "pages": 3
+    }
+  }
+}
+```
+
+#### Get Appointment by ID
+```http
+GET /api/appointments/:id
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "appointment": {
+      "id": "uuid",
+      "doctor": {
+        "id": "uuid",
+        "firstName": "Dr. John",
+        "lastName": "Smith",
+        "specialization": "Geriatrics",
+        "licenseNumber": "MD123456"
+      },
+      "elder": {
+        "id": "uuid",
+        "firstName": "Mary",
+        "lastName": "Johnson",
+        "dateOfBirth": "1950-05-15",
+        "medicalConditions": ["Hypertension", "Diabetes"]
+      },
+      "appointmentDate": "2024-01-16T09:00:00Z",
+      "duration": 30,
+      "status": "scheduled",
+      "reason": "Regular health checkup",
+      "notes": "Patient reports increased fatigue",
+      "zoomMeetingId": null,
+      "createdAt": "2024-01-15T14:30:00Z"
+    }
+  }
+}
+```
+
+#### Cancel Appointment
+```http
+PUT /api/appointments/:id/cancel
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "reason": "Patient feeling unwell"
+}
+```
+
+#### Reschedule Appointment
+```http
+PUT /api/appointments/:id/reschedule
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "newDate": "2024-01-17T10:00:00Z",
+  "reason": "Doctor's schedule conflict"
+}
+```
+
+#### Confirm Payment
+```http
+POST /api/appointments/:id/confirm-payment
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "paymentIntentId": "pi_1234567890",
+  "amount": 150.00
+}
+```
+
+#### Get Elder Summary
+```http
+GET /api/appointments/elders/:elderId/summary
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "elderId": "uuid",
+    "totalAppointments": 12,
+    "upcomingAppointments": 3,
+    "completedAppointments": 8,
+    "cancelledAppointments": 1,
+    "lastAppointment": {
+      "date": "2024-01-10",
+      "doctor": "Dr. Smith",
+      "reason": "Follow-up visit"
+    },
+    "nextAppointment": {
+      "date": "2024-01-16T09:00:00Z",
+      "doctor": "Dr. Smith",
+      "reason": "Regular checkup"
+    }
+  }
+}
+```
+
+### Ambulance Routes
+
+#### Get All Ambulances
+```http
+GET /api/ambulance
+Authorization: Bearer <token>
+Query Parameters:
+- status: available
+- location: New York
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "ambulances": [
+      {
+        "id": "uuid",
+        "vehicleNumber": "AMB-001",
+        "type": "Basic Life Support",
+        "status": "available",
+        "location": {
+          "latitude": 40.7128,
+          "longitude": -74.0060,
+          "address": "123 Emergency St, New York, NY"
+        },
+        "driver": {
+          "id": "uuid",
+          "firstName": "Mike",
+          "lastName": "Johnson",
+          "phone": "+1234567890"
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Get Available Ambulances
+```http
+GET /api/ambulance/available
+Authorization: Bearer <token>
+Query Parameters:
+- latitude: 40.7128
+- longitude: -74.0060
+- radius: 10
+```
+
+#### Get Ambulance Statistics
+```http
+GET /api/ambulance/stats
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalAmbulances": 25,
+    "availableAmbulances": 18,
+    "busyAmbulances": 5,
+    "maintenanceAmbulances": 2,
+    "totalDispatches": 1456,
+    "averageResponseTime": "8.5 minutes",
+    "successRate": 0.967
+  }
+}
+```
+
+#### Get Available Drivers
+```http
+GET /api/ambulance/drivers
+Authorization: Bearer <token>
+```
+
+#### Get Ambulance by ID
+```http
+GET /api/ambulance/:id
+Authorization: Bearer <token>
+```
+
+#### Create Ambulance
+```http
+POST /api/ambulance
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "vehicleNumber": "AMB-026",
+  "type": "Advanced Life Support",
+  "licensePlate": "EMS-2024",
+  "capacity": 2,
+  "equipment": ["Defibrillator", "Oxygen Tank", "Stretcher"],
+  "baseLocation": {
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "address": "456 Medical Center Dr, New York, NY"
+  }
+}
+```
+
+#### Update Ambulance
+```http
+PUT /api/ambulance/:id
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "status": "maintenance",
+  "maintenanceReason": "Routine service"
+}
+```
+
+#### Delete Ambulance
+```http
+DELETE /api/ambulance/:id
+Authorization: Bearer <admin_token>
+```
+
+### Assessment Routes
+
+#### Create Assessment
+```http
+POST /api/assessments
+Authorization: Bearer <specialist_token>
+Content-Type: application/json
+
+{
+  "elderId": "uuid",
+  "assessmentType": "mental_health",
+  "title": "Initial Mental Health Assessment",
+  "questions": [
+    {
+      "question": "How have you been feeling lately?",
+      "type": "text",
+      "required": true
+    }
+  ],
+  "scheduledDate": "2024-01-20T10:00:00Z"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Assessment created successfully",
+  "assessment": {
+    "id": "uuid",
+    "elderId": "uuid",
+    "specialistId": "uuid",
+    "assessmentType": "mental_health",
+    "status": "pending",
+    "createdAt": "2024-01-15T15:00:00Z"
+  }
+}
+```
+
+#### Get Specialist Assessments
+```http
+GET /api/assessments
+Authorization: Bearer <specialist_token>
+Query Parameters:
+- status: completed
+- type: mental_health
+- page: 1
+- limit: 10
+```
+
+#### Get Assessment Statistics
+```http
+GET /api/assessments/statistics
+Authorization: Bearer <specialist_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalAssessments": 145,
+    "completedAssessments": 132,
+    "pendingAssessments": 13,
+    "byType": {
+      "mental_health": 89,
+      "cognitive": 34,
+      "physical_therapy": 22
+    },
+    "averageCompletionTime": "45 minutes",
+    "satisfactionRate": 4.6
+  }
+}
+```
+
+#### Get Assessment by ID
+```http
+GET /api/assessments/:assessmentId
+Authorization: Bearer <specialist_token>
+```
+
+#### Complete Assessment
+```http
+PUT /api/assessments/:assessmentId/complete
+Authorization: Bearer <specialist_token>
+Content-Type: application/json
+
+{
+  "responses": [
+    {
+      "questionId": "uuid",
+      "answer": "I've been feeling anxious lately"
+    }
+  ],
+  "recommendations": "Recommend weekly counseling sessions",
+  "followUpDate": "2024-02-20T10:00:00Z"
+}
+```
+
+#### Update Assessment
+```http
+PUT /api/assessments/:assessmentId
+Authorization: Bearer <specialist_token>
+Content-Type: application/json
+
+{
+  "title": "Updated Mental Health Assessment",
+  "questions": [
+    {
+      "question": "Updated question?",
+      "type": "multiple_choice",
+      "options": ["Option 1", "Option 2", "Option 3"]
+    }
+  ]
+}
+```
+
+#### Delete Assessment
+```http
+DELETE /api/assessments/:assessmentId
+Authorization: Bearer <specialist_token>
+```
+
+### Coordinator Routes
+
+#### Get Dashboard Overview
+```http
+GET /api/coordinator/dashboard
+Authorization: Bearer <coordinator_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "activeEmergencies": 3,
+    "pendingDispatches": 7,
+    "availableAmbulances": 12,
+    "totalStaff": 45,
+    "activeStaff": 38,
+    "systemStatus": "normal"
+  }
+}
+```
+
+#### Get Emergency Queue
+```http
+GET /api/coordinator/queue
+Authorization: Bearer <coordinator_token>
+Query Parameters:
+- status: pending
+- priority: high
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "emergencies": [
+      {
+        "id": "uuid",
+        "elderId": "uuid",
+        "elderName": "Mary Johnson",
+        "type": "medical_emergency",
+        "priority": "high",
+        "location": {
+          "latitude": 40.7128,
+          "longitude": -74.0060,
+          "address": "123 Main St, New York, NY"
+        },
+        "reportedAt": "2024-01-15T14:30:00Z",
+        "status": "pending",
+        "description": "Elder reports chest pain"
+      }
+    ]
+  }
+}
+```
+
+#### Acknowledge Emergency
+```http
+POST /api/coordinator/emergency/:emergencyId/acknowledge
+Authorization: Bearer <coordinator_token>
+Content-Type: application/json
+
+{
+  "coordinatorId": "uuid",
+  "estimatedResponseTime": 10
+}
+```
+
+#### Dispatch Ambulance
+```http
+POST /api/coordinator/emergency/:emergencyId/dispatch
+Authorization: Bearer <coordinator_token>
+Content-Type: application/json
+
+{
+  "ambulanceId": "uuid",
+  "driverId": "uuid",
+  "dispatchNotes": "Priority dispatch for chest pain"
+}
+```
+
+#### Get Dispatch History
+```http
+GET /api/coordinator/dispatch/history
+Authorization: Bearer <coordinator_token>
+Query Parameters:
+- date: 2024-01-15
+- status: completed
+```
+
+#### Get Analytics
+```http
+GET /api/coordinator/analytics
+Authorization: Bearer <coordinator_token>
+Query Parameters:
+- period: month
+- startDate: 2024-01-01
+- endDate: 2024-01-31
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalEmergencies": 234,
+    "averageResponseTime": "8.5 minutes",
+    "successRate": 0.967,
+    "emergenciesByType": {
+      "medical": 156,
+      "fall": 45,
+      "cardiac": 33
+    },
+    "peakHours": ["14:00", "15:00", "16:00"],
+    "monthlyTrend": [
+      {"month": "2024-01", "count": 234}
+    ]
+  }
+}
+```
+
+### Dashboard Routes
+
+#### Get Dashboard Statistics
+```http
+GET /api/dashboard/statistics
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalElders": 12,
+    "activeElders": 11,
+    "upcomingAppointments": 5,
+    "pendingAlerts": 3,
+    "recentActivities": [
+      {
+        "type": "vital_signs",
+        "message": "Blood pressure recorded for Mary Johnson",
+        "timestamp": "2024-01-15T13:30:00Z"
+      }
+    ]
+  }
+}
+```
+
+#### Get Today Schedule
+```http
+GET /api/dashboard/today
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "date": "2024-01-15",
+    "appointments": [
+      {
+        "id": "uuid",
+        "time": "09:00",
+        "type": "consultation",
+        "elderName": "Mary Johnson",
+        "doctorName": "Dr. Smith"
+      }
+    ],
+    "tasks": [
+      {
+        "id": "uuid",
+        "time": "14:00",
+        "type": "medication_reminder",
+        "elderName": "John Doe",
+        "medication": "Lisinopril 10mg"
+      }
+    ]
+  }
+}
+```
+
+#### Get Recent Activities
+```http
+GET /api/dashboard/activities
+Authorization: Bearer <token>
+Query Parameters:
+- limit: 10
+```
+
+#### Get Alerts
+```http
+GET /api/dashboard/alerts
+Authorization: Bearer <token>
+Query Parameters:
+- status: unread
+```
+
+### Delivery Routes
+
+#### Create Delivery
+```http
+POST /api/deliveries/create
+Authorization: Bearer <pharmacist_token>
+Content-Type: application/json
+
+{
+  "prescriptionId": "uuid",
+  "deliveryAddress": "123 Main St, New York, NY 10001",
+  "deliveryDate": "2024-01-16",
+  "priority": "normal",
+  "specialInstructions": "Ring doorbell twice",
+  "contactPhone": "+1234567890"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Delivery created successfully",
+  "delivery": {
+    "id": "uuid",
+    "prescriptionId": "uuid",
+    "status": "pending",
+    "trackingNumber": "DEL20240115001",
+    "estimatedDelivery": "2024-01-16T14:00:00Z"
+  }
+}
+```
+
+#### Get Deliveries
+```http
+GET /api/deliveries
+Authorization: Bearer <pharmacist_token>
+Query Parameters:
+- status: in_transit
+- date: 2024-01-16
+- page: 1
+- limit: 20
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "deliveries": [
+      {
+        "id": "uuid",
+        "prescriptionId": "uuid",
+        "elderName": "Mary Johnson",
+        "deliveryAddress": "123 Main St, New York, NY",
+        "status": "in_transit",
+        "trackingNumber": "DEL20240115001",
+        "deliveryDate": "2024-01-16",
+        "driver": {
+          "id": "uuid",
+          "firstName": "Mike",
+          "lastName": "Johnson",
+          "phone": "+1234567890"
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 45,
+      "pages": 3
+    }
+  }
+}
+```
+
+#### Get Delivery Statistics
+```http
+GET /api/deliveries/stats
+Authorization: Bearer <pharmacist_token>
+Query Parameters:
+- period: month
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalDeliveries": 1234,
+    "completedDeliveries": 1189,
+    "pendingDeliveries": 23,
+    "inTransitDeliveries": 22,
+    "averageDeliveryTime": "2.3 hours",
+    "onTimeDeliveryRate": 0.945,
+    "customerSatisfaction": 4.7
+  }
+}
+```
+
+#### Update Delivery Status
+```http
+PATCH /api/deliveries/:id/status
+Authorization: Bearer <pharmacist_token>
+Content-Type: application/json
+
+{
+  "status": "delivered",
+  "deliveredAt": "2024-01-16T15:30:00Z",
+  "recipientName": "John Doe",
+  "notes": "Delivered to front door as requested"
+}
+```
+
+### Doctor Appointment Routes
+
+#### Get Doctor Appointments
+```http
+GET /api/doctor/appointments
+Authorization: Bearer <doctor_token>
+Query Parameters:
+- date: 2024-01-16
+- status: scheduled
+- page: 1
+- limit: 10
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "appointments": [
+      {
+        "id": "uuid",
+        "elder": {
+          "id": "uuid",
+          "firstName": "Mary",
+          "lastName": "Johnson",
+          "dateOfBirth": "1950-05-15"
+        },
+        "appointmentDate": "2024-01-16T09:00:00Z",
+        "status": "scheduled",
+        "reason": "Regular checkup",
+        "notes": "Patient reports fatigue"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 25,
+      "pages": 3
+    }
+  }
+}
+```
+
+#### Get Elder Medical Summary
+```http
+GET /api/doctor/elders/:elderId/medical-summary
+Authorization: Bearer <doctor_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "elderId": "uuid",
+    "personalInfo": {
+      "firstName": "Mary",
+      "lastName": "Johnson",
+      "dateOfBirth": "1950-05-15",
+      "medicalConditions": ["Hypertension", "Diabetes"],
+      "allergies": ["Penicillin"],
+      "currentMedications": ["Lisinopril 10mg", "Metformin 500mg"]
+    },
+    "recentVitals": [
+      {
+        "date": "2024-01-14",
+        "bloodPressure": "140/90",
+        "heartRate": 78,
+        "temperature": 98.6
+      }
+    ],
+    "lastAppointment": {
+      "date": "2024-01-10",
+      "diagnosis": "Stable hypertension",
+      "treatment": "Continue current medication"
+    },
+    "upcomingAppointments": [
+      {
+        "date": "2024-01-16T09:00:00Z",
+        "reason": "Follow-up visit"
+      }
+    ]
+  }
+}
+```
+
+#### Get Dashboard Stats
+```http
+GET /api/doctor/dashboard/stats
+Authorization: Bearer <doctor_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "todayAppointments": 8,
+    "completedToday": 5,
+    "pendingToday": 3,
+    "totalPatients": 45,
+    "activePatients": 42,
+    "monthlyRevenue": 8750.00,
+    "averageRating": 4.8
+  }
+}
 ```
 
 #### Create Prescription
 ```http
-POST /api/prescriptions
+POST /api/doctor/appointments/:appointmentId/prescriptions
 Authorization: Bearer <doctor_token>
 Content-Type: application/json
 
 {
-  "elderId": "elder-uuid",
   "medications": [
     {
       "name": "Lisinopril",
+      "genericName": "Lisinopril",
       "dosage": "10mg",
       "frequency": "Once daily",
-      "duration": "30 days"
+      "durationDays": 30,
+      "quantity": 30,
+      "instructions": "Take with food",
+      "sideEffects": "May cause dizziness",
+      "refills": 3
     }
   ],
-  "pharmacyId": "pharmacy-uuid"
+  "pharmacyId": "uuid",
+  "notes": "Patient to monitor blood pressure weekly"
 }
 ```
+
+#### Get Consultation Records
+```http
+GET /api/doctor/consultations
+Authorization: Bearer <doctor_token>
+Query Parameters:
+- elderId: uuid
+- date: 2024-01-10
+```
+
+#### Update Schedule
+```http
+POST /api/doctor/schedule
+Authorization: Bearer <doctor_token>
+Content-Type: application/json
+
+{
+  "date": "2024-01-16",
+  "slots": [
+    {
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "isAvailable": true
+    },
+    {
+      "startTime": "09:30",
+      "endTime": "10:00",
 
 ## 🏗️ Project Structure
 
