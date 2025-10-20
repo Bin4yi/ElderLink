@@ -195,13 +195,6 @@ const DriverDashboard = () => {
               </View>
 
               <View style={styles.rideDetails}>
-                <Text style={styles.detailLabel}>Location</Text>
-                <Text style={styles.detailValue} numberOfLines={2}>
-                  {activeDispatch.emergency?.location?.address || 'Address not available'}
-                </Text>
-              </View>
-
-              <View style={styles.rideDetails}>
                 <Text style={styles.detailLabel}>Status</Text>
                 <View
                   style={[
