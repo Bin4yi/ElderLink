@@ -189,19 +189,6 @@ const DriverManagement = () => {
             />
           </div>
 
-          {/* Status Filter */}
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
 
           {/* Assignment Filter */}
           <div className="relative">
@@ -246,9 +233,6 @@ const DriverManagement = () => {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Assigned Ambulance
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Status
-                  </th>
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Actions
                   </th>
@@ -290,27 +274,7 @@ const DriverManagement = () => {
                         <span className="text-sm text-gray-500">Not assigned</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
-                          driver.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {driver.isActive ? (
-                          <>
-                            <CheckCircle size={14} />
-                            Active
-                          </>
-                        ) : (
-                          <>
-                            <XCircle size={14} />
-                            Inactive
-                          </>
-                        )}
-                      </span>
-                    </td>
+                  
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
                         <button
