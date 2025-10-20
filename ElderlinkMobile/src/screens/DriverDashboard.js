@@ -138,28 +138,6 @@ const DriverDashboard = () => {
     );
   };
 
-  const handleMarkAvailable = async () => {
-    Alert.alert(
-      'Mark Ambulance Available',
-      'Mark your ambulance as available for new dispatches?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Mark Available',
-          onPress: async () => {
-            try {
-              await driverService.markAvailable();
-              Alert.alert('Success', 'Ambulance marked as available');
-              loadData();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to mark ambulance as available');
-            }
-          },
-        },
-      ]
-    );
-  };
-
   if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.container}>
@@ -175,24 +153,6 @@ const DriverDashboard = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Dashboard</Text>
-      </View>
-
-      {/* Status Banner */}
-      <View style={styles.statusBanner}>
-        <View style={styles.statusBannerLeft}>
-          <Ionicons name="pulse" size={24} color={COLORS.success} />
-          <View>
-            <Text style={styles.statusBannerTitle}>Status: Active</Text>
-            <Text style={styles.statusBannerSubtitle}>Ready for dispatches</Text>
-          </View>
-        </View>
-        <TouchableOpacity 
-          style={styles.availableButton}
-          onPress={handleMarkAvailable}
-        >
-          <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
-          <Text style={styles.availableButtonText}>Available</Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -356,58 +316,6 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontFamily: 'OpenSans-Bold',
     letterSpacing: 0.5,
-  },
-  statusBanner: {
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  statusBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  statusBannerTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-    fontFamily: 'OpenSans-Bold',
-  },
-  statusBannerSubtitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    fontFamily: 'OpenSans-Regular',
-    marginTop: 2,
-  },
-  availableButton: {
-    backgroundColor: COLORS.success,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    shadowColor: COLORS.success,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  availableButtonText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '700',
-    fontFamily: 'OpenSans-Bold',
   },
   content: {
     flex: 1,
