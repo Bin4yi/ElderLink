@@ -1,28 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add token to requests
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+import api from './api';
 
 // Driver service methods
 export const driverService = {
@@ -33,17 +9,10 @@ export const driverService = {
    */
   getAllDrivers: async (filters = {}) => {
     try {
-      console.log('🔍 Driver Service: Fetching drivers with filters:', filters);
-      console.log('🔍 API Base URL:', API_BASE_URL);
-      console.log('🔍 Token exists:', !!localStorage.getItem('token'));
-      
       const response = await api.get('/drivers', { params: filters });
-      console.log('✅ Driver Service: Response received:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Driver Service: Error fetching drivers:', error);
-      console.error('❌ Error response:', error.response?.data);
-      console.error('❌ Error status:', error.response?.status);
+      console.error('Error fetching drivers:', error);
       throw error.response?.data || error.message;
     }
   },

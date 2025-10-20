@@ -1,7 +1,7 @@
 // backend/scripts/testTreatmentPlanEndpoints.js
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:5002/api/mental-health/treatment-plans';
+const BASE_URL = 'http://localhost:5000/api/mental-health/treatment-plans';
 
 // You'll need to replace these with actual tokens from your logged-in users
 const STAFF_TOKEN = 'YOUR_STAFF_JWT_TOKEN_HERE';

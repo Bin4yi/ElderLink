@@ -246,154 +246,6 @@ exports.getPharmacistProfile = async (req, res) => {
     const user = await User.findByPk(userId, {
       attributes: [
         'id',
-        'firstName',
-        'lastName',
-        'email',
-        'phone',
-        'specialization',
-        'licenseNumber',
-        'experience',
-        'profileImage',
-        'photo',
-        'isActive',
-        'role',
-        'createdAt'
-      ]
-    });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Verify user is pharmacist
-    if (user.role !== 'pharmacist') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Pharmacist role required.'
-      });
-    }
-
-    // Format profile data
-    const profile = {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone || '',
-      specialization: user.specialization || 'Clinical Pharmacy',
-      licenseNumber: user.licenseNumber || '',
-      experience: user.experience || 0,
-      profileImage: user.profileImage || user.photo || '',
-      isActive: user.isActive,
-      role: user.role,
-      joinedDate: user.createdAt
-    };
-
-    res.json({
-      success: true,
-      data: profile
-    });
-
-  } catch (error) {
-    console.error('Error fetching pharmacist profile:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch profile',
-      error: error.message
-    });
-  }
-};
-
-/**
- * Update pharmacist profile information
- */
-exports.updatePharmacistProfile = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const {
-      firstName,
-      lastName,
-      phone,
-      specialization,
-      licenseNumber,
-      experience
-    } = req.body;
-
-    // Find user
-    const user = await User.findByPk(userId);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Verify user is pharmacist
-    if (user.role !== 'pharmacist') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Pharmacist role required.'
-      });
-    }
-
-    // Update fields
-    if (firstName !== undefined) user.firstName = firstName;
-    if (lastName !== undefined) user.lastName = lastName;
-    if (phone !== undefined) user.phone = phone;
-    if (specialization !== undefined) user.specialization = specialization;
-    if (licenseNumber !== undefined) user.licenseNumber = licenseNumber;
-    if (experience !== undefined) user.experience = experience;
-
-    // Save changes
-    await user.save();
-
-    // Return updated profile
-    const updatedProfile = {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      specialization: user.specialization,
-      licenseNumber: user.licenseNumber,
-      experience: user.experience,
-      profileImage: user.profileImage || user.photo,
-      isActive: user.isActive,
-      role: user.role,
-      joinedDate: user.createdAt
-    };
-
-    res.json({
-      success: true,
-      message: 'Profile updated successfully',
-      data: updatedProfile
-    });
-
-  } catch (error) {
-    console.error('Error updating pharmacist profile:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update profile',
-      error: error.message
-    });
-  }
-};
-
-/**
- * Get pharmacist profile information
- */
-exports.getPharmacistProfile = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    // Find user with pharmacist role
-    const user = await User.findByPk(userId, {
-      attributes: [
-        'id',
         'firstName', 
         'lastName', 
         'email', 
@@ -503,7 +355,8 @@ exports.updatePharmacistProfile = async (req, res) => {
       lastName, 
       phone, 
       specialization,
-      licenseNumber
+      licenseNumber,
+      experience
     } = req.body;
 
     // Find user
@@ -530,6 +383,7 @@ exports.updatePharmacistProfile = async (req, res) => {
     if (phone !== undefined) user.phone = phone;
     if (specialization !== undefined) user.specialization = specialization;
     if (licenseNumber !== undefined) user.licenseNumber = licenseNumber;
+    if (experience !== undefined) user.experience = experience;
 
     // Save changes
     await user.save();
@@ -572,6 +426,7 @@ exports.updatePharmacistProfile = async (req, res) => {
       phone: user.phone,
       specialization: user.specialization,
       licenseNumber: user.licenseNumber,
+      experience: user.experience,
       profileImage: user.profileImage || user.photo,
       isActive: user.isActive,
       role: user.role,
@@ -774,6 +629,215 @@ exports.updateFamilyProfile = async (req, res) => {
 
   } catch (error) {
     console.error('Error updating family profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get coordinator profile information
+ */
+exports.getCoordinatorProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Find user with coordinator role
+    const user = await User.findByPk(userId, {
+      attributes: [
+        'id',
+        'firstName',
+        'lastName',
+        'email',
+        'phone',
+        'profileImage',
+        'photo',
+        'isActive',
+        'role',
+        'createdAt'
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify user is coordinator
+    if (user.role !== 'coordinator') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Coordinator role required.'
+      });
+    }
+
+    // Get current month start date
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    
+    // Get coordinator statistics
+    const { EmergencyAlert, AmbulanceDispatch } = require('../models');
+    const { Op } = require('sequelize');
+
+    // Total emergencies handled this month
+    const emergenciesThisMonth = await EmergencyAlert.count({
+      where: {
+        acknowledgedBy: userId,
+        acknowledgedAt: {
+          [Op.gte]: startOfMonth
+        }
+      }
+    });
+
+    // Total dispatches coordinated this month
+    const dispatchesThisMonth = await AmbulanceDispatch.count({
+      where: {
+        coordinatorId: userId,
+        dispatchedAt: {
+          [Op.gte]: startOfMonth
+        }
+      }
+    });
+
+    // Active emergencies
+    const activeEmergencies = await EmergencyAlert.count({
+      where: {
+        acknowledgedBy: userId,
+        status: {
+          [Op.in]: ['acknowledged', 'dispatched', 'en_route']
+        }
+      }
+    });
+
+    // Format profile data
+    const profile = {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone || '',
+      profileImage: user.profileImage || user.photo || '',
+      isActive: user.isActive,
+      role: user.role,
+      department: 'Emergency Coordination',
+      joinDate: user.createdAt,
+      stats: {
+        emergenciesThisMonth,
+        dispatchesThisMonth,
+        activeEmergencies
+      }
+    };
+
+    res.json({
+      success: true,
+      data: profile
+    });
+
+  } catch (error) {
+    console.error('Error fetching coordinator profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch profile',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update coordinator profile information
+ */
+exports.updateCoordinatorProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { phone, profileImage } = req.body;
+
+    // Find user
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify user is coordinator
+    if (user.role !== 'coordinator') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Coordinator role required.'
+      });
+    }
+
+    // Update allowed fields
+    if (phone !== undefined) user.phone = phone;
+    if (profileImage !== undefined) user.profileImage = profileImage;
+
+    // Save changes
+    await user.save();
+
+    // Get stats
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const { EmergencyAlert, AmbulanceDispatch } = require('../models');
+    const { Op } = require('sequelize');
+
+    const emergenciesThisMonth = await EmergencyAlert.count({
+      where: {
+        acknowledgedBy: userId,
+        acknowledgedAt: {
+          [Op.gte]: startOfMonth
+        }
+      }
+    });
+
+    const dispatchesThisMonth = await AmbulanceDispatch.count({
+      where: {
+        coordinatorId: userId,
+        dispatchedAt: {
+          [Op.gte]: startOfMonth
+        }
+      }
+    });
+
+    const activeEmergencies = await EmergencyAlert.count({
+      where: {
+        acknowledgedBy: userId,
+        status: {
+          [Op.in]: ['acknowledged', 'dispatched', 'en_route']
+        }
+      }
+    });
+
+    // Return updated profile
+    const updatedProfile = {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      profileImage: user.profileImage || user.photo,
+      isActive: user.isActive,
+      role: user.role,
+      department: 'Emergency Coordination',
+      joinDate: user.createdAt,
+      stats: {
+        emergenciesThisMonth,
+        dispatchesThisMonth,
+        activeEmergencies
+      }
+    };
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedProfile
+    });
+
+  } catch (error) {
+    console.error('Error updating coordinator profile:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update profile',

@@ -57,6 +57,20 @@ router.get('/family', profileController.getFamilyProfile);
 router.put('/family', profileController.updateFamilyProfile);
 
 /**
+ * @route   GET /api/profile/coordinator
+ * @desc    Get coordinator profile information
+ * @access  Private (Coordinator only)
+ */
+router.get('/coordinator', profileController.getCoordinatorProfile);
+
+/**
+ * @route   PUT /api/profile/coordinator
+ * @desc    Update coordinator profile information
+ * @access  Private (Coordinator only)
+ */
+router.put('/coordinator', profileController.updateCoordinatorProfile);
+
+/**
  * @route   GET /api/profile/settings
  * @desc    Get user settings/preferences
  * @access  Private
