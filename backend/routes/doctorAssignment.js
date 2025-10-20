@@ -55,4 +55,11 @@ router.put('/assignments/:assignmentId/terminate',
   DoctorAssignmentController.terminateAssignment
 );
 
+// Get assigned elders for doctor (doctor-specific endpoint)
+router.get('/doctor/assigned-elders', 
+  authenticate, 
+  authorize('doctor'), 
+  DoctorAssignmentController.getAssignedEldersForDoctor
+);
+
 module.exports = router;

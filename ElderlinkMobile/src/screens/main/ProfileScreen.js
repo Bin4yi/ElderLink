@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -55,37 +55,34 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       {/* Profile Header */}
-      <Card style={styles.profileHeader}>
-        <View style={styles.headerContent}>
-          <View style={styles.avatarContainer}>
-            {(elder?.profilePicture || user?.profilePicture) ? (
-              <Image 
-                source={{ uri: elder?.profilePicture || user?.profilePicture }} 
-                style={styles.avatar}
-              />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={40} color={COLORS.gray500} />
+      <View style={styles.profileHeaderContainer}>
+        <Card style={styles.profileHeader}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.fullName}>{displayName || 'User'}</Text>
+              <View style={styles.detailsRow}>
+                {userAge && (
+                  <View style={styles.detailItem}>
+                    <Ionicons name="calendar-outline" size={16} color={COLORS.primary} />
+                    <Text style={styles.detailText}>{userAge} years old</Text>
+                  </View>
+                )}
+                <View style={styles.detailItem}>
+                  <Ionicons name="mail-outline" size={16} color={COLORS.primary} />
+                  <Text style={styles.detailText}>{user?.email}</Text>
+                </View>
               </View>
-            )}
+            </View>
+            
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={handleEditProfile}
+            >
+              <Ionicons name="create-outline" size={22} color="#FFF" />
+            </TouchableOpacity>
           </View>
-          
-          <View style={styles.nameContainer}>
-            <Text style={styles.fullName}>{displayName || 'User'}</Text>
-            {userAge && (
-              <Text style={styles.ageText}>{userAge} years old</Text>
-            )}
-            <Text style={styles.userEmail}>{user?.email}</Text>
-          </View>
-          
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={handleEditProfile}
-          >
-            <Ionicons name="pencil" size={20} color={COLORS.gray600} />
-          </TouchableOpacity>
-        </View>
-      </Card>
+        </Card>
+      </View>
 
       {/* Personal Information */}
       <Card style={styles.sectionCard}>
@@ -137,105 +134,6 @@ const ProfileScreen = ({ navigation }) => {
         </View>
       </Card>
 
-      {/* Health Information */}
-      {elder && (
-        <Card style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Health Information</Text>
-          
-          <View style={styles.infoRow}>
-            <Ionicons name="medical" size={20} color={COLORS.textSecondary} />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Medical Conditions</Text>
-              <Text style={styles.infoValue}>
-                {elder.medicalConditions || 'None reported'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Ionicons name="bandage" size={20} color={COLORS.textSecondary} />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Allergies</Text>
-              <Text style={styles.infoValue}>
-                {elder.allergies || 'None reported'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Ionicons name="flask" size={20} color={COLORS.textSecondary} />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Current Medications</Text>
-              <Text style={styles.infoValue}>
-                {elder.currentMedications || 'None reported'}
-              </Text>
-            </View>
-          </View>
-        </Card>
-      )}
-
-      {/* App Settings */}
-      <Card style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Settings</Text>
-        
-        <TouchableOpacity
-          style={styles.settingRow}
-          onPress={() => navigation.navigate('Settings')}
-        >
-          <Ionicons name="settings" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.settingText}>App Settings</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray400} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingRow}
-          onPress={() => navigation.navigate('NotificationSettings')}
-        >
-          <Ionicons name="notifications" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.settingText}>Notifications</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray400} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingRow}
-          onPress={() => navigation.navigate('EmergencyContacts')}
-        >
-          <Ionicons name="people" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.settingText}>Emergency Contacts</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray400} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingRow}
-          onPress={() => {
-            Alert.alert(
-              'Privacy Policy',
-              'Your privacy is important to us. Contact your care coordinator for more information about how your data is protected.',
-              [{ text: 'OK' }]
-            );
-          }}
-        >
-          <Ionicons name="shield-checkmark" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.settingText}>Privacy Policy</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray400} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingRow}
-          onPress={() => {
-            Alert.alert(
-              'Help & Support',
-              'For help with the app:\n\n• Contact your family member\n• Reach out to your care coordinator\n• Call the support number provided by your care team',
-              [{ text: 'OK' }]
-            );
-          }}
-        >
-          <Ionicons name="help-circle" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.settingText}>Help & Support</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray400} />
-        </TouchableOpacity>
-      </Card>
-
       {/* Sign Out */}
       <Card style={styles.signOutCard}>
         <Button
@@ -262,37 +160,33 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundLight,
   },
   
+  profileHeaderContainer: {
+    backgroundColor: COLORS.primary,
+    paddingTop: 40,
+    paddingBottom: 80,
+    paddingHorizontal: 20,
+  },
+  
   profileHeader: {
-    marginHorizontal: 20,
-    marginTop: 20,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   
-  avatarContainer: {
-    marginRight: 20,
-  },
-  
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  
-  avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.gray200,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
-  nameContainer: {
+  headerLeft: {
     flex: 1,
+    marginRight: 16,
   },
   
   fullName: {
@@ -300,31 +194,45 @@ const styles = StyleSheet.create({
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
     color: COLORS.textPrimary,
-    marginBottom: 4,
+    marginBottom: 12,
+    letterSpacing: -0.5,
   },
   
-  ageText: {
-    fontSize: 18,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-    marginBottom: 2,
+  detailsRow: {
+    gap: 12,
   },
   
-  userEmail: {
-    fontSize: 16,
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  
+  detailText: {
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.textSecondary,
+    flex: 1,
   },
   
   editButton: {
-    padding: 12,
-    backgroundColor: COLORS.gray50,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   
   sectionCard: {
     marginHorizontal: 20,
-    marginTop: 20,
+    marginTop: -40,
   },
   
   sectionTitle: {
@@ -334,7 +242,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: 20,
   },
-  
+
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -360,23 +268,6 @@ const styles = StyleSheet.create({
     fontFamily: 'OpenSans-SemiBold',
     fontWeight: '600',
     color: COLORS.textPrimary,
-  },
-  
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-  },
-  
-  settingText: {
-    flex: 1,
-    fontSize: 18,
-    fontFamily: 'OpenSans-SemiBold',
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginLeft: 16,
   },
   
   signOutCard: {

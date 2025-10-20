@@ -1,7 +1,7 @@
 // backend/routes/auth.js
 const express = require('express');
 const router = express.Router();
-const { register, login, getProfile } = require('../controllers/authController');
+const { register, login, getProfile, changePassword } = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 
@@ -34,9 +34,35 @@ router.post('/test-body', (req, res) => {
   });
 });
 
+// Get all pharmacies (for doctors to select)
+router.get('/pharmacies', authenticate, async (req, res) => {
+  try {
+    const { User } = require('../models');
+    
+    const pharmacies = await User.findAll({
+      where: { role: 'pharmacist', isActive: true },
+      attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
+      order: [['firstName', 'ASC']]
+    });
+
+    res.json({
+      success: true,
+      pharmacies: pharmacies
+    });
+  } catch (error) {
+    console.error('❌ Error fetching pharmacies:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pharmacies',
+      error: error.message
+    });
+  }
+});
+
 // Make sure all these functions are properly exported from authController
 router.post('/register', validateRegistration, register);
 router.post('/login', validateLogin, login);
 router.get('/profile', authenticate, getProfile);
+router.post('/change-password', authenticate, changePassword);
 
 module.exports = router;

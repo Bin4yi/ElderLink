@@ -39,6 +39,10 @@ const PrescriptionItem = sequelize.define('PrescriptionItem', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  frequency: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   quantityPrescribed: {
     type: DataTypes.INTEGER,
     allowNull: false

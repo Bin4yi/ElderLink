@@ -97,7 +97,7 @@ class AppointmentController {
             [Op.between]: [startOfDay, endOfDay]
           },
           status: {
-            [Op.in]: ['pending', 'approved', 'reserved']
+            [Op.in]: ['upcoming', 'today', 'in-progress', 'reserved']
           }
         }
       });
@@ -275,7 +275,7 @@ class AppointmentController {
           doctorId,
           appointmentDate: new Date(appointmentDate),
           status: {
-            [Op.in]: ['pending', 'approved', 'reserved']
+            [Op.in]: ['upcoming', 'today', 'in-progress', 'reserved']
           }
         }
       });
@@ -305,6 +305,10 @@ class AppointmentController {
         }
       }
 
+      // Get doctor's current consultation fee
+      const doctor = await Doctor.findByPk(doctorId);
+      const consultationFee = doctor ? doctor.consultationFee : null;
+
       // Create a temporary reservation
       // familyMemberId is the user's ID (not a separate table)
       const reservation = await Appointment.create({
@@ -316,7 +320,8 @@ class AppointmentController {
         familyMemberId: req.user.id, // Family member is the logged-in user
         duration: 30,
         type: 'consultation',
-        priority: 'medium'
+        priority: 'medium',
+        consultationFee: consultationFee // Record doctor's fee at booking time
         // reason, elderId, symptoms, notes will be added when completing reservation
       });
 
@@ -581,6 +586,10 @@ class AppointmentController {
       // Get family member ID from authenticated user
       const familyMemberId = req.user.role === 'family_member' ? req.user.id : null;
 
+      // Get doctor's current consultation fee
+      const doctorData = await Doctor.findByPk(doctorId);
+      const consultationFee = doctorData ? doctorData.consultationFee : null;
+
       // Create appointment
       const appointment = await Appointment.create({
         elderId,
@@ -593,7 +602,8 @@ class AppointmentController {
         reason,
         symptoms,
         notes,
-        status: 'pending'
+        status: 'pending',
+        consultationFee: consultationFee // Record doctor's fee at booking time
       });
 
       // Fetch the complete appointment with relations
@@ -649,19 +659,48 @@ class AppointmentController {
   // Get appointments for family member
   static async getAppointments(req, res) {
     try {
+      console.log('📅 getAppointments called');
+      console.log('   User:', req.user ? { id: req.user.id, role: req.user.role, email: req.user.email } : 'NO USER');
+      
       const { status, page = 1, limit = 10 } = req.query;
       const offset = (page - 1) * limit;
 
       const whereClause = {};
       if (req.user.role === 'family_member') {
+        console.log('   Setting familyMemberId:', req.user.id);
         whereClause.familyMemberId = req.user.id;
       } else if (req.user.role === 'elder') {
-        whereClause.elderId = req.user.id;
+        console.log('   Elder role detected, finding Elder record for userId:', req.user.id);
+        // For elders, we need to find their Elder record first
+        const elder = await Elder.findOne({ where: { userId: req.user.id } });
+        console.log('   Elder found:', elder ? `ID=${elder.id}, Name=${elder.firstName} ${elder.lastName}` : 'NULL');
+        if (elder) {
+          whereClause.elderId = elder.id;
+          console.log('   Setting elderId to:', elder.id);
+        } else {
+          console.log('⚠️ No elder profile found for user:', req.user.id);
+          return res.json({
+            success: true,
+            appointments: [],
+            pagination: {
+              currentPage: 1,
+              totalPages: 0,
+              totalItems: 0,
+              itemsPerPage: parseInt(limit)
+            }
+          });
+        }
+      } else {
+        console.log('   Unknown role:', req.user.role);
       }
 
       if (status) {
+        console.log('   Adding status filter:', status);
         whereClause.status = status;
       }
+
+      console.log('   Final whereClause:', JSON.stringify(whereClause));
+      console.log('   Querying appointments...');
 
       const appointments = await Appointment.findAndCountAll({
         where: whereClause,
@@ -687,6 +726,9 @@ class AppointmentController {
         limit: parseInt(limit),
         offset: parseInt(offset)
       });
+
+      console.log(`   ✅ Found ${appointments.count} appointments`);
+      console.log(`   Returning ${appointments.rows.length} rows`);
 
       res.json({
         success: true,
@@ -816,7 +858,7 @@ class AppointmentController {
       await appointment.update({
         appointmentDate: new Date(newDateTime),
         rescheduleReason: reason,
-        status: 'approved' // Assuming rescheduled appointments are approved
+        status: 'upcoming' // Rescheduled appointments go back to upcoming
       });
 
       res.json({

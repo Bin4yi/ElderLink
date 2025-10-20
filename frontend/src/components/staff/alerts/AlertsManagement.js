@@ -104,16 +104,7 @@ const AlertsManagement = () => {
     }
   };
 
-  const handleEmergencyContact = async (alertId) => {
-    try {
-      await healthAlertService.markEmergencyContacted(alertId);
-      toast.success('Emergency services contacted');
-      loadAlerts();
-    } catch (error) {
-      console.error('Failed to mark emergency contacted:', error);
-      toast.error('Failed to update alert');
-    }
-  };
+  // REMOVED: handleEmergencyContact function - emergency services button removed from UI
 
   const getSeverityColor = (severity) => {
     switch (severity) {
@@ -302,7 +293,7 @@ const AlertsManagement = () => {
                         <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
                           {alert.elder?.photo ? (
                             <img
-                              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/uploads/elders/${alert.elder.photo}`}
+                              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/elders/${alert.elder.photo}`}
                               alt={`${alert.elder.firstName} ${alert.elder.lastName}`}
                               className="w-full h-full object-cover"
                             />
@@ -381,7 +372,6 @@ const AlertsManagement = () => {
             onClose={() => setSelectedAlert(null)}
             onAcknowledge={handleAcknowledge}
             onResolve={handleResolve}
-            onEmergencyContact={handleEmergencyContact}
           />
         )}
       </>

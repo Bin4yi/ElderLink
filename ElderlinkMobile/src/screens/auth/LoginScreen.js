@@ -65,10 +65,6 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const navigateToForgotPassword = () => {
-    navigation.navigate(ROUTES.AUTH.FORGOT_PASSWORD);
-  };
-
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -135,15 +131,6 @@ const LoginScreen = ({ navigation }) => {
             required
           />
 
-          {/* Forgot Password Link */}
-          <Button
-            title="Forgot password?"
-            onPress={navigateToForgotPassword}
-            variant="ghost"
-            size="medium"
-            style={styles.forgotButton}
-          />
-
           {/* Login Button */}
           <Button
             title="Sign In"
@@ -205,14 +192,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   
-  forgotButton: {
-    alignSelf: 'flex-end',
-    marginTop: 8,
-    marginBottom: 32,
-  },
-  
   loginButton: {
     marginBottom: 24,
+    marginTop: 32,
   },
 });
 

@@ -73,6 +73,7 @@ app.get("/api", (req, res) => {
 // Route configurations
 const routeConfigs = [
   { path: "./routes/auth", mount: "/api/auth", name: "authRoutes" },
+  { path: "./routes/passwordReset", mount: "/api/password-reset", name: "passwordResetRoutes" },
   { path: "./routes/elder", mount: "/api/elder", name: "elderRoutes" },
   {
     path: "./routes/healthMonitoring",
@@ -136,6 +137,8 @@ const doctorAppointmentsRoutes = require("./routes/doctorAppointments");
 // Import new inventory routes
 const inventoryRoutes = require("./routes/inventory");
 const prescriptionRoutes = require("./routes/prescriptions");
+const deliveryRoutes = require("./routes/deliveries");
+const pharmacistAnalyticsRoutes = require("./routes/pharmacistAnalytics");
 
 // 🚨 ADD: Import emergency routes
 const emergencyRoutes = require("./routes/emergency");
@@ -166,6 +169,12 @@ const resourceRoutes = require("./routes/resourceRoutes");
 const mentalHealthProfileRoutes = require("./routes/mentalHealthProfileRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const staffAssessmentRoutes = require("./routes/staffAssessmentRoutes");
+
+// ✅ ADD: Import monthly sessions routes
+const monthlySessionRoutes = require('./routes/monthlySessions');
+
+// ✅ ADD: Import mobile notifications routes
+const mobileNotificationsRoutes = require('./routes/mobileNotifications');
 
 // 🚨 ADD: Webhook routes FIRST (no auth required)
 app.use("/api/webhook", webhookRoutes);
@@ -203,9 +212,23 @@ try {
   const doctorScheduleRoutes = require("./routes/doctorSchedule");
   app.use("/api/doctor/schedules", doctorScheduleRoutes);
 
+  // Use doctor patients routes
+  const doctorPatientsRoutes = require('./routes/doctorPatients');
+  app.use('/api/doctor/patients', doctorPatientsRoutes);
+
+  // Use doctor profile routes
+  const doctorProfileRoutes = require('./routes/doctorProfile');
+  app.use('/api/doctor/profile', doctorProfileRoutes);
+
+  // Use doctor dashboard routes
+  const doctorDashboardRoutes = require('./routes/doctorDashboard');
+  app.use('/api/doctor/dashboard', doctorDashboardRoutes);
+
   // Use new inventory routes
   app.use("/api/inventory", inventoryRoutes);
   app.use("/api/prescriptions", prescriptionRoutes);
+  app.use("/api/deliveries", deliveryRoutes);
+  app.use("/api/analytics/pharmacist", pharmacistAnalyticsRoutes);
 
   // 🚨 ADD: Use emergency routes
   app.use("/api/emergency", emergencyRoutes);
@@ -221,6 +244,12 @@ try {
 
   // Use profile routes
   app.use("/api/profile", profileRoutes);
+
+  // ✅ ADD: Use monthly sessions routes
+  app.use('/api/monthly-sessions', monthlySessionRoutes);
+
+  // ✅ ADD: Use mobile notifications routes
+  app.use('/api/mobile', mobileNotificationsRoutes);
 
   // Register Mental Health Routes
   app.use("/api/mental-health/assignments", mentalHealthAssignmentRoutes);
@@ -335,12 +364,16 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log("✅ Database connected successfully");
 
-    await sequelize.sync({ alter: true });
-    console.log("✅ Database models synchronized");
+    // await sequelize.sync({ alter: true }); // Commented out to prevent hanging
+    console.log("✅ Database models synchronized (sync skipped)");
 
     // Start reservation cleanup task
     const { startReservationCleanup } = require("./utils/reservationCleanup");
     startReservationCleanup();
+
+    // Start subscription scheduler
+    const { initSubscriptionScheduler } = require("./schedulers/subscriptionScheduler");
+    initSubscriptionScheduler();
 
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);

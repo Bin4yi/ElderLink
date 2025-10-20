@@ -144,6 +144,14 @@ export const elderService = {
           }
         });
         
+        // ✅ FIX: Add authentication fields to FormData
+        formData.append('enableLogin', elderData.enableLogin || false);
+        if (elderData.enableLogin) {
+          formData.append('email', elderData.email || '');
+          formData.append('password', elderData.password || '');
+        }
+        console.log('🔐 Added auth fields - enableLogin:', elderData.enableLogin);
+        
         // Add photo file
         formData.append('photo', elderData.photo);
         console.log('📸 Added photo file:', elderData.photo.name);
@@ -243,14 +251,12 @@ export const elderService = {
       // Handle different response structures
       if (response.data) {
         if (response.data.success && response.data.elders) {
-          console.log('✅ ElderService: Found elders in success response:', response.data.elders.length);
           return {
             success: true,
             elders: response.data.elders,
             count: response.data.count || response.data.elders.length
           };
         } else if (Array.isArray(response.data.elders)) {
-          console.log('✅ ElderService: Found elders in array response:', response.data.elders.length);
           return {
             success: true,
             elders: response.data.elders,
@@ -286,12 +292,8 @@ export const elderService = {
       console.error('❌ ElderService: Error response:', error.response?.data);
       console.error('❌ ElderService: Error status:', error.response?.status);
       
-      return {
-        success: false,
-        elders: [],
-        count: 0,
-        error: error.response?.data?.message || error.message
-      };
+      // Throw the error so the component can catch it
+      throw error;
     }
   },
 

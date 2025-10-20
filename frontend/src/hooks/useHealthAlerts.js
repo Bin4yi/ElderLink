@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
 
-const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002';
+const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const useHealthAlerts = (userId) => {
   const [socket, setSocket] = useState(null);

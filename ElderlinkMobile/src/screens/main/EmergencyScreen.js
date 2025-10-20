@@ -20,7 +20,6 @@ import { Alert as CustomAlert } from '../../components/common/Alert';
 const EmergencyScreen = ({ navigation, route }) => {
   const { user } = useAuth();
   const { emergencyData, clearEmergency } = useEmergency();
-  const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [assignedStaff, setAssignedStaff] = useState([]);
 
   useEffect(() => {
@@ -29,9 +28,8 @@ const EmergencyScreen = ({ navigation, route }) => {
 
   const loadEmergencyData = async () => {
     try {
-      // Load emergency contacts and assigned staff
+      // Load assigned staff
       // This would typically come from your API
-      setEmergencyContacts(emergencyData?.emergencyContacts || []);
       setAssignedStaff(emergencyData?.assignedStaff || []);
     } catch (error) {
       console.error('Error loading emergency data:', error);
@@ -85,23 +83,6 @@ const EmergencyScreen = ({ navigation, route }) => {
       ]
     );
   };
-
-  const renderEmergencyContact = (contact, index) => (
-    <TouchableOpacity
-      key={contact.id || index}
-      style={styles.contactItem}
-      onPress={() => handleCallContact(contact)}
-    >
-      <View style={styles.contactInfo}>
-        <Text style={styles.contactName}>{contact.name}</Text>
-        <Text style={styles.contactPhone}>{contact.phone}</Text>
-        <Text style={styles.contactRelation}>{contact.relationship}</Text>
-      </View>
-      <View style={styles.callButton}>
-        <Ionicons name="call" size={24} color={COLORS.white} />
-      </View>
-    </TouchableOpacity>
-  );
 
   const renderStaffMember = (staff, index) => (
     <TouchableOpacity
@@ -175,12 +156,6 @@ const EmergencyScreen = ({ navigation, route }) => {
               </View>
             )}
             <View style={styles.statusItem}>
-              <Ionicons name="people" size={20} color={COLORS.textSecondary} />
-              <Text style={styles.statusText}>
-                {emergencyData.emergencyContacts?.length || 0} contacts notified
-              </Text>
-            </View>
-            <View style={styles.statusItem}>
               <Ionicons name="medical" size={20} color={COLORS.textSecondary} />
               <Text style={styles.statusText}>
                 {emergencyData.assignedStaff?.length || 0} care staff notified
@@ -188,28 +163,6 @@ const EmergencyScreen = ({ navigation, route }) => {
             </View>
           </Card>
         )}
-
-        {/* Emergency Contacts */}
-        <Card style={styles.contactsCard}>
-          <Text style={styles.contactsTitle}>Emergency Contacts</Text>
-          <Text style={styles.contactsSubtitle}>
-            Your family and friends have been notified. You can call them directly:
-          </Text>
-          
-          {emergencyContacts.length > 0 ? (
-            <View style={styles.contactsList}>
-              {emergencyContacts.map(renderEmergencyContact)}
-            </View>
-          ) : (
-            <View style={styles.noContactsMessage}>
-              <Ionicons name="person-add" size={48} color={COLORS.gray300} />
-              <Text style={styles.noContactsText}>No emergency contacts configured</Text>
-              <Text style={styles.noContactsSubtext}>
-                Add emergency contacts in Settings for faster access during emergencies.
-              </Text>
-            </View>
-          )}
-        </Card>
 
         {/* Care Staff */}
         {assignedStaff.length > 0 && (
@@ -358,94 +311,10 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   
-  contactsCard: {
-    marginBottom: 20,
-  },
-  
-  contactsTitle: {
-    fontSize: 18,
-    fontFamily: 'OpenSans-SemiBold',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  
-  contactsSubtitle: {
-    fontSize: 15,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  
-  contactsList: {
-    gap: 12,
-  },
-  
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  
-  contactInfo: {
-    flex: 1,
-  },
-  
-  contactName: {
-    fontSize: 16,
-    fontFamily: 'OpenSans-SemiBold',
-    color: COLORS.textPrimary,
-    marginBottom: 4,
-  },
-  
-  contactPhone: {
-    fontSize: 15,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-    marginBottom: 2,
-  },
-  
-  contactRelation: {
-    fontSize: 14,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-  },
-  
   callButton: {
     backgroundColor: COLORS.primary,
     padding: 12,
     borderRadius: 8,
-  },
-  
-  noContactsMessage: {
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  
-  noContactsText: {
-    fontSize: 16,
-    fontFamily: 'OpenSans-SemiBold',
-    color: COLORS.textPrimary,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  
-  noContactsSubtext: {
-    fontSize: 14,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 20,
   },
   
   staffCard: {

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, Loader } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const Login = ({ onClose, onSwitchToRegister }) => {
   const [formData, setFormData] = useState({
@@ -150,6 +150,16 @@ const Login = ({ onClose, onSwitchToRegister }) => {
               )}
             </button>
           </div>
+        </div>
+
+        {/* Forgot Password Link */}
+        <div className="flex justify-end">
+          <Link
+            to="/forgot-password"
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Forgot Password?
+          </Link>
         </div>
 
         <button

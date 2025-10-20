@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ambulanceService } from '../../services/ambulance';
 import socketService from '../../services/socket';
+import Loading from '../common/Loading';
 import './AmbulanceTracker.css';
 
 const AmbulanceTracker = () => {
@@ -78,7 +79,7 @@ const AmbulanceTracker = () => {
   if (loading) {
     return (
       <div className="ambulance-tracker loading">
-        <div className="loading-spinner"></div>
+        <Loading text="Loading ambulances..." />
       </div>
     );
   }

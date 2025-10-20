@@ -1,1 +1,11 @@
+<<<<<<< HEAD
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+server.js
+=======
 node_modules/
+>>>>>>> 22da350c94af44c0f7ef1f2d6b6a1bd239fe74f8

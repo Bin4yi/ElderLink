@@ -49,8 +49,8 @@ const Appointment = sequelize.define('Appointment', {
     defaultValue: 'medium'
   },
   status: {
-    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'completed', 'cancelled', 'no-show', 'reserved'),
-    defaultValue: 'pending'
+    type: DataTypes.ENUM('upcoming', 'today', 'in-progress', 'completed', 'cancelled', 'no-show', 'reserved'),
+    defaultValue: 'upcoming'
   },
   reason: {
     type: DataTypes.TEXT,
@@ -111,6 +111,11 @@ const Appointment = sequelize.define('Appointment', {
   paymentStatus: {
     type: DataTypes.ENUM('pending', 'completed', 'expired'),
     defaultValue: 'pending'
+  },
+  consultationFee: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    comment: 'Doctor consultation fee at the time of appointment booking'
   }
 }, {
   tableName: 'Appointments',

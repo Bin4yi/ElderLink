@@ -5,7 +5,7 @@ export const doctorAppointmentService = {
   // Get doctor's appointments
   async getDoctorAppointments(params = {}) {
     try {
-      const { status, date, page = 1, limit = 10 } = params;
+      const { status, date, page = 1, limit = 100 } = params; // Increased to 100 to show more appointments
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString()

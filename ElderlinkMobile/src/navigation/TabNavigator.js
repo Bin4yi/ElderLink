@@ -6,8 +6,9 @@ import { COLORS } from '../utils/colors';
 
 // Import main screens
 import HomeScreen from '../screens/main/HomeScreen';
+import RemindersScreen from '../screens/main/RemindersScreen';
+import HealthMetricsScreen from '../screens/main/HealthMetricsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
-import SettingsScreen from '../screens/main/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -68,11 +69,14 @@ const TabNavigator = () => {
             case ROUTES.HOME:
               iconName = focused ? 'home' : 'home-outline';
               break;
+            case ROUTES.REMINDERS:
+              iconName = focused ? 'notifications' : 'notifications-outline';
+              break;
+            case ROUTES.HEALTH_METRICS:
+              iconName = focused ? 'medical' : 'medical-outline';
+              break;
             case ROUTES.PROFILE:
               iconName = focused ? 'person' : 'person-outline';
-              break;
-            case ROUTES.SETTINGS:
-              iconName = focused ? 'settings' : 'settings-outline';
               break;
             default:
               iconName = 'circle-outline';
@@ -101,22 +105,32 @@ const TabNavigator = () => {
       />
       
       <Tab.Screen 
+        name={ROUTES.REMINDERS} 
+        component={RemindersScreen}
+        options={{
+          title: 'Reminders',
+          headerTitle: 'My Appointments',
+          tabBarLabel: 'Reminders',
+        }}
+      />
+      
+      <Tab.Screen 
+        name={ROUTES.HEALTH_METRICS} 
+        component={HealthMetricsScreen}
+        options={{
+          title: 'Health',
+          headerTitle: 'My Health',
+          tabBarLabel: 'Health',
+        }}
+      />
+      
+      <Tab.Screen 
         name={ROUTES.PROFILE} 
         component={ProfileScreen}
         options={{
           title: 'Profile',
           headerTitle: 'My Profile',
           tabBarLabel: 'Profile',
-        }}
-      />
-      
-      <Tab.Screen 
-        name={ROUTES.SETTINGS} 
-        component={SettingsScreen}
-        options={{
-          title: 'Settings',
-          headerTitle: 'Settings',
-          tabBarLabel: 'Settings',
         }}
       />
     </Tab.Navigator>

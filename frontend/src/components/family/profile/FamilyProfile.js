@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Users, 
@@ -14,42 +14,120 @@ import {
   Home,
   Briefcase,
   Clock,
-  Globe
+  Globe,
+  Save,
+  Loader
 } from 'lucide-react';
 import RoleLayout from '../../common/RoleLayout';
+import axios from 'axios';
 
 const FamilyProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [profile, setProfile] = useState(null);
 
-  // Dummy family member data
-  const familyMember = {
-    firstName: "Sarah",
-    lastName: "Johnson",
-    email: "sarah.johnson@email.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Maple Street, Springfield, IL 62701",
-    dateOfBirth: "1985-06-15",
-    relationship: "Primary Caregiver",
-    occupation: "Registered Nurse",
-    emergencyContact: "Robert Johnson - +1 (555) 987-6543",
-    joinedDate: "2024-01-15",
-    profilePhoto: null,
-    preferences: {
-      notifications: "All",
-      language: "English",
-      timezone: "EST"
-    },
-    connectedElders: [
-      { name: "Margaret Johnson", relationship: "Mother", status: "Active" },
-      { name: "Robert Johnson Sr.", relationship: "Father", status: "Active" }
-    ]
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/profile/family', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        setProfile(response.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      setError(err.response?.data?.message || 'Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const [profile, setProfile] = useState(familyMember);
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+      
+      const token = localStorage.getItem('token');
+      const response = await axios.put(
+        'http://localhost:5000/api/profile/family',
+        {
+          phone: profile.phone,
+          profileImage: profile.profileImage
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      if (response.data.success) {
+        setProfile(response.data.data);
+        setSuccess('Profile updated successfully!');
+        setIsEditing(false);
+        setTimeout(() => setSuccess(null), 3000);
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError(err.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <RoleLayout>
+        <div className="flex items-center justify-center h-screen">
+          <Loader className="w-8 h-8 animate-spin text-red-600" />
+        </div>
+      </RoleLayout>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <RoleLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error || 'Failed to load profile'}</p>
+            <button 
+              onClick={fetchProfile}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </RoleLayout>
+    );
+  }
 
   return (
     <RoleLayout>
       <div className="max-w-4xl mx-auto space-y-6 p-6">
+        {/* Success/Error Messages */}
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl">
+            {success}
+          </div>
+        )}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl">
+            {error}
+          </div>
+        )}
+
         {/* Header */}
         <div className="bg-gradient-to-r from-red-500 via-red-600 to-pink-600 rounded-2xl p-8 text-white shadow-xl">
           <div className="flex items-center justify-between">
@@ -86,13 +164,42 @@ const FamilyProfile = () => {
                 </div>
               </div>
             </div>
-            <button 
-              onClick={() => setIsEditing(!isEditing)}
-              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl px-6 py-3 flex items-center transition-all duration-200 hover:scale-105"
-            >
-              <Edit className="w-5 h-5 mr-2" />
-              {isEditing ? 'Save Changes' : 'Edit Profile'}
-            </button>
+            {isEditing ? (
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setIsEditing(false)}
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl px-6 py-3 flex items-center transition-all duration-200"
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSave}
+                  className="bg-white hover:bg-white/90 text-red-600 rounded-xl px-6 py-3 flex items-center transition-all duration-200 hover:scale-105"
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <>
+                      <Loader className="w-5 h-5 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl px-6 py-3 flex items-center transition-all duration-200 hover:scale-105"
+              >
+                <Edit className="w-5 h-5 mr-2" />
+                Edit Profile
+              </button>
+            )}
           </div>
         </div>
 
@@ -138,15 +245,9 @@ const FamilyProfile = () => {
                   <Mail className="w-5 h-5 mr-2 text-red-600" />
                   <span className="font-semibold text-gray-900">Email Address</span>
                 </div>
-                {isEditing ? (
-                  <input 
-                    type="email"
-                    value={profile.email}
-                    onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  />
-                ) : (
-                  <p className="text-gray-700 ml-7">{profile.email}</p>
+                <p className="text-gray-700 ml-7">{profile.email}</p>
+                {isEditing && (
+                  <p className="text-xs text-gray-500 ml-7 mt-1">Email cannot be changed</p>
                 )}
               </div>
 
@@ -169,94 +270,77 @@ const FamilyProfile = () => {
 
               <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-4">
                 <div className="flex items-center mb-2">
-                  <MapPin className="w-5 h-5 mr-2 text-red-600" />
-                  <span className="font-semibold text-gray-900">Address</span>
+                  <User className="w-5 h-5 mr-2 text-red-600" />
+                  <span className="font-semibold text-gray-900">Full Name</span>
                 </div>
-                {isEditing ? (
-                  <textarea 
-                    value={profile.address}
-                    onChange={(e) => setProfile(prev => ({ ...prev, address: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    rows="2"
-                  />
-                ) : (
-                  <p className="text-gray-700 ml-7">{profile.address}</p>
+                <p className="text-gray-700 ml-7">{profile.firstName} {profile.lastName}</p>
+                {isEditing && (
+                  <p className="text-xs text-gray-500 ml-7 mt-1">Name cannot be changed</p>
                 )}
               </div>
 
               <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-4">
                 <div className="flex items-center mb-2">
                   <Calendar className="w-5 h-5 mr-2 text-red-600" />
-                  <span className="font-semibold text-gray-900">Date of Birth</span>
+                  <span className="font-semibold text-gray-900">Member Since</span>
                 </div>
                 <p className="text-gray-700 ml-7">
-                  {new Date(profile.dateOfBirth).toLocaleDateString()}
+                  {new Date(profile.joinedDate).toLocaleDateString()}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Professional Information */}
+          {/* Account Information */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="bg-gradient-to-r from-red-50 to-pink-50 px-6 py-4 border-b border-gray-200">
               <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                <Briefcase className="w-6 h-6 mr-3 text-red-600" />
-                Professional & Emergency Info
+                <Shield className="w-6 h-6 mr-3 text-red-600" />
+                Account Information
               </h3>
             </div>
             
             <div className="p-6 space-y-4">
               <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-4">
                 <div className="flex items-center mb-2">
-                  <Briefcase className="w-5 h-5 mr-2 text-red-600" />
-                  <span className="font-semibold text-gray-900">Occupation</span>
-                </div>
-                {isEditing ? (
-                  <input 
-                    type="text"
-                    value={profile.occupation}
-                    onChange={(e) => setProfile(prev => ({ ...prev, occupation: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  />
-                ) : (
-                  <p className="text-gray-700 ml-7">{profile.occupation}</p>
-                )}
-              </div>
-
-              <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-4">
-                <div className="flex items-center mb-2">
-                  <Heart className="w-5 h-5 mr-2 text-red-600" />
-                  <span className="font-semibold text-gray-900">Relationship</span>
-                </div>
-                <p className="text-gray-700 ml-7">{profile.relationship}</p>
-              </div>
-
-              <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-4">
-                <div className="flex items-center mb-2">
                   <Shield className="w-5 h-5 mr-2 text-red-600" />
-                  <span className="font-semibold text-gray-900">Emergency Contact</span>
+                  <span className="font-semibold text-gray-900">Account Status</span>
                 </div>
-                {isEditing ? (
-                  <input 
-                    type="text"
-                    value={profile.emergencyContact}
-                    onChange={(e) => setProfile(prev => ({ ...prev, emergencyContact: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  />
-                ) : (
-                  <p className="text-gray-700 ml-7">{profile.emergencyContact}</p>
-                )}
+                <p className="text-gray-700 ml-7">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    profile.isActive 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {profile.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-4">
-                  <div className="font-semibold text-gray-900 mb-1">Language</div>
-                  <div className="text-gray-700">{profile.preferences.language}</div>
+              <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-4">
+                <div className="flex items-center mb-2">
+                  <User className="w-5 h-5 mr-2 text-red-600" />
+                  <span className="font-semibold text-gray-900">User Role</span>
                 </div>
-                <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-4">
-                  <div className="font-semibold text-gray-900 mb-1">Timezone</div>
-                  <div className="text-gray-700">{profile.preferences.timezone}</div>
+                <p className="text-gray-700 ml-7 capitalize">{profile.role.replace('_', ' ')}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-4">
+                <div className="flex items-center mb-2">
+                  <Users className="w-5 h-5 mr-2 text-red-600" />
+                  <span className="font-semibold text-gray-900">Connected Elders</span>
                 </div>
+                <p className="text-gray-700 ml-7">{profile.connectedElders?.length || 0} Elder(s)</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-4">
+                <div className="flex items-center mb-2">
+                  <Camera className="w-5 h-5 mr-2 text-red-600" />
+                  <span className="font-semibold text-gray-900">Profile Image</span>
+                </div>
+                <p className="text-gray-700 ml-7 text-sm">
+                  {profile.profileImage ? 'Uploaded' : 'No image uploaded'}
+                </p>
               </div>
             </div>
           </div>
@@ -299,55 +383,30 @@ const FamilyProfile = () => {
           </div>
         </div>
 
-        {/* Account Preferences */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-red-50 to-pink-50 px-6 py-4 border-b border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center">
-              <Globe className="w-6 h-6 mr-3 text-red-600" />
-              Account Preferences
-            </h3>
-          </div>
-          
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-6 text-center">
-                <div className="font-semibold text-gray-900 mb-2">Notifications</div>
-                <div className="text-red-600 text-lg font-bold">{profile.preferences.notifications}</div>
-                <div className="text-sm text-gray-600 mt-1">Preference Level</div>
-              </div>
-              <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-6 text-center">
-                <div className="font-semibold text-gray-900 mb-2">Privacy Level</div>
-                <div className="text-red-600 text-lg font-bold">Standard</div>
-                <div className="text-sm text-gray-600 mt-1">Security Setting</div>
-              </div>
-              <div className="bg-gradient-to-br from-gray-50 to-red-50 rounded-xl p-6 text-center">
-                <div className="font-semibold text-gray-900 mb-2">Data Sharing</div>
-                <div className="text-red-600 text-lg font-bold">Enabled</div>
-                <div className="text-sm text-gray-600 mt-1">For Better Care</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Quick Actions */}
         <div className="bg-gradient-to-r from-red-100 to-pink-100 rounded-2xl p-6 border border-red-200">
           <h3 className="text-lg font-bold text-red-900 mb-4">Quick Actions</h3>
           <div className="flex flex-wrap gap-3">
-            <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+            <button 
+              onClick={() => setIsEditing(true)}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+            >
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
             </button>
-            <button className="bg-white hover:bg-gray-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+            <button 
+              onClick={() => alert('Photo upload feature coming soon!')}
+              className="bg-white hover:bg-gray-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+            >
               <Camera className="w-4 h-4 mr-2" />
               Update Photo
             </button>
-            <button className="bg-white hover:bg-gray-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
-              <Shield className="w-4 h-4 mr-2" />
-              Privacy Settings
-            </button>
-            <button className="bg-white hover:bg-gray-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+            <button 
+              onClick={() => window.location.href = '/family/subscription'}
+              className="bg-white hover:bg-gray-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+            >
               <Users className="w-4 h-4 mr-2" />
-              Manage Elders
+              Manage Subscriptions
             </button>
           </div>
         </div>

@@ -14,6 +14,9 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Login from "./components/auth/Login";
+import ForgotPassword from "./components/auth/ForgotPassword";
+import VerifyOTP from "./components/auth/VerifyOTP";
+import ResetPassword from "./components/auth/ResetPassword";
 
 // Admin
 import AdminDashboard from "./components/admin/dashboard/AdminDashboard";
@@ -25,20 +28,26 @@ import SystemAnalytics from "./components/admin/analytics/SystemAnalytics";
 import CoordinatorDashboard from "./components/coordinator/CoordinatorDashboard";
 
 // Doctor
-import DoctorDashboard from "./components/doctor/dashboard/DoctorDashboard";
-import PatientList from "./components/doctor/patients/PatientList";
-import AppointmentManagement from "./components/doctor/appointments/AppointmentManagement";
-import ConsultationHistory from "./components/doctor/consultations/ConsultationHistory";
-import MedicalRecords from "./components/doctor/records/MedicalRecords";
+import DoctorDashboard from './components/doctor/dashboard/DoctorDashboard';
+import PatientList from './components/doctor/patients/PatientList';
+import AppointmentManagement from './components/doctor/appointments/AppointmentManagement';
+import DoctorScheduleManager from './components/doctor/appointments/DoctorScheduleManager';
+import ConsultationHistory from './components/doctor/consultations/ConsultationHistory';
+import MedicalRecords from './components/doctor/records/MedicalRecords';
+import PrescriptionList from './components/doctor/prescriptions/PrescriptionList';
+import CreatePrescription from './components/doctor/prescriptions/CreatePrescription';
+import ZoomMeetingManager from './components/doctor/sessions/ZoomMeetingManager';
+import DoctorProfile from './components/doctor/profile/DoctorProfile';
+
 
 // Family
 import FamilyDashboard from "./components/family/dashboard/FamilyDashboard";
 import AppointmentList from "./components/family/appointments/AppointmentList";
 import MonthlySessions from "./components/family/sessions/MonthlySessions";
+import AutoScheduleMonthly from "./components/family/sessions/AutoScheduleMonthly";
 import Doctors from "./components/family/doctors/Doctors";
 import DoctorAssignment from "./components/family/doctors/DoctorAssignment"; // NEW IMPORT
 import AppointmentBooking from "./components/family/appointments/AppointmentBooking";
-import FamilySettings from "./components/family/settings/FamilySettings";
 import FamilyProfile from "./components/family/profile/FamilyProfile";
 import FamilyHealthReports from "./components/family/reports/FamilyHealthReports";
 import FamilySubscriptions from "./components/family/subscription/FamilySubscriptions";
@@ -47,14 +56,16 @@ import AppointmentPaymentForm from "./components/family/appointments/Appointment
 import DoctorCalendarModal from "./components/family/appointments/DoctorCalendarModal";
 
 // Pharmacy
-import PharmacyDashboard from "./components/pharmacist/dashboard/PharmacyDashboard";
-import MedicationManagement from "./components/pharmacist/medications/MedicationManagement";
-import DeliverySchedule from "./components/pharmacist/delivery/DeliverySchedule";
-import PrescriptionManagement from "./components/pharmacist/prescriptions/PrescriptionManagement";
-import InventoryManagement from "./components/pharmacist/inventory/InventoryManagement";
-import AddNewItem from "./components/pharmacist/inventory/AddNewItem";
-import PharmacyProfile from "./components/pharmacist/profile/Pharmacyprofile";
-import MedicineProfile from "./components/pharmacist/inventory/MedicineProfile";
+import PharmacyDashboard from './components/pharmacist/dashboard/PharmacyDashboard';
+import PharmacistAnalysis from './components/pharmacist/analysis/PharmacistAnalysis';
+import DeliverySchedule from './components/pharmacist/delivery/DeliverySchedule';
+import PrescriptionManagement from './components/pharmacist/prescriptions/PrescriptionManagement';
+import FillPrescription from './components/pharmacist/prescriptions/FillPrescription';
+import CreateDelivery from './components/pharmacist/prescriptions/CreateDelivery';
+import InventoryManagement from './components/pharmacist/inventory/InventoryManagement';
+import AddNewItem from './components/pharmacist/inventory/AddNewItem';
+import PharmacyProfile from './components/pharmacist/profile/Pharmacyprofile';
+import MedicineProfile from './components/pharmacist/inventory/MedicineProfile';
 
 // Mental Health Consultant Components
 import MentalHealthDashboard from "./components/mental-health/dashboard/MentalHealthDashboard";
@@ -125,11 +136,17 @@ function App() {
                     path="/doctor/appointments"
                     element={<AppointmentManagement />}
                   />
+                  <Route path="/doctor/schedule" element={<DoctorScheduleManager />} />
                   <Route
                     path="/doctor/consultations"
                     element={<ConsultationHistory />}
                   />
                   <Route path="/doctor/records" element={<MedicalRecords />} />
+              <Route path="/doctor/prescriptions" element={<PrescriptionList />} />
+              <Route path="/doctor/prescriptions/create-from-consultation/:consultationId" element={<CreatePrescription />} />
+              <Route path="/doctor/zoom-meetings" element={<ZoomMeetingManager />} />
+                  <Route path="/doctor/profile" element={<DoctorProfile />} />
+                  
                   {/* Family routes */}
                   <Route
                     path="/family/dashboard"
@@ -143,13 +160,13 @@ function App() {
                     path="/family/sessions"
                     element={<MonthlySessions />}
                   />
+                  <Route path="/family/sessions/auto-schedule" element={<AutoScheduleMonthly />} />
                   <Route path="/family/doctors" element={<Doctors />} />
                   <Route
                     path="/family/doctor-assignment"
                     element={<DoctorAssignment />}
                   />{" "}
                   {/* NEW ROUTE */}
-                  <Route path="/family/settings" element={<FamilySettings />} />
                   <Route path="/family/profile" element={<FamilyProfile />} />
                   <Route
                     path="/family/health-reports"
@@ -165,38 +182,17 @@ function App() {
                     element={<DoctorCalendarModal />}
                   />
                   {/* Pharmacy routes */}
-                  <Route
-                    path="/pharmacist/dashboard"
-                    element={<PharmacyDashboard />}
-                  />
-                  <Route
-                    path="/pharmacist/medications"
-                    element={<MedicationManagement />}
-                  />
-                  <Route
-                    path="/pharmacist/delivery"
-                    element={<DeliverySchedule />}
-                  />
-                  <Route
-                    path="/pharmacist/prescriptions"
-                    element={<PrescriptionManagement />}
-                  />
-                  <Route
-                    path="/pharmacist/inventory"
-                    element={<InventoryManagement />}
-                  />
-                  <Route
-                    path="/pharmacist/inventory/add"
-                    element={<AddNewItem />}
-                  />
-                  <Route
-                    path="/pharmacist/profile"
-                    element={<PharmacyProfile />}
-                  />
-                  <Route
-                    path="/pharmacist/medicine/:id"
-                    element={<MedicineProfile />}
-                  />
+                  <Route path="/pharmacist/dashboard" element={<PharmacyDashboard />} />
+                  <Route path="/pharmacist/analysis" element={<PharmacistAnalysis />} />
+                  <Route path="/pharmacist/delivery" element={<DeliverySchedule />} />
+                  <Route path="/pharmacist/prescriptions" element={<PrescriptionManagement />} />
+                  <Route path="/pharmacist/prescriptions/:id/fill" element={<FillPrescription />} />
+                  <Route path="/pharmacist/prescriptions/:prescriptionId/create-delivery" element={<CreateDelivery />} />
+                  <Route path="/pharmacist/inventory" element={<InventoryManagement />} />
+                  <Route path="/pharmacist/inventory/add" element={<AddNewItem />} />
+                  <Route path="/pharmacist/profile" element={<PharmacyProfile />} />
+                  <Route path="/pharmacist/medicine/:id" element={<MedicineProfile />} />
+                  
                   {/* Mental Health routes */}
                   <Route
                     path="/mental-health/dashboard"
@@ -272,6 +268,12 @@ function App() {
                   />
                   <Route path="/elder/emergency" element={<ElderEmergency />} />
                   <Route path="/elder/profile" element={<ElderProfile />} />
+                  
+                  {/* Password Reset Routes */}
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/verify-otp" element={<VerifyOTP />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  
                   {/* Booking and Payment routes */}
                   <Route
                     path="/appointment-booking"
