@@ -36,7 +36,7 @@ const PatientsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'appointments', 'assignments'
+  const [activeTab, setActiveTab] = useState('appointments'); // 'appointments', 'assignments'
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
   const [selectedPatients, setSelectedPatients] = useState([]);
@@ -272,20 +272,7 @@ const PatientsPage = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Patients</p>
-                <p className="text-2xl font-bold text-gray-900">{statistics.unique}</p>
-                <p className="text-xs text-gray-500">Unique patients</p>
-              </div>
-            </div>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -330,23 +317,6 @@ const PatientsPage = () => {
         <div className="bg-white rounded-lg shadow-sm p-1">
           <div className="flex gap-2">
             <button
-              onClick={() => setActiveTab('all')}
-              className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
-                activeTab === 'all'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              All Patients
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                activeTab === 'all' ? 'bg-blue-700' : 'bg-gray-200 text-gray-700'
-              }`}>
-                {statistics.unique}
-              </span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('appointments')}
               className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
                 activeTab === 'appointments'
@@ -354,7 +324,7 @@ const PatientsPage = () => {
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <CalendarDays className="w-4 h-4" />
+              <Calendar className="w-4 h-4" />
               Appointment Patients
               <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                 activeTab === 'appointments' ? 'bg-purple-700' : 'bg-gray-200 text-gray-700'
@@ -462,15 +432,12 @@ const PatientsPage = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Family Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredPatients.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center">
+                    <td colSpan="7" className="px-6 py-12 text-center">
                       <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                       <h3 className="text-lg font-semibold text-gray-700 mb-2">No Patients Found</h3>
                       <p className="text-gray-500">
@@ -603,34 +570,6 @@ const PatientsPage = () => {
                         ) : (
                           <div className="text-sm text-gray-500">No family contact</div>
                         )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2">
-                          <button 
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Video Call"
-                          >
-                            <Video className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                            title="Medical Records"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                            title="More Options"
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   ))

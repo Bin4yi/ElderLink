@@ -8,9 +8,10 @@ class DoctorPatientController {
     try {
       // Step 2: Get Doctor Information
       const userId = req.user.id;
-      const { search, status, riskLevel, page = 1, limit = 100 } = req.query;
+      const { search, status, riskLevel, source, page = 1, limit = 100 } = req.query;
 
       console.log('🔍 Getting patients for doctor user:', userId);
+      console.log('🔍 Source filter:', source);
 
       // Find doctor profile from Doctor table using user ID
       const doctor = await Doctor.findOne({
@@ -125,14 +126,14 @@ class DoctorPatientController {
       // Add appointment patients
       validAppointments.forEach(apt => {
         if (apt.elder) {
-          const existingPatient = patientMap.get(apt.elder.id);
           patientMap.set(apt.elder.id, {
             elder: apt.elder,
-            source: existingPatient ? 'both' : 'appointment',
+            source: 'appointment',
             appointmentDate: apt.appointmentDate,
             appointmentStatus: apt.status,
             familyMember: apt.familyMember || apt.elder.subscription?.user,
-            assignmentType: existingPatient?.assignmentType
+            assignmentType: null,
+            assignmentDate: null
           });
         }
       });
@@ -141,15 +142,23 @@ class DoctorPatientController {
       validAssignments.forEach(assignment => {
         if (assignment.elder) {
           const existing = patientMap.get(assignment.elder.id);
-          patientMap.set(assignment.elder.id, {
-            elder: assignment.elder,
-            source: existing ? 'both' : 'assignment',
-            assignmentType: assignment.assignmentType,
-            assignmentDate: assignment.assignmentDate,
-            appointmentDate: existing?.appointmentDate,
-            appointmentStatus: existing?.appointmentStatus,
-            familyMember: assignment.familyMember || assignment.elder.subscription?.user
-          });
+          if (existing) {
+            // Patient exists in appointments, mark as both
+            existing.source = 'both';
+            existing.assignmentType = assignment.assignmentType;
+            existing.assignmentDate = assignment.assignmentDate;
+          } else {
+            // New patient from assignment only
+            patientMap.set(assignment.elder.id, {
+              elder: assignment.elder,
+              source: 'assignment',
+              assignmentType: assignment.assignmentType,
+              assignmentDate: assignment.assignmentDate,
+              appointmentDate: null,
+              appointmentStatus: null,
+              familyMember: assignment.familyMember || assignment.elder.subscription?.user
+            });
+          }
         }
       });
 
@@ -186,7 +195,7 @@ class DoctorPatientController {
             [Op.in]: patientIds
           }
         },
-        order: [['recordDate', 'DESC']]
+        order: [['monitoringDate', 'DESC']]
       });
       
       // Group vitals manually to get latest for each patient
@@ -343,6 +352,23 @@ class DoctorPatientController {
 
       if (riskLevel) {
         patients = patients.filter(p => p.riskLevel === riskLevel);
+      }
+
+      // Filter by source (appointment, assignment, or both)
+      console.log('📊 Before source filter:', patients.length);
+      console.log('📊 Patient sources:', patients.map(p => ({ name: p.name, source: p.source })));
+      
+      if (source) {
+        const beforeFilter = patients.length;
+        patients = patients.filter(p => {
+          if (source === 'appointment') {
+            return p.source === 'appointment' || p.source === 'both';
+          } else if (source === 'assignment') {
+            return p.source === 'assignment' || p.source === 'both';
+          }
+          return true;
+        });
+        console.log(`✅ Filtered by source '${source}': ${beforeFilter} -> ${patients.length} patients`);
       }
 
       // Step 7: Calculate Statistics

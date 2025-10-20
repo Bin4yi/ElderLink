@@ -97,7 +97,7 @@ class AppointmentController {
             [Op.between]: [startOfDay, endOfDay]
           },
           status: {
-            [Op.in]: ['upcoming', 'today', 'in-progress', 'reserved']
+            [Op.in]: ['upcoming', 'today', 'in-progress', 'reserved', 'pending']
           }
         }
       });
@@ -115,14 +115,25 @@ class AppointmentController {
         allSlots = allSlots.concat(slots);
       }
 
-      // Sort slots by time
-      allSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+      // Remove duplicate slots by startTime (keep the first occurrence)
+      const uniqueSlots = [];
+      const seenTimes = new Set();
+      
+      for (const slot of allSlots) {
+        if (!seenTimes.has(slot.startTime)) {
+          seenTimes.add(slot.startTime);
+          uniqueSlots.push(slot);
+        }
+      }
 
-      console.log(`✅ Generated ${allSlots.length} available slot(s)`);
+      // Sort slots by time
+      uniqueSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+      console.log(`✅ Total slots generated: ${allSlots.length}, Unique slots: ${uniqueSlots.length}`);
 
       res.json({
         success: true,
-        availableSlots: allSlots
+        availableSlots: uniqueSlots
       });
     } catch (error) {
       console.error('❌ Error fetching doctor availability:', error);
@@ -201,7 +212,7 @@ class AppointmentController {
     const dateStr = date.toISOString().split('T')[0];
     const startTime = new Date(`${dateStr}T${schedule.startTime}`);
     const endTime = new Date(`${dateStr}T${schedule.endTime}`);
-    const slotDuration = schedule.slotDuration || 30; // Default 30 minutes
+    const slotDuration = 60; // Fixed 60 minutes (hourly slots only)
 
     console.log(`⏰ Time range: ${startTime} to ${endTime}`);
 
@@ -231,6 +242,9 @@ class AppointmentController {
             if (new Date() < expiresAt) {
               status = 'reserved';
             }
+          } else if (['pending', 'upcoming', 'today', 'in-progress'].includes(conflictingAppointment.status)) {
+            // Slot is booked (pending payment or confirmed)
+            status = 'booked';
           } else {
             status = 'booked';
           }
@@ -889,9 +903,13 @@ class AppointmentController {
         });
       }
 
+      // Update payment status AND change appointment status to 'upcoming' to block the slot
       await appointment.update({
-        paymentStatus: 'completed'
+        paymentStatus: 'completed',
+        status: 'upcoming' // Block the slot for others after successful payment
       });
+
+      console.log('✅ Payment completed and slot blocked for appointment:', id);
 
       res.json({
         success: true,

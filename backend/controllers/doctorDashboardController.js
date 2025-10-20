@@ -293,12 +293,12 @@ class DoctorDashboardController {
             attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
           }
         ],
-        order: [['appointmentTime', 'ASC']]
+        order: [['appointmentDate', 'ASC']]
       });
 
       const formattedSchedule = schedule.map(apt => ({
         id: apt.id,
-        time: apt.appointmentTime,
+        time: apt.appointmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         date: apt.appointmentDate,
         patient: {
           id: apt.elder?.id,
@@ -314,7 +314,7 @@ class DoctorDashboardController {
           email: apt.familyMember.email,
           phone: apt.familyMember.phone
         } : null,
-        type: apt.appointmentType,
+        type: apt.type,
         reason: apt.reason,
         status: apt.status,
         notes: apt.notes
@@ -366,10 +366,10 @@ class DoctorDashboardController {
           {
             model: Appointment,
             as: 'appointment',
-            attributes: ['id', 'appointmentType', 'status']
+            attributes: ['id', 'type', 'status']
           }
         ],
-        order: [['consultationDate', 'DESC']],
+        order: [['sessionDate', 'DESC']],
         limit: parseInt(limit)
       });
 
@@ -383,8 +383,8 @@ class DoctorDashboardController {
         },
         diagnosis: consultation.diagnosis,
         treatment: consultation.treatment,
-        date: consultation.consultationDate,
-        appointmentType: consultation.appointment?.appointmentType,
+        date: consultation.sessionDate,
+        appointmentType: consultation.appointment?.type,
         priority: consultation.followUpRequired ? 'high' : 'normal',
         followUpDate: consultation.followUpDate
       }));
@@ -530,7 +530,7 @@ class DoctorDashboardController {
       const appointments = await Appointment.findAll({
         where: {
           doctorId: doctor.id,
-          status: { [Op.in]: ['scheduled', 'confirmed'] },
+          status: { [Op.in]: ['upcoming', 'today'] },
           appointmentDate: {
             [Op.between]: [new Date(), futureDate]
           }
@@ -547,14 +547,14 @@ class DoctorDashboardController {
             attributes: ['id', 'firstName', 'lastName', 'phone']
           }
         ],
-        order: [['appointmentDate', 'ASC'], ['appointmentTime', 'ASC']],
+        order: [['appointmentDate', 'ASC']],
         limit: parseInt(limit)
       });
 
       const formattedAppointments = appointments.map(apt => ({
         id: apt.id,
         date: apt.appointmentDate,
-        time: apt.appointmentTime,
+        time: apt.appointmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         patient: {
           id: apt.elder?.id,
           name: `${apt.elder?.firstName || ''} ${apt.elder?.lastName || ''}`.trim(),
@@ -564,7 +564,7 @@ class DoctorDashboardController {
             ? Math.floor((new Date() - new Date(apt.elder.dateOfBirth)) / 31557600000)
             : null
         },
-        type: apt.appointmentType,
+        type: apt.type,
         reason: apt.reason,
         status: apt.status,
         familyMemberPhone: apt.familyMember?.phone

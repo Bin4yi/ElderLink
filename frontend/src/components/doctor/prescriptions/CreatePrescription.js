@@ -184,7 +184,7 @@ const CreatePrescriptionFromConsultation = () => {
         elderId: elder.id,
         appointmentId: consultationId,
         pharmacyId: selectedPharmacyId,
-        medications: selectedItems,
+        items: selectedItems, // Changed from 'medications' to 'items'
         notes: notes,
         deliveryRequired: deliveryRequired,
         deliveryAddress: deliveryRequired ? deliveryAddress : null
@@ -193,7 +193,7 @@ const CreatePrescriptionFromConsultation = () => {
       console.log('📤 Submitting prescription:', prescriptionData);
 
       const response = await axios.post(
-        `${API_BASE_URL}/prescriptions`,
+        `${API_BASE_URL}/prescriptions/doctor/create`,
         prescriptionData,
         {
           headers: { Authorization: `Bearer ${token}` }

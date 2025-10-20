@@ -986,23 +986,56 @@ const ConsultationHistory = () => {
                             )}
 
                             {/* Action Buttons */}
-                            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 pt-4 border-t border-gray-200">
+                              {/* Last Record Button */}
+                              <button
+                                onClick={() => handleViewLastRecord({ elder: session.elder, id: session.id })}
+                                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                              >
+                                <History className="w-4 h-4" />
+                                <span className="hidden sm:inline">Last Record</span>
+                                <span className="sm:hidden">Record</span>
+                              </button>
+
+                              {/* Elder Details Button */}
                               <button
                                 onClick={() => handleViewElderDetails({ elder: session.elder })}
-                                className="flex-1 min-w-[140px] px-5 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
+                                className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
                               >
-                                <UserCircle className="w-5 h-5" />
-                                Elder Details
+                                <UserCircle className="w-4 h-4" />
+                                <span className="hidden sm:inline">Elder Details</span>
+                                <span className="sm:hidden">Details</span>
                               </button>
-                              {session.zoomJoinUrl && (
-                                <button
-                                  onClick={() => handleStartZoomMeeting(session)}
-                                  className="flex-1 min-w-[140px] px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
-                                >
-                                  <Video className="w-5 h-5" />
-                                  Start Call
-                                </button>
-                              )}
+
+                              {/* Upload Record Button */}
+                              <button
+                                onClick={() => handleUploadRecord({ elder: session.elder, id: session.id })}
+                                className="px-4 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                              >
+                                <Upload className="w-4 h-4" />
+                                <span className="hidden sm:inline">Upload Record</span>
+                                <span className="sm:hidden">Upload</span>
+                              </button>
+
+                              {/* Upload Prescription Button */}
+                              <button
+                                onClick={() => handleUploadPrescription({ elder: session.elder, id: session.id })}
+                                className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                              >
+                                <Pill className="w-4 h-4" />
+                                <span className="hidden sm:inline">Upload Prescription</span>
+                                <span className="sm:hidden">Rx</span>
+                              </button>
+
+                              {/* Join Call Button - Always visible */}
+                              <button
+                                onClick={() => handleStartZoomMeeting(session)}
+                                className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                              >
+                                <Video className="w-4 h-4" />
+                                <span className="hidden sm:inline">Join Call</span>
+                                <span className="sm:hidden">Join</span>
+                              </button>
                             </div>
                           </div>
                         </div>
