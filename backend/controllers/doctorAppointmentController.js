@@ -769,7 +769,7 @@ class DoctorAppointmentController {
       // Clear the appointment date/time (set to null)
       // This releases the time slot and requires family member to reschedule
       appointment.appointmentDate = null;
-      appointment.status = 'pending'; // Set back to pending
+      appointment.status = 'cancelled'; // Set to cancelled (will be reserved again when rescheduled)
       appointment.doctorNotes = appointment.doctorNotes 
         ? `${appointment.doctorNotes}\n\nPostponed by doctor: ${reason || 'No reason provided'}`
         : `Postponed by doctor: ${reason || 'No reason provided'}`;

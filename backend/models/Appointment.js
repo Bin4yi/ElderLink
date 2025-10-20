@@ -34,7 +34,7 @@ const Appointment = sequelize.define('Appointment', {
   },
   appointmentDate: {
     type: DataTypes.DATE,
-    allowNull: false
+    allowNull: true  // Allow NULL for postponed appointments
   },
   duration: {
     type: DataTypes.INTEGER,

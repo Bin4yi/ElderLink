@@ -620,8 +620,8 @@ const AppointmentManagement = () => {
               View Full Details
             </button>
 
-            {/* Postpone Button - Only show for upcoming/today appointments */}
-            {(calculatedStatus === 'upcoming' || calculatedStatus === 'today') && (
+            {/* Postpone Button - Only show for upcoming appointments */}
+            {calculatedStatus === 'upcoming' && (
               <button
                 onClick={() => handlePostponeAppointment(appointment.id)}
                 disabled={actionLoading}
