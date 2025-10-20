@@ -1,11 +1,9 @@
 // backend/controllers/profileController.js
-<<<<<<< HEAD
-const { User, StaffAssignment } = require("../models");
+const { User, StaffAssignment ,Prescription, Delivery } = require("../models");
 const bcrypt = require("bcryptjs");
-=======
-const { User, StaffAssignment, Prescription, Delivery } = require('../models');
+// const { User, StaffAssignment, Prescription, Delivery } = require('../models');
 const { Op } = require('sequelize');
->>>>>>> 083d9944cff51b034e2a2fc6bdd7d2fea70e33fd
+
 
 /**
  * Get staff profile information
@@ -386,30 +384,6 @@ exports.updatePharmacistProfile = async (req, res) => {
 };
 
 /**
-<<<<<<< HEAD
- * Change pharmacist password
- */
-exports.changePharmacistPassword = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { currentPassword, newPassword } = req.body;
-
-    // Validate input
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Current password and new password are required'
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password must be at least 6 characters'
-      });
-    }
-
-=======
  * Get pharmacist profile information
  */
 exports.getPharmacistProfile = async (req, res) => {
@@ -532,7 +506,6 @@ exports.updatePharmacistProfile = async (req, res) => {
       licenseNumber
     } = req.body;
 
->>>>>>> 083d9944cff51b034e2a2fc6bdd7d2fea70e33fd
     // Find user
     const user = await User.findByPk(userId);
 
@@ -551,36 +524,6 @@ exports.updatePharmacistProfile = async (req, res) => {
       });
     }
 
-<<<<<<< HEAD
-    // Verify current password
-    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
-
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        message: 'Current password is incorrect'
-      });
-    }
-
-    // Set new password (will be hashed by the beforeUpdate hook in User model)
-    user.password = newPassword;
-    user.lastPasswordChange = new Date();
-
-    await user.save();
-
-    console.log('✅ Password changed successfully for pharmacist:', user.email);
-
-    res.json({
-      success: true,
-      message: 'Password changed successfully'
-    });
-
-  } catch (error) {
-    console.error('Error changing pharmacist password:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to change password',
-=======
     // Update fields
     if (firstName !== undefined) user.firstName = firstName;
     if (lastName !== undefined) user.lastName = lastName;
@@ -947,7 +890,6 @@ exports.updateUserSettings = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update settings',
->>>>>>> 083d9944cff51b034e2a2fc6bdd7d2fea70e33fd
       error: error.message
     });
   }
