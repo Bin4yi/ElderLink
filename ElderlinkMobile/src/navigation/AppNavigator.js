@@ -7,11 +7,11 @@ import { COLORS } from '../utils/colors';
 // Import navigators
 import AuthNavigator from './AuthNavigator';
 import TabNavigator from './TabNavigator';
+import DriverTabNavigator from './DriverTabNavigator';
 
 // Import screens
 import EmergencyScreen from '../screens/main/EmergencyScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
-import DriverDashboard from '../screens/DriverDashboard';
 import RideDetails from '../screens/RideDetails';
 
 // Loading screen component
@@ -63,11 +63,11 @@ const AppNavigator = () => {
           }}
         />
       ) : isDriver ? (
-        // Driver app stack
+        // Driver app stack with tab navigation
         <>
           <Stack.Screen 
-            name="DriverDashboard" 
-            component={DriverDashboard}
+            name="DriverMain" 
+            component={DriverTabNavigator}
             options={{
               animationEnabled: false,
             }}

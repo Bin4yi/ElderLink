@@ -15,6 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import driverService from '../services/driverService';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '../utils/colors';
 
 const RideDetails = ({ route, navigation }) => {
   const { dispatch: initialDispatch } = route.params;
@@ -158,7 +160,8 @@ const RideDetails = ({ route, navigation }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+          <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Ride Details</Text>
         <View style={styles.backButton} />
@@ -167,48 +170,66 @@ const RideDetails = ({ route, navigation }) => {
       <ScrollView style={styles.content}>
         {/* Map Section - Temporarily disabled, requires native build */}
         {hasLocation && (
-          <View style={styles.mapContainer}>
-            <View style={styles.mapPlaceholder}>
-              <Text style={styles.mapPlaceholderText}>📍 Map View</Text>
-              <Text style={styles.mapPlaceholderSubtext}>
-                Emergency Location:{'\n'}
-                {elderLocation.address}
-              </Text>
-              <Text style={styles.mapPlaceholderCoords}>
-                Coordinates: {elderLocation.latitude.toFixed(6)}, {elderLocation.longitude.toFixed(6)}
-              </Text>
-              {currentLocation && (
-                <Text style={styles.mapPlaceholderCoords}>
-                  Your Location: {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
+          <>
+            <View style={styles.mapContainer}>
+              <View style={styles.mapPlaceholder}>
+                <Ionicons name="location" size={48} color={COLORS.primary} />
+                <Text style={styles.mapPlaceholderText}>Emergency Location</Text>
+                <Text style={styles.mapPlaceholderSubtext}>
+                  {elderLocation.address}
                 </Text>
-              )}
+                <View style={styles.coordsContainer}>
+                  <Text style={styles.mapPlaceholderCoords}>
+                    📍 {elderLocation.latitude.toFixed(6)}, {elderLocation.longitude.toFixed(6)}
+                  </Text>
+                  {currentLocation && (
+                    <Text style={styles.mapPlaceholderCoords}>
+                      🚗 {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
+                    </Text>
+                  )}
+                </View>
+              </View>
             </View>
-
-            <TouchableOpacity style={styles.openMapsButton} onPress={openInMaps}>
-              <Text style={styles.openMapsButtonText}>📍 Open in Google Maps</Text>
-            </TouchableOpacity>
-          </View>
+            
+            <View style={styles.mapButtonContainer}>
+              <TouchableOpacity style={styles.openMapsButton} onPress={openInMaps}>
+                <Ionicons name="map" size={20} color={COLORS.white} />
+                <Text style={styles.openMapsButtonText}>Open in Maps</Text>
+              </TouchableOpacity>
+            </View>
+          </>
         )}
 
         {/* Emergency Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Emergency Information</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="alert-circle" size={26} color={COLORS.primary} />
+            <Text style={styles.sectionTitle}>Emergency Details</Text>
+          </View>
           <View style={styles.infoCard}>
             <InfoRow
+              icon="person"
               label="Patient"
               value={`${dispatch.emergencyAlert?.elder?.user?.firstName} ${dispatch.emergencyAlert?.elder?.user?.lastName}`}
             />
-            <InfoRow label="Alert Type" value={dispatch.emergencyAlert?.alertType || 'Emergency'} />
+            <InfoRow 
+              icon="medical"
+              label="Alert Type" 
+              value={dispatch.emergencyAlert?.alertType || 'Emergency'} 
+            />
             <InfoRow
+              icon="warning"
               label="Priority"
               value={dispatch.emergencyAlert?.priority?.toUpperCase() || 'MEDIUM'}
               valueColor={getPriorityColor(dispatch.emergencyAlert?.priority)}
             />
             <InfoRow
+              icon="call"
               label="Phone"
               value={dispatch.emergencyAlert?.elder?.user?.phone || 'Not available'}
             />
             <InfoRow
+              icon="information-circle"
               label="Status"
               value={getStatusText(dispatch.status)}
               valueColor={getStatusColor(dispatch.status)}
@@ -218,62 +239,54 @@ const RideDetails = ({ route, navigation }) => {
 
         {/* Location */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="location" size={26} color={COLORS.primary} />
+            <Text style={styles.sectionTitle}>Location Details</Text>
+          </View>
           <View style={styles.infoCard}>
-            <InfoRow label="Address" value={elderLocation?.address || 'Address not available'} />
+            <InfoRow 
+              icon="navigate"
+              label="Address" 
+              value={elderLocation?.address || 'Address not available'} 
+            />
             {hasLocation && (
               <>
-                <InfoRow label="Latitude" value={elderLocation.latitude.toFixed(6)} />
-                <InfoRow label="Longitude" value={elderLocation.longitude.toFixed(6)} />
+                <InfoRow 
+                  icon="compass"
+                  label="Coordinates" 
+                  value={`${elderLocation.latitude.toFixed(6)}, ${elderLocation.longitude.toFixed(6)}`} 
+                />
               </>
             )}
           </View>
         </View>
 
-        {/* Medical Information */}
-        {dispatch.emergencyAlert?.medicalInfo && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Medical Information</Text>
-            <View style={styles.infoCard}>
-              {dispatch.emergencyAlert.medicalInfo.conditions && (
-                <InfoRow
-                  label="Conditions"
-                  value={dispatch.emergencyAlert.medicalInfo.conditions.join(', ')}
-                />
-              )}
-              {dispatch.emergencyAlert.medicalInfo.allergies && (
-                <InfoRow
-                  label="Allergies"
-                  value={dispatch.emergencyAlert.medicalInfo.allergies.join(', ')}
-                />
-              )}
-              {dispatch.emergencyAlert.medicalInfo.medications && (
-                <InfoRow
-                  label="Medications"
-                  value={dispatch.emergencyAlert.medicalInfo.medications.join(', ')}
-                />
-              )}
-            </View>
-          </View>
-        )}
-
         {/* Vitals */}
         {dispatch.emergencyAlert?.vitals && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Vitals</Text>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="heart" size={26} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Vital Signs</Text>
+            </View>
             <View style={styles.infoCard}>
               {dispatch.emergencyAlert.vitals.heartRate && (
-                <InfoRow label="Heart Rate" value={`${dispatch.emergencyAlert.vitals.heartRate} bpm`} />
+                <InfoRow 
+                  icon="heart-outline"
+                  label="Heart Rate" 
+                  value={`${dispatch.emergencyAlert.vitals.heartRate} bpm`} 
+                />
               )}
               {dispatch.emergencyAlert.vitals.bloodPressure && (
                 <InfoRow
+                  icon="fitness"
                   label="Blood Pressure"
                   value={`${dispatch.emergencyAlert.vitals.bloodPressure.systolic}/${dispatch.emergencyAlert.vitals.bloodPressure.diastolic} mmHg`}
                 />
               )}
               {dispatch.emergencyAlert.vitals.oxygenSaturation && (
                 <InfoRow
-                  label="Oxygen"
+                  icon="water"
+                  label="Oxygen Saturation"
                   value={`${dispatch.emergencyAlert.vitals.oxygenSaturation}%`}
                 />
               )}
@@ -292,7 +305,10 @@ const RideDetails = ({ route, navigation }) => {
               {updating ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={styles.actionButtonText}>✓ Accept Dispatch</Text>
+                <>
+                  <Ionicons name="checkmark-circle" size={22} color={COLORS.white} />
+                  <Text style={styles.actionButtonText}>Accept Dispatch</Text>
+                </>
               )}
             </TouchableOpacity>
           )}
@@ -306,7 +322,10 @@ const RideDetails = ({ route, navigation }) => {
               {updating ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={styles.actionButtonText}>🚗 En Route</Text>
+                <>
+                  <Ionicons name="car-sport" size={22} color={COLORS.white} />
+                  <Text style={styles.actionButtonText}>En Route</Text>
+                </>
               )}
             </TouchableOpacity>
           )}
@@ -320,7 +339,10 @@ const RideDetails = ({ route, navigation }) => {
               {updating ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={styles.actionButtonText}>📍 Mark as Arrived</Text>
+                <>
+                  <Ionicons name="location" size={22} color={COLORS.white} />
+                  <Text style={styles.actionButtonText}>Mark as Arrived</Text>
+                </>
               )}
             </TouchableOpacity>
           )}
@@ -334,7 +356,10 @@ const RideDetails = ({ route, navigation }) => {
               {updating ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={styles.actionButtonText}>✓ Complete Ride</Text>
+                <>
+                  <Ionicons name="checkmark-done-circle" size={22} color={COLORS.white} />
+                  <Text style={styles.actionButtonText}>Complete Ride</Text>
+                </>
               )}
             </TouchableOpacity>
           )}
@@ -346,10 +371,17 @@ const RideDetails = ({ route, navigation }) => {
   );
 };
 
-const InfoRow = ({ label, value, valueColor }) => (
+const InfoRow = ({ icon, label, value, valueColor }) => (
   <View style={styles.infoRow}>
-    <Text style={styles.infoLabel}>{label}</Text>
-    <Text style={[styles.infoValue, valueColor && { color: valueColor }]}>{value}</Text>
+    {icon && (
+      <View style={styles.infoIcon}>
+        <Ionicons name={icon} size={20} color={COLORS.primary} />
+      </View>
+    )}
+    <View style={styles.infoContent}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={[styles.infoValue, valueColor && { color: valueColor }]}>{value}</Text>
+    </View>
   </View>
 );
 
@@ -378,142 +410,225 @@ const getStatusText = (status) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.backgroundLight,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    backgroundColor: COLORS.primary,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
   },
   backButton: {
     padding: 8,
-    minWidth: 60,
+    minWidth: 80,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   backButtonText: {
-    fontSize: 16,
-    color: '#4CAF50',
+    fontSize: 17,
+    color: COLORS.white,
     fontWeight: '600',
+    fontFamily: 'OpenSans-SemiBold',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.white,
+    fontFamily: 'OpenSans-Bold',
+    letterSpacing: 0.5,
   },
   content: {
     flex: 1,
   },
   mapContainer: {
-    height: 300,
-    position: 'relative',
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 0,
   },
   map: {
     flex: 1,
   },
   mapPlaceholder: {
-    flex: 1,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    borderRadius: 8,
+    paddingTop: 32,
+    paddingBottom: 24,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: COLORS.primaryLight,
   },
   mapPlaceholderText: {
-    fontSize: 32,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    marginTop: 16,
     marginBottom: 12,
+    fontFamily: 'OpenSans-Bold',
+    letterSpacing: 0.3,
   },
   mapPlaceholderSubtext: {
     fontSize: 16,
-    color: '#333',
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
     lineHeight: 24,
+    fontFamily: 'OpenSans-SemiBold',
+  },
+  coordsContainer: {
+    width: '100%',
+    gap: 8,
   },
   mapPlaceholderCoords: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 13,
+    color: COLORS.textPrimary,
     textAlign: 'center',
-    marginTop: 4,
+    fontFamily: 'OpenSans-SemiBold',
+    backgroundColor: COLORS.gray100,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  mapButtonContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   openMapsButton: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 16,
+    elevation: 6,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
   },
   openMapsButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: COLORS.white,
+    fontSize: 17,
+    fontWeight: 'bold',
+    fontFamily: 'OpenSans-Bold',
+    letterSpacing: 0.5,
   },
   section: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
+    color: COLORS.textPrimary,
+    fontFamily: 'OpenSans-Bold',
+    letterSpacing: 0.3,
   },
   infoCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 16,
-    elevation: 2,
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: 24,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
   },
   infoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
+    alignItems: 'center',
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: COLORS.gray100,
+  },
+  infoIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  infoContent: {
+    flex: 1,
   },
   infoLabel: {
-    fontSize: 14,
-    color: '#666',
-    flex: 1,
+    fontSize: 13,
+    color: COLORS.textLight,
+    fontFamily: 'OpenSans-SemiBold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   infoValue: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: 16,
+    color: COLORS.textPrimary,
     fontWeight: '600',
-    flex: 1,
-    textAlign: 'right',
+    fontFamily: 'OpenSans-SemiBold',
+    lineHeight: 22,
   },
   actionButton: {
-    paddingVertical: 16,
-    borderRadius: 8,
+    paddingVertical: 18,
+    borderRadius: 16,
     alignItems: 'center',
-    marginBottom: 12,
-    elevation: 2,
+    justifyContent: 'center',
+    marginBottom: 16,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    flexDirection: 'row',
+    gap: 10,
   },
   acceptButton: {
-    backgroundColor: '#42A5F5',
+    backgroundColor: COLORS.info,
+    shadowColor: COLORS.info,
   },
   enRouteButton: {
-    backgroundColor: '#AB47BC',
+    backgroundColor: COLORS.warning,
+    shadowColor: COLORS.warning,
   },
   arrivedButton: {
-    backgroundColor: '#66BB6A',
+    backgroundColor: COLORS.success,
+    shadowColor: COLORS.success,
   },
   completeButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
   },
   actionButtonText: {
-    color: '#FFF',
-    fontSize: 18,
+    color: COLORS.white,
+    fontSize: 19,
     fontWeight: 'bold',
+    fontFamily: 'OpenSans-Bold',
+    letterSpacing: 0.5,
   },
 });
 

@@ -55,37 +55,34 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       {/* Profile Header */}
-      <Card style={styles.profileHeader}>
-        <View style={styles.headerContent}>
-          <View style={styles.avatarContainer}>
-            {(elder?.profilePicture || user?.profilePicture) ? (
-              <Image 
-                source={{ uri: elder?.profilePicture || user?.profilePicture }} 
-                style={styles.avatar}
-              />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={40} color={COLORS.gray500} />
+      <View style={styles.profileHeaderContainer}>
+        <Card style={styles.profileHeader}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.fullName}>{displayName || 'User'}</Text>
+              <View style={styles.detailsRow}>
+                {userAge && (
+                  <View style={styles.detailItem}>
+                    <Ionicons name="calendar-outline" size={16} color={COLORS.primary} />
+                    <Text style={styles.detailText}>{userAge} years old</Text>
+                  </View>
+                )}
+                <View style={styles.detailItem}>
+                  <Ionicons name="mail-outline" size={16} color={COLORS.primary} />
+                  <Text style={styles.detailText}>{user?.email}</Text>
+                </View>
               </View>
-            )}
+            </View>
+            
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={handleEditProfile}
+            >
+              <Ionicons name="create-outline" size={22} color="#FFF" />
+            </TouchableOpacity>
           </View>
-          
-          <View style={styles.nameContainer}>
-            <Text style={styles.fullName}>{displayName || 'User'}</Text>
-            {userAge && (
-              <Text style={styles.ageText}>{userAge} years old</Text>
-            )}
-            <Text style={styles.userEmail}>{user?.email}</Text>
-          </View>
-          
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={handleEditProfile}
-          >
-            <Ionicons name="pencil" size={20} color={COLORS.gray600} />
-          </TouchableOpacity>
-        </View>
-      </Card>
+        </Card>
+      </View>
 
       {/* Personal Information */}
       <Card style={styles.sectionCard}>
@@ -163,37 +160,33 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundLight,
   },
   
+  profileHeaderContainer: {
+    backgroundColor: COLORS.primary,
+    paddingTop: 40,
+    paddingBottom: 80,
+    paddingHorizontal: 20,
+  },
+  
   profileHeader: {
-    marginHorizontal: 20,
-    marginTop: 20,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   
-  avatarContainer: {
-    marginRight: 20,
-  },
-  
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  
-  avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.gray200,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
-  nameContainer: {
+  headerLeft: {
     flex: 1,
+    marginRight: 16,
   },
   
   fullName: {
@@ -201,31 +194,45 @@ const styles = StyleSheet.create({
     fontFamily: 'OpenSans-Bold',
     fontWeight: 'bold',
     color: COLORS.textPrimary,
-    marginBottom: 4,
+    marginBottom: 12,
+    letterSpacing: -0.5,
   },
   
-  ageText: {
-    fontSize: 18,
-    fontFamily: 'OpenSans-Regular',
-    color: COLORS.textSecondary,
-    marginBottom: 2,
+  detailsRow: {
+    gap: 12,
   },
   
-  userEmail: {
-    fontSize: 16,
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  
+  detailText: {
+    fontSize: 15,
     fontFamily: 'OpenSans-Regular',
     color: COLORS.textSecondary,
+    flex: 1,
   },
   
   editButton: {
-    padding: 12,
-    backgroundColor: COLORS.gray50,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   
   sectionCard: {
     marginHorizontal: 20,
-    marginTop: 20,
+    marginTop: -40,
   },
   
   sectionTitle: {
