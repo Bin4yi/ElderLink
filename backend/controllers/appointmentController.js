@@ -897,6 +897,38 @@ class AppointmentController {
     }
   }
 
+  // Mark appointment as completed (when user joins Zoom)
+  static async markAsCompleted(req, res) {
+    try {
+      const { id } = req.params;
+
+      const appointment = await Appointment.findByPk(id);
+      if (!appointment) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Appointment not found' 
+        });
+      }
+
+      await appointment.update({
+        status: 'completed'
+      });
+
+      res.json({
+        success: true,
+        message: 'Appointment marked as completed',
+        appointment
+      });
+    } catch (error) {
+      console.error('❌ Error marking appointment as completed:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to mark appointment as completed',
+        error: error.message 
+      });
+    }
+  }
+
   // Reschedule appointment
   static async rescheduleAppointment(req, res) {
     try {

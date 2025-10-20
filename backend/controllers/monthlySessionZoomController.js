@@ -74,15 +74,17 @@ const createZoomMeeting = async (req, res) => {
       session.elder
     );
 
-    // Update session with Zoom details
+    // Update session with Zoom details and change status to completed
     await session.update({
       zoomMeetingId: meeting.meetingId,
       zoomJoinUrl: meeting.joinUrl,
       zoomPassword: meeting.password,
-      zoomStartUrl: meeting.startUrl
+      zoomStartUrl: meeting.startUrl,
+      status: 'completed'
     });
 
     console.log('✅ Zoom meeting created and saved:', meeting.meetingId);
+    console.log('✅ Monthly session status changed to completed');
 
     res.json({
       success: true,

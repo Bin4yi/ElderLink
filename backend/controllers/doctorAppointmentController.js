@@ -682,14 +682,16 @@ class DoctorAppointmentController {
         autoRecording: 'none'
       });
 
-      // Update appointment with Zoom details
+      // Update appointment with Zoom details and change status to completed
       await appointment.update({
         zoomMeetingId: meeting.meetingId,
         zoomJoinUrl: meeting.joinUrl,
-        zoomPassword: meeting.password
+        zoomPassword: meeting.password,
+        status: 'completed'
       });
 
       console.log('✅ Zoom meeting created and saved:', meeting.meetingId);
+      console.log('✅ Appointment status changed to completed');
 
       res.json({
         success: true,

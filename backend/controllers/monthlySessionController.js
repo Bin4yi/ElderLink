@@ -555,6 +555,88 @@ exports.getDoctorMonthlySessions = async (req, res) => {
 };
 
 /**
+ * Get monthly sessions for elder (their own sessions)
+ */
+exports.getElderMonthlySessions = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { status, startDate, endDate } = req.query;
+
+    console.log('🔍 getElderMonthlySessions called for userId:', userId);
+
+    // Get elder profile
+    const elder = await Elder.findOne({ where: { userId } });
+    if (!elder) {
+      console.log('❌ Elder profile not found for userId:', userId);
+      return res.status(404).json({
+        success: false,
+        message: 'Elder profile not found'
+      });
+    }
+
+    console.log('✅ Elder profile found:', { elderId: elder.id, userId: elder.userId });
+
+    const whereClause = { elderId: elder.id };
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    if (startDate || endDate) {
+      whereClause.sessionDate = {};
+      if (startDate) whereClause.sessionDate[Op.gte] = startDate;
+      if (endDate) whereClause.sessionDate[Op.lte] = endDate;
+    }
+
+    console.log('🔎 Searching elder monthly sessions with whereClause:', whereClause);
+
+    const sessions = await MonthlySession.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Doctor,
+          as: 'doctor',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+            }
+          ]
+        },
+        {
+          model: User,
+          as: 'familyMember',
+          required: false,
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+        }
+      ],
+      order: [['sessionDate', 'ASC'], ['sessionTime', 'ASC']]
+    });
+
+    console.log('✅ Found monthly sessions for elder:', sessions.length);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        sessions,
+        count: sessions.length
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching elder monthly sessions:', error);
+    console.error('❌ Error stack:', error.stack);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch monthly sessions',
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+};
+
+/**
  * Get single monthly session details
  */
 exports.getMonthlySessionById = async (req, res) => {
@@ -764,6 +846,41 @@ exports.cancelMonthlySession = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to cancel monthly session',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Mark monthly session as completed (when user joins Zoom)
+ */
+exports.markAsCompleted = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = await MonthlySession.findByPk(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Monthly session not found'
+      });
+    }
+
+    await session.update({
+      status: 'completed'
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Monthly session marked as completed',
+      data: session
+    });
+
+  } catch (error) {
+    console.error('Error marking monthly session as completed:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to mark monthly session as completed',
       error: error.message
     });
   }

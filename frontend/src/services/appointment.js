@@ -194,6 +194,16 @@ class AppointmentService {
     }
   }
 
+  // Mark appointment as completed (simple status update)
+  async markAsCompleted(appointmentId) {
+    try {
+      const response = await api.patch(`/appointments/${appointmentId}/mark-completed`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Create prescription
   async createPrescription(consultationId, prescriptionData) {
     try {
@@ -405,6 +415,7 @@ export const {
   reviewAppointment,
   getElderMedicalSummary,
   completeAppointment,
+  markAsCompleted,
   createPrescription,
   getConsultationRecords,
   updateDoctorSchedule,
