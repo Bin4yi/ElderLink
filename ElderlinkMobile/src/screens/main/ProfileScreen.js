@@ -74,12 +74,15 @@ const ProfileScreen = ({ navigation }) => {
               </View>
             </View>
             
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={handleEditProfile}
-            >
-              <Ionicons name="create-outline" size={22} color="#FFF" />
-            </TouchableOpacity>
+            {/* Only show edit button for non-elder users */}
+            {user?.role !== 'elder' && (
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={handleEditProfile}
+              >
+                <Ionicons name="create-outline" size={22} color="#FFF" />
+              </TouchableOpacity>
+            )}
           </View>
         </Card>
       </View>
