@@ -92,6 +92,12 @@ const mentalHealthService = {
     return response.data;
   },
 
+  getElderSessions: async (filters = {}) => {
+    const params = new URLSearchParams(filters).toString();
+    const response = await api.get(`/mental-health/sessions/elder?${params}`);
+    return response.data;
+  },
+
   completeSession: async (sessionId, completionData) => {
     const response = await api.put(
       `/mental-health/sessions/${sessionId}/complete`,
