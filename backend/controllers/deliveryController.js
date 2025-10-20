@@ -107,7 +107,14 @@ exports.getDeliveries = async (req, res) => {
     const { status, date } = req.query;
 
     const whereClause = { pharmacistId };
-    if (status && status !== "all") whereClause.status = status;
+    if (status && status !== "all") {
+      // Handle comma-separated status values
+      if (status.includes(',')) {
+        whereClause.status = { [Op.in]: status.split(',').map(s => s.trim()) };
+      } else {
+        whereClause.status = status;
+      }
+    }
     if (date && date !== "all") {
       whereClause.scheduledDate = {
         [Op.gte]: new Date(date),
