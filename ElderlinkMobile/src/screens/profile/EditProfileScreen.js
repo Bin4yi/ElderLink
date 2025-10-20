@@ -28,6 +28,23 @@ import Button from '../../components/common/Button';
 const EditProfileScreen = ({ navigation }) => {
   const { user, elder, updateElderData } = useAuth();
   
+  // Check if user is elder - they shouldn't be able to edit profile
+  useEffect(() => {
+    if (user?.role === 'elder') {
+      Alert.alert(
+        'Access Denied',
+        'You are not allowed to edit your profile. Please contact your family member or administrator for assistance.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ],
+        { cancelable: false }
+      );
+    }
+  }, [user, navigation]);
+  
   // Form state
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -170,6 +187,16 @@ const EditProfileScreen = ({ navigation }) => {
    * Handle save button press
    */
   const handleSave = async () => {
+    // Block elders from saving
+    if (user?.role === 'elder') {
+      Alert.alert(
+        'Access Denied',
+        'You are not allowed to edit your profile. Please contact your family member or administrator.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
     // Validate form
     if (!validateForm()) {
       Alert.alert(

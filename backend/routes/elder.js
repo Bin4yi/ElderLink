@@ -358,46 +358,32 @@ router.post('/', authenticate, authorize('family_member'), upload.single('photo'
   }
 });
 
-// Update elder
-router.put('/:id', authenticate, authorize('family_member', 'elder'), upload.single('photo'), async (req, res) => {
+// Update elder - Only family members can update elder profiles
+router.put('/:id', authenticate, authorize('family_member'), upload.single('photo'), async (req, res) => {
   try {
     const { id } = req.params;
     console.log('🔄 Updating elder:', id);
     console.log('👤 User role:', req.user.role);
     console.log('🆔 User ID:', req.user.id);
 
-    let elder;
+    // Family members can update elders they own through subscription
+    const elder = await Elder.findOne({
+      where: { id: id },
+      include: [
+        {
+          model: Subscription,
+          as: 'subscription',
+          where: { userId: req.user.id }, // Check if family member owns this subscription
+          required: true
+        }
+      ]
+    });
     
-    // If user is an elder, they can only update their own profile
-    if (req.user.role === 'elder') {
-      elder = await Elder.findOne({
-        where: { 
-          id: id,
-          userId: req.user.id // Must match their own userId
-        }
+    if (!elder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Elder not found or you do not have permission to update this elder'
       });
-      
-      if (!elder) {
-        return res.status(403).json({
-          success: false,
-          message: 'You can only update your own profile'
-        });
-      }
-    } else {
-      // Family members can update elders they own
-      elder = await Elder.findOne({
-        where: { 
-          id: id,
-          userId: req.user.id
-        }
-      });
-      
-      if (!elder) {
-        return res.status(404).json({
-          success: false,
-          message: 'Elder not found or you do not have permission to update this elder'
-        });
-      }
     }
 
     // Update data
@@ -406,9 +392,28 @@ router.put('/:id', authenticate, authorize('family_member', 'elder'), upload.sin
       updateData.photo = req.file.filename;
     }
 
+    // Update Elder table
     await elder.update(updateData);
 
-    console.log('✅ Elder updated:', elder.id);
+    console.log('✅ Elder table updated:', elder.id);
+
+    // Also update the associated User table if elder has a userId
+    if (elder.userId) {
+      const userUpdateData = {};
+      
+      // Sync fields that exist in both tables
+      if (updateData.firstName) userUpdateData.firstName = updateData.firstName;
+      if (updateData.lastName) userUpdateData.lastName = updateData.lastName;
+      if (updateData.phone) userUpdateData.phone = updateData.phone;
+      
+      // Only update User table if there are fields to update
+      if (Object.keys(userUpdateData).length > 0) {
+        await User.update(userUpdateData, {
+          where: { id: elder.userId }
+        });
+        console.log('✅ User table also updated:', elder.userId, userUpdateData);
+      }
+    }
 
     // Fetch updated elder with associations
     const updatedElder = await Elder.findByPk(elder.id, {
