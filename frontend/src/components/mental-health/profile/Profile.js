@@ -45,6 +45,8 @@ const MentalHealthProfile = () => {
 
       // Load profile
       const profileResponse = await mentalHealthService.getSpecialistProfile();
+      console.log("Profile loaded:", profileResponse.profile);
+      console.log("Profile image:", profileResponse.profile?.profileImage);
       setProfile(profileResponse.profile);
       setForm(profileResponse.profile);
 
@@ -97,17 +99,41 @@ const MentalHealthProfile = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    try {
-      // In production, upload to cloud storage (S3, Cloudinary, etc.)
-      // For now, we'll create a local URL
-      const imageUrl = URL.createObjectURL(file);
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
 
-      await mentalHealthService.updateProfileImage(imageUrl);
-      toast.success("Profile image updated!");
-      loadProfileData();
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    try {
+      // Convert image to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64String = reader.result;
+          await mentalHealthService.updateProfileImage(base64String);
+          toast.success("Profile image updated!");
+          loadProfileData();
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          toast.error(
+            error.response?.data?.message || "Failed to upload image"
+          );
+        }
+      };
+      reader.onerror = () => {
+        toast.error("Failed to read image file");
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
-      console.error("Error uploading image:", error);
-      toast.error("Failed to upload image");
+      console.error("Error processing image:", error);
+      toast.error("Failed to process image");
     }
   };
 
@@ -231,11 +257,20 @@ const MentalHealthProfile = () => {
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="relative">
                 <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
-                  {profile.profileImage ? (
+                  {(profile.profileImage || profile.photo) ? (
                     <img
-                      src={profile.profileImage}
+                      src={profile.profileImage || profile.photo}
                       alt="Profile"
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error("Error loading profile image");
+                        // Hide image and show default icon
+                        const parent = e.target.parentElement;
+                        e.target.style.display = 'none';
+                        const icon = document.createElement('div');
+                        icon.innerHTML = '<svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>';
+                        parent.appendChild(icon.firstChild);
+                      }}
                     />
                   ) : (
                     <User className="w-12 h-12 text-white" />
