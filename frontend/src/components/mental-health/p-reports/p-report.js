@@ -11,6 +11,11 @@ import {
   TrendingDown,
   Minus,
   Calendar,
+  X,
+  CheckCircle,
+  AlertCircle,
+  FileText,
+  BarChart2,
 } from "lucide-react";
 import RoleLayout from "../../common/RoleLayout";
 import mentalHealthService from "../../../services/mentalHealthService";
@@ -22,6 +27,8 @@ const ProgressReports = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [showNewReportModal, setShowNewReportModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
   const [clients, setClients] = useState([]);
 
   useEffect(() => {
@@ -71,6 +78,57 @@ const ProgressReports = () => {
     } catch (error) {
       console.error("Error creating progress report:", error);
       toast.error("Failed to create progress report");
+    }
+  };
+
+  const handleViewReport = async (reportId) => {
+    try {
+      const response = await mentalHealthService.getProgressReportById(
+        reportId
+      );
+      setSelectedReport(response.progressReport);
+      setShowViewModal(true);
+    } catch (error) {
+      console.error("Error loading report:", error);
+      toast.error("Failed to load report details");
+    }
+  };
+
+  const handleDownloadPDF = async (reportId) => {
+    try {
+      toast.loading("Generating PDF...");
+
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:5000/api/mental-health/progress-reports/${reportId}/pdf`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to generate PDF");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `progress-report-${reportId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.dismiss();
+      toast.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      toast.dismiss();
+      toast.error("Failed to download PDF");
     }
   };
 
@@ -375,11 +433,17 @@ const ProgressReports = () => {
 
                   {/* Actions */}
                   <div className="lg:w-48 flex flex-col gap-3">
-                    <button className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                    <button
+                      onClick={() => handleViewReport(report.id)}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
                       <Eye className="w-4 h-4" />
                       View Full Report
                     </button>
-                    <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <button
+                      onClick={() => handleDownloadPDF(report.id)}
+                      className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
                       <Download className="w-4 h-4" />
                       Download PDF
                     </button>
@@ -546,6 +610,253 @@ const ProgressReports = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* View Report Modal */}
+        {showViewModal && selectedReport && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6 rounded-t-xl">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">
+                      Progress Report Details
+                    </h2>
+                    <p className="text-purple-100">
+                      {selectedReport.elder?.firstName}{" "}
+                      {selectedReport.elder?.lastName} - {selectedReport.period}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowViewModal(false)}
+                    className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 space-y-6">
+                {/* Report Info */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Report Type</p>
+                    <p className="font-semibold capitalize">
+                      {selectedReport.reportType}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Status</p>
+                    <span
+                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                        selectedReport.status === "Completed"
+                          ? "bg-green-100 text-green-800"
+                          : selectedReport.status === "In Progress"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {selectedReport.status}
+                    </span>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Date Created</p>
+                    <p className="font-semibold">
+                      {new Date(
+                        selectedReport.dateCreated
+                      ).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Progress Metrics */}
+                <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-6">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-purple-600" />
+                    Progress Metrics
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          Overall Progress
+                        </span>
+                        <span className="text-2xl font-bold text-purple-600">
+                          {selectedReport.overallProgress}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div
+                          className="bg-gradient-to-r from-purple-500 to-blue-500 h-3 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${selectedReport.overallProgress}%`,
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          Mental Health Score
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl font-bold text-blue-600">
+                            {selectedReport.mentalHealthScore}
+                          </span>
+                          {selectedReport.previousScore && (
+                            <span className="text-sm text-gray-500">
+                              (prev: {selectedReport.previousScore})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${
+                              (selectedReport.mentalHealthScore / 10) * 100
+                            }%`,
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Key Metrics */}
+                {selectedReport.keyMetrics &&
+                  Object.keys(selectedReport.keyMetrics).length > 0 && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-6">
+                      <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <BarChart2 className="w-5 h-5 text-blue-600" />
+                        Key Metrics
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {Object.entries(selectedReport.keyMetrics).map(
+                          ([key, value]) => (
+                            <div
+                              key={key}
+                              className="bg-gray-50 rounded-lg p-4 text-center"
+                            >
+                              <p className="text-xs text-gray-600 mb-1 capitalize">
+                                {key.replace(/([A-Z])/g, " $1").trim()}
+                              </p>
+                              <p className="text-xl font-bold text-gray-800">
+                                {value}
+                              </p>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Highlights */}
+                {selectedReport.highlights &&
+                  selectedReport.highlights.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                      <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        Key Highlights
+                      </h3>
+                      <ul className="space-y-2">
+                        {selectedReport.highlights.map((highlight, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="text-green-600 mt-1">✓</span>
+                            <span className="text-gray-700">{highlight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                {/* Concerns */}
+                {selectedReport.concerns &&
+                  selectedReport.concerns.length > 0 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                      <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-yellow-600" />
+                        Areas of Concern
+                      </h3>
+                      <ul className="space-y-2">
+                        {selectedReport.concerns.map((concern, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="text-yellow-600 mt-1">⚠</span>
+                            <span className="text-gray-700">{concern}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                {/* Recommendations */}
+                {selectedReport.recommendations &&
+                  selectedReport.recommendations.length > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                      <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                        Recommendations
+                      </h3>
+                      <ul className="space-y-2">
+                        {selectedReport.recommendations.map(
+                          (recommendation, index) => (
+                            <li key={index} className="flex items-start gap-2">
+                              <span className="text-blue-600 mt-1">→</span>
+                              <span className="text-gray-700">
+                                {recommendation}
+                              </span>
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
+                {/* Next Review */}
+                {selectedReport.nextReview && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">
+                      Next Review Scheduled
+                    </p>
+                    <p className="text-lg font-semibold text-purple-600">
+                      {new Date(selectedReport.nextReview).toLocaleDateString(
+                        "en-US",
+                        {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3 border-t">
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    handleDownloadPDF(selectedReport.id);
+                    setShowViewModal(false);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Download PDF
+                </button>
+              </div>
             </div>
           </div>
         )}
