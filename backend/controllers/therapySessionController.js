@@ -227,6 +227,24 @@ const updateSession = async (req, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
 
+    // Only allow editing scheduled sessions
+    if (session.status !== "scheduled") {
+      return res.status(400).json({
+        message: "Only scheduled sessions can be edited",
+      });
+    }
+
+    // Check if session date is in the future
+    const sessionDate = new Date(session.scheduledDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (sessionDate < today) {
+      return res.status(400).json({
+        message: "Cannot edit past sessions",
+      });
+    }
+
     // Update allowed fields
     const allowedFields = [
       "scheduledDate",
@@ -237,7 +255,6 @@ const updateSession = async (req, res) => {
       "sessionGoals",
       "sessionNotes",
       "homework",
-      "status",
     ];
 
     allowedFields.forEach((field) => {
@@ -248,9 +265,20 @@ const updateSession = async (req, res) => {
 
     await session.save();
 
+    // Fetch updated session with elder details
+    const updatedSession = await TherapySession.findByPk(session.id, {
+      include: [
+        {
+          model: Elder,
+          as: "elder",
+          attributes: ["id", "firstName", "lastName", "photo"],
+        },
+      ],
+    });
+
     res.status(200).json({
       message: "Session updated successfully",
-      session,
+      session: updatedSession,
     });
   } catch (error) {
     console.error("Error updating session:", error);
@@ -348,6 +376,80 @@ const getSessionStatistics = async (req, res) => {
   }
 };
 
+// Get all sessions for an elder (for elder dashboard)
+const getElderSessions = async (req, res) => {
+  try {
+    // Check if user is an elder
+    if (req.user.role !== "elder") {
+      return res.status(403).json({
+        message: "Access denied. Elder role required.",
+      });
+    }
+
+    // Get elder record from userId
+    const elder = await Elder.findOne({ where: { userId: req.user.id } });
+
+    if (!elder) {
+      return res.status(404).json({
+        message: "Elder profile not found",
+      });
+    }
+
+    const elderId = elder.id;
+    const { status } = req.query;
+    const whereClause = { elderId };
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    const sessions = await TherapySession.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: User,
+          as: "specialist",
+          attributes: [
+            "id",
+            "firstName",
+            "lastName",
+            "email",
+            "phone",
+            "photo",
+          ],
+        },
+      ],
+      order: [
+        ["scheduledDate", "DESC"],
+        ["scheduledTime", "DESC"],
+      ],
+    });
+
+    // Calculate statistics
+    const statistics = {
+      total: sessions.length,
+      scheduled: sessions.filter((s) => s.status === "scheduled").length,
+      completed: sessions.filter((s) => s.status === "completed").length,
+      upcoming: sessions.filter(
+        (s) =>
+          s.status === "scheduled" && new Date(s.scheduledDate) >= new Date()
+      ).length,
+    };
+
+    res.status(200).json({
+      count: sessions.length,
+      sessions,
+      statistics,
+    });
+  } catch (error) {
+    console.error("Error fetching elder sessions:", error);
+    res.status(500).json({
+      message: "Error fetching sessions",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createSession,
   getSpecialistSessions,
@@ -355,4 +457,5 @@ module.exports = {
   updateSession,
   cancelSession,
   getSessionStatistics,
+  getElderSessions,
 };
