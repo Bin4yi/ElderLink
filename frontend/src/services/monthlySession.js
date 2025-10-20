@@ -171,16 +171,21 @@ const monthlySessionService = {
   },
 
   /**
-   * Check if a monthly session exists for a specific month
+   * Check if a monthly session exists for a specific elder, year, and month
    * @param {string} elderId - Elder ID
    * @param {number} year - Year (e.g., 2025)
    * @param {number} month - Month (1-12)
+   * @param {string} doctorId - Optional Doctor ID to check for same doctor
    * @returns {Promise} Response with exists flag and session details if exists
    */
-  checkMonthlySessionExists: async (elderId, year, month) => {
+  checkMonthlySessionExists: async (elderId, year, month, doctorId = null) => {
     try {
+      const params = { elderId, year, month };
+      if (doctorId) {
+        params.doctorId = doctorId;
+      }
       const response = await api.get(`/monthly-sessions/check-exists`, {
-        params: { elderId, year, month }
+        params
       });
       return response.data;
     } catch (error) {

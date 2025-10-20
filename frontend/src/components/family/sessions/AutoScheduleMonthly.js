@@ -19,6 +19,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import RoleLayout from '../../common/RoleLayout';
 import monthlySessionService from '../../../services/monthlySession';
 import { elderService } from '../../../services/elder';
 import { doctorAssignmentService } from '../../../services/doctorAssignment';
@@ -173,34 +174,48 @@ const AutoScheduleMonthly = ({ onComplete }) => {
       
       console.log('🔍 Checking for existing session:', { 
         elderId: selectedElder, 
+        doctorId: assignedDoctor?.id,
         year, 
         month,
         selectedDate: formData.sessionDate 
       });
       
-      // Check if a session already exists for this specific month
+      // Check if a session already exists for this specific month with the same doctor
       const response = await monthlySessionService.checkMonthlySessionExists(
         selectedElder,
         year,
-        month
+        month,
+        assignedDoctor?.id // Pass doctor ID to check for duplicate with same doctor
       );
       
       console.log('📋 Check response:', response);
       
       if (response.success && response.exists) {
         const session = response.session;
-        console.log('⚠️ Found existing session for this month:', session);
-        console.log(`   Existing: ${new Date(session.sessionDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`);
-        console.log(`   Selected: ${new Date(formData.sessionDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`);
+        console.log('⚠️ Found existing session:', session);
+        
+        const doctorName = session.doctor?.user 
+          ? `Dr. ${session.doctor.user.firstName} ${session.doctor.user.lastName}`
+          : 'this doctor';
+        
+        const existingDate = new Date(session.sessionDate).toLocaleDateString('en-US', { 
+          month: 'long', 
+          day: 'numeric',
+          year: 'numeric' 
+        });
         
         setExistingSession(session);
         
-        toast.error(`You Already Created Session for ${new Date(formData.sessionDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}! For additional sessions, please book a regular appointment with payment.`, {
+        // Use the detailed message from backend if available, otherwise construct one
+        const errorMessage = response.message || 
+          `You Already Created a Session with ${doctorName} on ${existingDate} at ${session.sessionTime}. For additional sessions, please book a regular appointment with payment.`;
+        
+        toast.error(errorMessage, {
           duration: 8000,
           icon: '⚠️'
         });
       } else {
-        console.log(`✅ No existing session found for ${new Date(formData.sessionDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} - You can create a session!`);
+        console.log(`✅ No existing session found - You can create a session!`);
         setExistingSession(null);
       }
     } catch (error) {
@@ -211,12 +226,12 @@ const AutoScheduleMonthly = ({ onComplete }) => {
     }
   };
 
-  // Check for existing session whenever the date changes
+  // Check for existing session whenever the date or doctor changes
   useEffect(() => {
-    if (selectedElder && formData.sessionDate) {
+    if (selectedElder && formData.sessionDate && assignedDoctor) {
       checkExistingSession();
     }
-  }, [selectedElder, formData.sessionDate]);
+  }, [selectedElder, formData.sessionDate, assignedDoctor]);
 
   const resetForm = () => {
     setExistingSession(null);
@@ -313,12 +328,14 @@ const AutoScheduleMonthly = ({ onComplete }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-12">
-        <div className="text-center">
-          <Loader className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading elders...</p>
+      <RoleLayout>
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center">
+            <Loader className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading elders...</p>
+          </div>
         </div>
-      </div>
+      </RoleLayout>
     );
   }
 
@@ -327,8 +344,9 @@ const AutoScheduleMonthly = ({ onComplete }) => {
   console.log('🎨 Elders count:', elders.length);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <RoleLayout>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8 px-2 sm:px-4">
+      <div className="max-w-7xl mx-auto">
         {/* Modern Header with Back Button */}
         <div className="mb-8">
           <button
@@ -339,7 +357,7 @@ const AutoScheduleMonthly = ({ onComplete }) => {
             <span className="font-medium">Back to Sessions</span>
           </button>
 
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 hover:shadow-3xl transition-all duration-300">
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-4 sm:p-6 lg:p-8 border border-white/20 hover:shadow-3xl transition-all duration-300">
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-4">
                 <div className="relative group">
@@ -358,7 +376,7 @@ const AutoScheduleMonthly = ({ onComplete }) => {
             </div>
 
             {/* Modern Progress Steps */}
-            <div className="mt-8 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-2xl p-6 border border-blue-200/50 backdrop-blur-sm">
+            <div className="mt-6 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-2xl p-4 sm:p-6 border border-blue-200/50 backdrop-blur-sm">
               <div className="flex items-start space-x-4">
                 <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-lg">
                   <Info className="w-6 h-6 text-white" />
@@ -398,7 +416,7 @@ const AutoScheduleMonthly = ({ onComplete }) => {
       {!creating && (
         <>
           {/* Step 1: Select Elder - Modern Design */}
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 mb-6 border border-white/20 hover:shadow-3xl transition-all duration-300">
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-4 sm:p-6 lg:p-8 mb-6 border border-white/20 hover:shadow-3xl transition-all duration-300">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
                 <div className="relative">
@@ -513,7 +531,7 @@ const AutoScheduleMonthly = ({ onComplete }) => {
 
           {/* Step 2: Review Assigned Doctor - Modern Design */}
           {selectedElder && (
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 mb-6 border border-white/20 hover:shadow-3xl transition-all duration-300">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-4 sm:p-6 lg:p-8 mb-6 border border-white/20 hover:shadow-3xl transition-all duration-300">
               <div className="flex items-center space-x-4 mb-6">
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-purple-500 rounded-xl blur opacity-40"></div>
@@ -578,7 +596,7 @@ const AutoScheduleMonthly = ({ onComplete }) => {
 
           {/* Step 3: Select Date and Time */}
           {selectedElder && assignedDoctor && (
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-6">
               <div className="flex items-center space-x-2 mb-4">
                 <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
                   3
@@ -661,9 +679,21 @@ const AutoScheduleMonthly = ({ onComplete }) => {
                     }`}
                   />
                   {existingSession ? (
-                    <p className="text-xs text-red-600 mt-1 font-medium">
-                      ⚠️ Session already exists for {new Date(formData.sessionDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                    </p>
+                    <div className="text-xs text-red-600 mt-1 font-medium">
+                      <p className="flex items-center">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        Session already exists with {existingSession.doctor?.user 
+                          ? `Dr. ${existingSession.doctor.user.firstName} ${existingSession.doctor.user.lastName}` 
+                          : 'this doctor'}
+                      </p>
+                      <p className="ml-4 mt-0.5">
+                        📅 {new Date(existingSession.sessionDate).toLocaleDateString('en-US', { 
+                          month: 'long', 
+                          day: 'numeric',
+                          year: 'numeric' 
+                        })} at {existingSession.sessionTime}
+                      </p>
+                    </div>
                   ) : (
                     <p className="text-xs text-gray-500 mt-1">Choose any month - you can create one free session per month</p>
                   )}
@@ -727,7 +757,7 @@ const AutoScheduleMonthly = ({ onComplete }) => {
 
           {/* Step 4: Create Session Button */}
           {selectedElder && assignedDoctor && formData.sessionDate && formData.sessionTime && (
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-4 sm:p-6 lg:p-8 border border-white/20">
               {/* Existing Session Warning with Book Appointment CTA */}
               {existingSession && (
                 <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-6">
@@ -764,7 +794,18 @@ const AutoScheduleMonthly = ({ onComplete }) => {
                       </div>
                       <div className="flex items-center space-x-3">
                         <button
-                          onClick={() => navigate('/family/appointments/book')}
+                          onClick={() => {
+                            // Navigate to appointment booking with pre-selected elder and doctor
+                            navigate('/appointment-booking', {
+                              state: {
+                                preSelectedElder: selectedElder,
+                                preSelectedDoctor: assignedDoctor?.id,
+                                elderData: selectedElderData,
+                                doctorData: assignedDoctor,
+                                fromMonthlySession: true
+                              }
+                            });
+                          }}
                           className="flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                         >
                           <Calendar className="w-5 h-5" />
@@ -850,6 +891,7 @@ const AutoScheduleMonthly = ({ onComplete }) => {
       )}
       </div>
     </div>
+    </RoleLayout>
   );
 };
 
