@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import RoleLayout from '../../common/RoleLayout';
 import { 
   User, 
@@ -8,18 +8,21 @@ import {
   Heart, 
   Shield, 
   Pill,
-  Edit,
   Mail,
   Clock,
   Activity,
   FileText,
-  Camera
+  Camera,
+  Upload
 } from 'lucide-react';
 import { elderService } from '../../../services/elder';
+import toast from 'react-hot-toast';
 
 const ElderProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const quickPhotoInputRef = useRef(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -35,6 +38,62 @@ const ElderProfile = () => {
     };
     fetchProfile();
   }, []);
+
+  const handlePhotoChange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    const uploadToast = toast.loading('Uploading photo...');
+
+    try {
+      // Create FormData
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      // Make API call
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/elders/${profile.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload photo');
+      }
+
+      const data = await response.json();
+      
+      // Update profile with new photo
+      setProfile(data.elder);
+      toast.success('Photo updated successfully!', { id: uploadToast });
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      toast.error('Failed to upload photo', { id: uploadToast });
+    } finally {
+      setUploading(false);
+      // Reset file input
+      if (quickPhotoInputRef.current) quickPhotoInputRef.current.value = '';
+    }
+  };
+
+  const handlePhotoButtonClick = (inputRef) => {
+    inputRef.current?.click();
+  };
 
   if (loading) {
     return (
@@ -82,9 +141,6 @@ const ElderProfile = () => {
                     <User className="w-12 h-12 text-white/70" />
                   )}
                 </div>
-                <button className="absolute -bottom-2 -right-2 bg-white text-red-600 rounded-full p-2 shadow-lg hover:scale-105 transition-transform">
-                  <Camera className="w-4 h-4" />
-                </button>
               </div>
               <div>
                 <h1 className="text-3xl font-bold mb-2">
@@ -102,10 +158,6 @@ const ElderProfile = () => {
                 </div>
               </div>
             </div>
-            <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl px-6 py-3 flex items-center transition-all duration-200 hover:scale-105">
-              <Edit className="w-5 h-5 mr-2" />
-              Edit Profile
-            </button>
           </div>
         </div>
 
@@ -328,14 +380,30 @@ const ElderProfile = () => {
         <div className="bg-gradient-to-r from-red-100 to-pink-100 rounded-2xl p-6 border border-red-200">
           <h3 className="text-lg font-bold text-red-900 mb-4">Quick Actions</h3>
           <div className="flex flex-wrap gap-3">
-            <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
-              <Edit className="w-4 h-4 mr-2" />
-              Edit Profile
+            <button 
+              onClick={() => handlePhotoButtonClick(quickPhotoInputRef)}
+              disabled={uploading}
+              className="bg-white hover:bg-gray-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-medium transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {uploading ? (
+                <>
+                  <Upload className="w-4 h-4 mr-2 animate-bounce" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Camera className="w-4 h-4 mr-2" />
+                  Update Photo
+                </>
+              )}
             </button>
-            <button className="bg-white hover:bg-gray-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
-              <Camera className="w-4 h-4 mr-2" />
-              Update Photo
-            </button>
+            <input
+              ref={quickPhotoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="hidden"
+            />
             <button className="bg-white hover:bg-gray-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
               <Shield className="w-4 h-4 mr-2" />
               Privacy Settings

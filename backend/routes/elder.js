@@ -17,7 +17,7 @@ const {
 } = require('../controllers/elderController');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validateElder, validateElderWithAuth } = require('../middleware/validation');
-const { Elder, User, Subscription } = require('../models');
+const { Elder, User, Subscription, Appointment, Doctor } = require('../models');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -447,6 +447,80 @@ router.post(
 
 // Create elder login
 router.post('/:id/create-login', authenticate, authorize('family_member'), createElderLogin);
+
+// Elder appointments route (for elder users to see their appointments)
+router.get('/appointments', authenticate, authorize('elder'), async (req, res) => {
+  try {
+    console.log('📅 Getting appointments for elder user:', req.user.id);
+    
+    const { status, page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+
+    // Find the elder record for this user
+    const elder = await Elder.findOne({ where: { userId: req.user.id } });
+    
+    if (!elder) {
+      console.log('❌ Elder profile not found for user:', req.user.id);
+      return res.json({
+        success: true,
+        appointments: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalItems: 0,
+          itemsPerPage: parseInt(limit)
+        }
+      });
+    }
+
+    console.log('✅ Found elder:', elder.id, elder.firstName, elder.lastName);
+
+    const whereClause = { elderId: elder.id };
+    if (status) {
+      whereClause.status = status;
+    }
+
+    const appointments = await Appointment.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: Doctor,
+          as: 'doctor',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['firstName', 'lastName', 'email', 'phone']
+            }
+          ]
+        }
+      ],
+      order: [['appointmentDate', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    console.log(`✅ Found ${appointments.count} appointments for elder ${elder.id}`);
+
+    res.json({
+      success: true,
+      appointments: appointments.rows,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(appointments.count / parseInt(limit)),
+        totalItems: appointments.count,
+        itemsPerPage: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get elder appointments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get appointments',
+      error: error.message
+    });
+  }
+});
 
 // Toggle elder access
 router.post('/:id/toggle-access', authenticate, authorize('family_member'), toggleElderAccess);
