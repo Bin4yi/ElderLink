@@ -9,16 +9,14 @@ import { appointmentService } from '../../../services/appointment';
 import toast from 'react-hot-toast';
 import RoleLayout from '../../common/RoleLayout';
 import { useNavigate } from 'react-router-dom';
+import DoctorCalendarModal from './DoctorCalendarModal';
 
 
 const AppointmentList = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
-  const [rescheduleDate, setRescheduleDate] = useState('');
-  const [rescheduleTime, setRescheduleTime] = useState('');
-  const [rescheduleReason, setRescheduleReason] = useState('');
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'upcoming', 'today', 'completed'
@@ -63,28 +61,32 @@ const AppointmentList = () => {
   };
 
   const openRescheduleModal = (id) => {
-    setSelectedAppointmentId(id);
-    setRescheduleModalOpen(true);
+    // Find the full appointment with doctor details
+    const appointment = appointments.find(apt => apt.id === id);
+    if (appointment && appointment.doctor) {
+      setSelectedAppointment(appointment);
+      setRescheduleModalOpen(true);
+    } else {
+      toast.error('Unable to open calendar - doctor information not found');
+    }
   };
 
-  const handleRescheduleSubmit = async () => {
-    if (!rescheduleDate || !rescheduleTime) {
-      toast.error('Date and time are required');
-      return;
-    }
-
-    const datetime = `${rescheduleDate}T${rescheduleTime}`;
-
+  const handleSlotSelect = async (date, time) => {
     try {
-      await appointmentService.reschedule(selectedAppointmentId, {
+      const datetime = `${date}T${time}:00`;
+      
+      await appointmentService.rescheduleAppointment(selectedAppointment.id, {
         newDateTime: datetime,
-        reason: rescheduleReason,
+        reason: 'Rescheduled by family member after postponement',
       });
+      
       toast.success('Appointment rescheduled successfully');
       setRescheduleModalOpen(false);
+      setSelectedAppointment(null);
       fetchAppointments();
     } catch (error) {
-      toast.error('Failed to reschedule appointment');
+      console.error('Error rescheduling appointment:', error);
+      toast.error(error.response?.data?.message || 'Failed to reschedule appointment');
     }
   };
 
@@ -231,40 +233,66 @@ const AppointmentList = () => {
           </div>
         </div>
 
+        {/* Postponement Notification - Show when appointmentDate is null */}
+        {!appointment.appointmentDate && appointment.status === 'cancelled' && (
+          <div className="px-4 py-3 bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-200">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-orange-900 mb-1">
+                  Appointment Postponed by Doctor
+                </p>
+                <p className="text-xs text-orange-700 mb-2">
+                  This appointment has been postponed. Please select a new date and time.
+                </p>
+                <button
+                  onClick={() => openRescheduleModal(appointment.id)}
+                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium flex items-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Reschedule Appointment
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       {/* Body - Compact */}
       <div className="px-4 py-3 space-y-2.5">
-        {/* Date & Time - Inline */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center gap-2">
-            <div className="bg-blue-100 p-1.5 rounded">
-              <CalendarCheck className="w-4 h-4 text-blue-600" />
+        {/* Date & Time - Inline - Only show if appointment has a date */}
+        {appointment.appointmentDate && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-100 p-1.5 rounded">
+                <CalendarCheck className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Date</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Date</p>
-              <p className="text-sm font-semibold text-gray-800">
-                {new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </p>
+            <div className="flex items-center gap-2">
+              <div className="bg-green-100 p-1.5 rounded">
+                <Clock className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Time</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {new Date(appointment.appointmentDate).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="bg-green-100 p-1.5 rounded">
-              <Clock className="w-4 h-4 text-green-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Time</p>
-              <p className="text-sm font-semibold text-gray-800">
-                {new Date(appointment.appointmentDate).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Reason - Compact */}
         {appointment.reason && (
@@ -624,6 +652,18 @@ const AppointmentList = () => {
             </div>
           )}
         </div>
+
+        {/* Reschedule Modal - DoctorCalendarModal */}
+        {rescheduleModalOpen && selectedAppointment && selectedAppointment.doctor && (
+          <DoctorCalendarModal
+            doctor={selectedAppointment.doctor}
+            onClose={() => {
+              setRescheduleModalOpen(false);
+              setSelectedAppointment(null);
+            }}
+            onSlotSelect={handleSlotSelect}
+          />
+        )}
       </div>
     </RoleLayout>
   );

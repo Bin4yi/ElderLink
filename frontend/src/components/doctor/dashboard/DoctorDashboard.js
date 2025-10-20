@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import doctorDashboardService from '../../../services/doctorDashboard';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const DoctorDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -34,6 +35,7 @@ const DoctorDashboard = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [healthAlerts, setHealthAlerts] = useState([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [revenueData, setRevenueData] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const { user } = useAuth();
@@ -48,12 +50,13 @@ const DoctorDashboard = () => {
       setLoading(true);
       
       // Load all dashboard data
-      const [statsRes, scheduleRes, activityRes, alertsRes, upcomingRes] = await Promise.all([
+      const [statsRes, scheduleRes, activityRes, alertsRes, upcomingRes, revenueRes] = await Promise.all([
         doctorDashboardService.getDashboardStats(),
         doctorDashboardService.getTodaySchedule(),
         doctorDashboardService.getRecentActivity(5),
         doctorDashboardService.getHealthAlerts('critical', 5),
-        doctorDashboardService.getUpcomingAppointments(7, 5)
+        doctorDashboardService.getUpcomingAppointments(7, 5),
+        doctorDashboardService.getRevenueHistory(7)
       ]);
 
       if (statsRes.success) {
@@ -74,6 +77,10 @@ const DoctorDashboard = () => {
 
       if (upcomingRes.success) {
         setUpcomingAppointments(upcomingRes.appointments);
+      }
+
+      if (revenueRes.success) {
+        setRevenueData(revenueRes.revenueData);
       }
 
       setLoading(false);
@@ -212,7 +219,7 @@ const DoctorDashboard = () => {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
           <div className="bg-white p-4 md:p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100">
             <div className="flex items-start justify-between mb-2">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -287,6 +294,20 @@ const DoctorDashboard = () => {
               Avg {stats?.averageConsultationsPerDay || 0}/day
             </p>
           </div>
+
+          <div className="bg-white p-4 md:p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100">
+            <div className="flex items-start justify-between mb-2">
+              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-emerald-600" />
+              </div>
+            </div>
+            <p className="text-xs text-gray-600 mb-1">Today's Revenue</p>
+            <p className="text-2xl font-bold text-gray-900">${stats?.todayRevenue || '0.00'}</p>
+            <p className="text-xs text-emerald-600 flex items-center mt-1">
+              <TrendingUp className="w-3 h-3 mr-1" />
+              From consultations
+            </p>
+          </div>
         </div>
 
         {/* Quick Actions - Removed Video Call */}
@@ -329,6 +350,85 @@ const DoctorDashboard = () => {
             <h3 className="text-lg font-semibold mb-2 text-gray-900">Prescriptions</h3>
             <p className="text-gray-600 text-sm">Create and review prescriptions</p>
           </button>
+        </div>
+
+        {/* Revenue Chart */}
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <DollarSign className="w-5 h-5 mr-2 text-emerald-600" />
+                Revenue Overview (Last 7 Days)
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Daily revenue from completed consultations
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-500 mb-1">Total 7-Day Revenue</p>
+              <p className="text-2xl font-bold text-emerald-600">
+                ${revenueData.reduce((sum, day) => sum + parseFloat(day.revenue), 0).toFixed(2)}
+              </p>
+            </div>
+          </div>
+          
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={revenueData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="day" 
+                tick={{ fontSize: 12 }}
+                stroke="#6b7280"
+              />
+              <YAxis 
+                tick={{ fontSize: 12 }}
+                stroke="#6b7280"
+                tickFormatter={(value) => `$${value}`}
+              />
+              <Tooltip 
+                formatter={(value) => [`$${parseFloat(value).toFixed(2)}`, 'Revenue']}
+                contentStyle={{ 
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}
+              />
+              <Bar 
+                dataKey="revenue" 
+                fill="#10b981" 
+                radius={[8, 8, 0, 0]}
+                animationDuration={1000}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+
+          <div className="grid grid-cols-4 gap-3 mt-6 pt-6 border-t border-gray-100">
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-1">Avg/Day</p>
+              <p className="text-lg font-semibold text-gray-900">
+                ${(revenueData.reduce((sum, day) => sum + parseFloat(day.revenue), 0) / 7).toFixed(2)}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-1">Highest</p>
+              <p className="text-lg font-semibold text-emerald-600">
+                ${Math.max(...revenueData.map(d => parseFloat(d.revenue))).toFixed(2)}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-1">Lowest</p>
+              <p className="text-lg font-semibold text-gray-900">
+                ${Math.min(...revenueData.map(d => parseFloat(d.revenue))).toFixed(2)}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-1">Today</p>
+              <p className="text-lg font-semibold text-blue-600">
+                ${stats?.todayRevenue || '0.00'}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Main Content Grid */}

@@ -11,6 +11,9 @@ router.use(authorize('doctor'));
 // Dashboard statistics
 router.get('/stats', DoctorDashboardController.getDashboardStats);
 
+// Revenue history for chart
+router.get('/revenue-history', DoctorDashboardController.getRevenueHistory);
+
 // Today's schedule
 router.get('/schedule/today', DoctorDashboardController.getTodaySchedule);
 

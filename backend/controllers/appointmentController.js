@@ -946,7 +946,7 @@ class AppointmentController {
       await appointment.update({
         appointmentDate: new Date(newDateTime),
         rescheduleReason: reason,
-        status: 'upcoming' // Rescheduled appointments go back to upcoming
+        status: 'reserved' // Use reserved status (will be confirmed after payment if needed)
       });
 
       res.json({

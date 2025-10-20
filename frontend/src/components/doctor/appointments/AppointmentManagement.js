@@ -66,35 +66,18 @@ const AppointmentManagement = () => {
 
   useEffect(() => {
     loadAppointments();
-  }, [filters.status, filters.dateRange]);
+  }, []); // Only load once on mount - filtering happens on frontend
 
 
 
   const loadAppointments = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Loading appointments with filters:', filters);
+      console.log('🔄 Loading all appointments (filtering will be done on frontend)');
 
+      // Load ALL appointments without backend filtering
+      // All filtering (status, date range, search, priority) will be done on frontend
       const params = {};
-      if (filters.status !== 'all') {
-        params.status = filters.status;
-      }
-
-      // Handle date range filtering
-      if (filters.dateRange !== 'all') {
-        const now = new Date();
-        switch (filters.dateRange) {
-          case 'today':
-            params.date = format(now, 'yyyy-MM-dd');
-            break;
-          case 'week':
-            // Backend will handle week range if needed
-            break;
-          case 'month':
-            // Backend will handle month range if needed
-            break;
-        }
-      }
 
       console.log('📋 Calling doctorAppointmentService.getDoctorAppointments with params:', params);
       
@@ -133,7 +116,7 @@ const AppointmentManagement = () => {
     }
   };
 
-  // Get filtered appointments based on search and priority
+  // Get filtered appointments based on search, priority, status and dateRange
   const getFilteredAppointments = () => {
     let filtered = [...appointments];
 
@@ -153,6 +136,26 @@ const AppointmentManagement = () => {
     // Priority filter
     if (filters.priority !== 'all') {
       filtered = filtered.filter(apt => apt.priority === filters.priority);
+    }
+
+    // Status filter - use the same date-based calculated status used for badges
+    if (filters.status && filters.status !== 'all') {
+      filtered = filtered.filter(apt => {
+        const calculatedStatus = getAppointmentStatus(apt.appointmentDate);
+
+        // If user explicitly filters for in-progress or cancelled, use the stored status field
+        if (filters.status === 'in-progress' || filters.status === 'cancelled') {
+          return apt.status === filters.status;
+        }
+
+        // For upcoming/today/completed rely on calculated date-based status
+        return calculatedStatus === filters.status;
+      });
+    }
+
+    // Date range filter handled in backend for some ranges, but we also support 'today' on frontend
+    if (filters.dateRange === 'today') {
+      filtered = filtered.filter(apt => isTodayDate(apt.appointmentDate));
     }
 
     return filtered;
@@ -182,6 +185,35 @@ const AppointmentManagement = () => {
     } catch (error) {
       console.error(`❌ Error ${action}ing appointment:`, error);
       toast.error(error.response?.data?.message || `Failed to ${action} appointment`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle postpone appointment (clear date, let family reschedule)
+  const handlePostponeAppointment = async (appointmentId) => {
+    const reason = prompt('Please provide a reason for postponing (optional):');
+    
+    // User cancelled the prompt
+    if (reason === null) return;
+
+    try {
+      setActionLoading(true);
+      
+      console.log('⏸️  Postponing appointment:', { appointmentId, reason });
+      
+      const response = await doctorAppointmentService.postponeAppointment(appointmentId, reason);
+      
+      if (response && response.success !== false) {
+        toast.success('Appointment postponed. Family member will be notified to reschedule.');
+        loadAppointments();
+        setSelectedAppointment(null);
+      } else {
+        toast.error(response?.message || 'Failed to postpone appointment');
+      }
+    } catch (error) {
+      console.error('❌ Error postponing appointment:', error);
+      toast.error(error.response?.data?.message || 'Failed to postpone appointment');
     } finally {
       setActionLoading(false);
     }
@@ -588,6 +620,18 @@ const AppointmentManagement = () => {
               View Full Details
             </button>
 
+            {/* Postpone Button - Only show for upcoming appointments */}
+            {calculatedStatus === 'upcoming' && (
+              <button
+                onClick={() => handlePostponeAppointment(appointment.id)}
+                disabled={actionLoading}
+                className="flex-1 min-w-[140px] px-5 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-base"
+              >
+                <Clock className="w-5 h-5" />
+                {actionLoading ? 'Processing...' : 'Postpone'}
+              </button>
+            )}
+
             {/* REMOVED: Approve/Reject buttons - No longer needed */}
           </div>
         </div>
@@ -611,13 +655,32 @@ const AppointmentManagement = () => {
     );
   }
 
-  // Get stats for the dashboard
+  // Get stats for the dashboard - ALWAYS use all appointments, never filtered
   const stats = {
     total: appointments.length,
-    upcoming: appointments.filter(a => a.status === 'upcoming').length,
-    today: groupedAppointments().today.length,
+    upcoming: appointments.filter(a => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const aptDate = new Date(a.appointmentDate);
+      aptDate.setHours(0, 0, 0, 0);
+      return aptDate > today; // Future dates only
+    }).length,
+    today: appointments.filter(a => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const aptDate = new Date(a.appointmentDate);
+      aptDate.setHours(0, 0, 0, 0);
+      return aptDate.getTime() === today.getTime(); // Today's appointments
+    }).length,
     inProgress: appointments.filter(a => a.status === 'in-progress').length,
-    completed: appointments.filter(a => a.status === 'completed').length
+    completed: appointments.filter(a => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const aptDate = new Date(a.appointmentDate);
+      aptDate.setHours(0, 0, 0, 0);
+      // Completed if: past date OR explicitly marked as completed
+      return aptDate < today || a.status === 'completed';
+    }).length
   };
 
   return (
