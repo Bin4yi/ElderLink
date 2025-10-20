@@ -672,6 +672,67 @@ const getDoctorPrescriptions = async (req, res) => {
   }
 };
 
+// Get prescriptions for an elder (their own medications)
+const getElderPrescriptions = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log('🔍 Getting prescriptions for elder userId:', userId);
+
+    // Find elder profile by userId
+    const elder = await Elder.findOne({ where: { userId } });
+    if (!elder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Elder profile not found'
+      });
+    }
+
+    console.log('✅ Elder found:', elder.id);
+
+    // Get prescriptions for this elder
+    const prescriptions = await Prescription.findAll({
+      where: { elderId: elder.id },
+      include: [
+        {
+          model: User,
+          as: 'doctor',
+          include: [{
+            model: Doctor,
+            as: 'doctorProfile',
+            attributes: ['specialization', 'licenseNumber', 'experience']
+          }],
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+        },
+        {
+          model: PrescriptionItem,
+          as: 'items',
+          include: [{
+            model: Inventory,
+            as: 'inventory',
+            attributes: ['name', 'category', 'manufacturer']
+          }]
+        }
+      ],
+      order: [['issuedDate', 'DESC']]
+    });
+
+    console.log('✅ Found prescriptions:', prescriptions.length);
+
+    res.json({
+      success: true,
+      prescriptions,
+      count: prescriptions.length
+    });
+  } catch (error) {
+    console.error("Error fetching elder prescriptions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch prescriptions",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getPrescriptions,
   getPrescription,
@@ -681,4 +742,6 @@ module.exports = {
   // Doctor functions
   createPrescription,
   getDoctorPrescriptions,
+  // Elder functions
+  getElderPrescriptions,
 };

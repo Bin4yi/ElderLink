@@ -10,6 +10,9 @@ const prescriptionController = require('../controllers/prescriptionController');
 router.post('/doctor/create', authenticate, authorize(['doctor']), prescriptionController.createPrescription);
 router.get('/doctor/my-prescriptions', authenticate, authorize(['doctor']), prescriptionController.getDoctorPrescriptions);
 
+// Elder routes - view their own prescriptions/medications
+router.get('/elder/my-medications', authenticate, authorize(['elder']), prescriptionController.getElderPrescriptions);
+
 // Pharmacist routes
 router.get('/', authenticate, authorize(['pharmacist', 'admin']), prescriptionController.getPrescriptions);
 router.get('/stats', authenticate, authorize(['pharmacist', 'admin']), prescriptionController.getPrescriptionStats);
