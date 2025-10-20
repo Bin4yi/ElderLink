@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import { LogBox } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { AuthProvider } from './src/context/AuthContext';
@@ -9,6 +10,9 @@ import { HealthProvider } from './src/context/HealthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { COLORS } from './src/utils/colors';
 import { StorageUtils } from './src/utils/storage';
+
+// Hide all warning and error logs in the app
+LogBox.ignoreAllLogs(true);
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
