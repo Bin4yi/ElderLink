@@ -8,9 +8,14 @@ const LastRecordModal = ({ isOpen, onClose, elderId, elderName }) => {
   const [loading, setLoading] = useState(false);
   const [lastConsultation, setLastConsultation] = useState(null);
   const [latestVitals, setLatestVitals] = useState(null);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
     if (isOpen && elderId) {
+      // Reset states when modal opens
+      setAccessDenied(false);
+      setLastConsultation(null);
+      setLatestVitals(null);
       loadLastRecords();
     }
   }, [isOpen, elderId]);
@@ -23,23 +28,24 @@ const LastRecordModal = ({ isOpen, onClose, elderId, elderName }) => {
       if (response.success) {
         setLastConsultation(response.data.lastConsultation);
         setLatestVitals(response.data.latestVitals);
+        setAccessDenied(false);
       } else if (response.accessDenied) {
         // Handle access denied from backend
-        toast.error('Access denied. The family member has not granted permission to view medical records.', {
+        setAccessDenied(true);
+        toast.error('Access denied. Family has not granted permission to view medical records.', {
           icon: '🔒',
           duration: 4000
         });
-        onClose(); // Close modal
       }
     } catch (error) {
       console.error('Error loading records:', error);
       
       if (error.response?.status === 403 || error.response?.data?.accessDenied) {
-        toast.error('Access denied. The family member has not granted permission to view medical records.', {
+        setAccessDenied(true);
+        toast.error('Access denied. Family has not granted permission to view medical records.', {
           icon: '🔒',
           duration: 4000
         });
-        onClose(); // Close modal
       } else {
         toast.error('Failed to load records');
       }
@@ -80,6 +86,26 @@ const LastRecordModal = ({ isOpen, onClose, elderId, elderName }) => {
             <div className="flex flex-col items-center justify-center py-12">
               <Loader className="w-12 h-12 animate-spin text-blue-600 mb-4" />
               <p className="text-gray-600">Loading records...</p>
+            </div>
+          ) : accessDenied ? (
+            <div className="text-center py-12">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Access Denied</h3>
+              <p className="text-gray-600 font-medium mb-2">Medical Records Not Available</p>
+              <p className="text-sm text-gray-500 max-w-md mx-auto">
+                The family member has not granted permission to view this patient's medical history and vital signs. 
+                Please contact the family member to request access.
+              </p>
+              <div className="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg max-w-md mx-auto">
+                <p className="text-sm text-orange-800">
+                  <strong>Note:</strong> Access permissions are set during appointment booking. 
+                  The family member can update these settings through their dashboard.
+                </p>
+              </div>
             </div>
           ) : !lastConsultation ? (
             <div className="text-center py-12">

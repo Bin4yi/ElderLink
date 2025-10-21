@@ -509,27 +509,38 @@ const getElderLastRecordWithVitals = async (req, res) => {
       order: [['sessionDate', 'DESC']]
     });
 
-    // If user is a doctor, check visibility permissions
-    if (userRole === 'doctor' && lastConsultation) {
-      const visibility = lastConsultation.appointment?.visibility;
+    console.log('📋 Last consultation found:', !!lastConsultation);
+    if (lastConsultation) {
+      console.log('📋 Appointment ID:', lastConsultation.appointment?.id);
+      console.log('📋 Has visibility record:', !!lastConsultation.appointment?.visibility);
+      console.log('📋 Allow access:', lastConsultation.appointment?.visibility?.allowMedicalRecordAccess);
+    }
+
+    // If user is a doctor and there IS a consultation record, check visibility permissions
+    if (userRole === 'doctor' && lastConsultation && lastConsultation.appointment) {
+      const visibility = lastConsultation.appointment.visibility;
       
       console.log('🔐 Checking visibility for doctor:', {
-        appointmentId: lastConsultation.appointment?.id,
+        appointmentId: lastConsultation.appointment.id,
         hasVisibilityRecord: !!visibility,
         allowAccess: visibility?.allowMedicalRecordAccess
       });
 
-      // If no visibility record exists or access is denied, return access denied
-      if (!visibility || !visibility.allowMedicalRecordAccess) {
+      // If no visibility record exists, check if this is an old appointment (before feature was added)
+      // For backward compatibility, allow access if no visibility record exists
+      if (!visibility) {
+        console.log('⚠️ No visibility record found - allowing access (backward compatibility)');
+      } else if (!visibility.allowMedicalRecordAccess) {
+        // If visibility record exists and access is explicitly denied
         console.log('❌ Access denied: Medical record access not granted by family');
         return res.status(403).json({
           success: false,
           message: 'Access denied. The family member has not granted permission to view medical records.',
           accessDenied: true
         });
+      } else {
+        console.log('✅ Access granted for doctor to view medical records');
       }
-
-      console.log('✅ Access granted for doctor to view medical records');
     }
 
     // Get the most recent vitals
@@ -537,6 +548,8 @@ const getElderLastRecordWithVitals = async (req, res) => {
       where: { elderId },
       order: [['monitoringDate', 'DESC']]
     });
+
+    console.log('📊 Latest vitals found:', !!latestVitals);
 
     res.status(200).json({
       success: true,
