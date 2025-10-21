@@ -44,7 +44,7 @@ const MentalHealthResource = require("./MentalHealthResource");
 
 // === Password Reset Model ===
 const PasswordResetOTP = require("./PasswordResetOTP");
-ix Appointment flow
+
 // === Appointment Visibility Model ===
 const AppointmentVisibility = require("./AppointmentVisibility");
 
