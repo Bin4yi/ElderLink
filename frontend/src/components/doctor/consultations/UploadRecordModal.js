@@ -39,16 +39,25 @@ const UploadRecordModal = ({ isOpen, onClose, appointment }) => {
         status: 'completed'
       };
 
+      console.log('📤 Submitting consultation record:', consultationData);
+
       const response = await api.post('/doctor/consultations/records', consultationData);
       
       if (response.data.success) {
-        toast.success('Consultation record saved!');
+        // Check if it was an update or create
+        const message = response.data.message || 'Consultation record saved successfully!';
+        toast.success(message);
         onClose();
-        window.location.reload();
+        
+        // Refresh the page to show updated data
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
     } catch (error) {
-      console.error('Error:', error);
-      toast.error(error.response?.data?.message || 'Failed to save');
+      console.error('❌ Error saving consultation record:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to save consultation record';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

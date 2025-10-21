@@ -45,6 +45,9 @@ const MentalHealthResource = require("./MentalHealthResource");
 // === Password Reset Model ===
 const PasswordResetOTP = require("./PasswordResetOTP");
 
+// === Appointment Visibility Model ===
+const AppointmentVisibility = require("./AppointmentVisibility");
+
 // Clear any existing associations to prevent conflicts
 const clearAssociations = (model) => {
   if (model.associations) {
@@ -213,6 +216,22 @@ Appointment.belongsTo(Elder, {
 Appointment.belongsTo(Doctor, {
   foreignKey: "doctorId",
   as: "doctor",
+});
+
+// AppointmentVisibility associations
+Appointment.hasOne(AppointmentVisibility, {
+  foreignKey: "appointmentId",
+  as: "visibility",
+});
+
+AppointmentVisibility.belongsTo(Appointment, {
+  foreignKey: "appointmentId",
+  as: "appointment",
+});
+
+AppointmentVisibility.belongsTo(User, {
+  foreignKey: "grantedBy",
+  as: "grantedByUser",
 });
 
 // Reverse associations for Appointments
@@ -627,6 +646,7 @@ module.exports = {
   StaffAssignment,
   DoctorAssignment,
   Appointment,
+  AppointmentVisibility,
   ConsultationRecord,
   Doctor,
   DoctorSchedule,
