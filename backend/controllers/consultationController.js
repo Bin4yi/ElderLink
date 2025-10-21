@@ -1,5 +1,5 @@
 // backend/controllers/consultationController.js
-const { ConsultationRecord, Appointment, Elder, Doctor, User, HealthMonitoring } = require('../models');
+const { ConsultationRecord, Appointment, Elder, Doctor, User, HealthMonitoring, AppointmentVisibility } = require('../models');
 const { Op } = require('sequelize');
 
 // Create a new consultation record
@@ -60,36 +60,54 @@ const createConsultationRecord = async (req, res) => {
       where: { appointmentId }
     });
 
-    if (existingRecord) {
-      return res.status(400).json({
-        success: false,
-        message: 'Consultation record already exists for this appointment'
-      });
-    }
+    let consultationRecord;
 
-    // Create consultation record (simplified - no vitals, no follow-ups)
-    const consultationRecord = await ConsultationRecord.create({
-      appointmentId,
-      doctorId: doctor.id,
-      elderId,
-      sessionDate: new Date(),
-      duration: appointment.duration || 30,
-      symptoms: symptoms || '',
-      diagnosis,
-      treatment: treatment || '',
-      recommendations: recommendations || '',
-      sessionSummary,
-      prescriptionAttached: prescriptionAttached || false,
-      status: 'completed'
-      // Removed: vitalSigns, followUpRequired, followUpDate, nextAppointment, additionalNotes, clinicalObservations
-    });
+    if (existingRecord) {
+      // Update existing record instead of blocking
+      console.log(`✏️ Updating existing consultation record for appointment: ${appointmentId}`);
+      
+      await existingRecord.update({
+        symptoms: symptoms || existingRecord.symptoms,
+        diagnosis,
+        treatment: treatment || existingRecord.treatment,
+        recommendations: recommendations || existingRecord.recommendations,
+        sessionSummary,
+        prescriptionAttached: prescriptionAttached || existingRecord.prescriptionAttached,
+        status: 'completed',
+        sessionDate: new Date() // Update session date to current time
+      });
+
+      consultationRecord = existingRecord;
+      
+      console.log(`✅ Consultation record updated successfully`);
+    } else {
+      // Create new consultation record
+      console.log(`📝 Creating new consultation record for appointment: ${appointmentId}`);
+      
+      consultationRecord = await ConsultationRecord.create({
+        appointmentId,
+        doctorId: doctor.id,
+        elderId,
+        sessionDate: new Date(),
+        duration: appointment.duration || 30,
+        symptoms: symptoms || '',
+        diagnosis,
+        treatment: treatment || '',
+        recommendations: recommendations || '',
+        sessionSummary,
+        prescriptionAttached: prescriptionAttached || false,
+        status: 'completed'
+      });
+
+      console.log(`✅ Consultation record created successfully`);
+    }
 
     // Update appointment status to completed
     await appointment.update({
       status: 'completed'
     });
 
-    // Fetch the created record with minimal associations
+    // Fetch the created/updated record with minimal associations
     const recordWithDetails = await ConsultationRecord.findByPk(consultationRecord.id, {
       include: [
         {
@@ -115,10 +133,16 @@ const createConsultationRecord = async (req, res) => {
       ]
     });
 
-    res.status(201).json({
+    // Determine the appropriate success message
+    const successMessage = existingRecord 
+      ? 'Consultation record updated successfully' 
+      : 'Consultation record created successfully';
+
+    res.status(existingRecord ? 200 : 201).json({
       success: true,
-      message: 'Consultation record created successfully',
-      data: recordWithDetails
+      message: successMessage,
+      data: recordWithDetails,
+      isUpdate: !!existingRecord
     });
 
   } catch (error) {
@@ -170,7 +194,12 @@ const getDoctorConsultationRecords = async (req, res) => {
         {
           model: Appointment,
           as: 'appointment',
-          attributes: ['id', 'appointmentDate', 'type']
+          attributes: ['id', 'appointmentDate', 'type'],
+          include: [{
+            model: AppointmentVisibility,
+            as: 'visibility',
+            attributes: ['allowMedicalRecordAccess', 'grantedBy', 'grantedAt']
+          }]
         }
       ],
       order: [['sessionDate', 'DESC']],
@@ -178,10 +207,18 @@ const getDoctorConsultationRecords = async (req, res) => {
       offset: parseInt(offset)
     });
 
+    // Add visibility flag to each record
+    const recordsWithVisibility = rows.map(record => {
+      const recordData = record.toJSON();
+      const visibility = recordData.appointment?.visibility;
+      recordData.canAccessMedicalRecords = visibility?.allowMedicalRecordAccess || false;
+      return recordData;
+    });
+
     res.status(200).json({
       success: true,
       data: {
-        records: rows,
+        records: recordsWithVisibility,
         pagination: {
           total: count,
           page: parseInt(page),
@@ -439,8 +476,12 @@ const deleteConsultationRecord = async (req, res) => {
 const getElderLastRecordWithVitals = async (req, res) => {
   try {
     const { elderId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
-    // Get the most recent consultation record
+    console.log('🔍 Fetching last record with vitals:', { elderId, userId, userRole });
+
+    // Get the most recent consultation record with appointment
     const lastConsultation = await ConsultationRecord.findOne({
       where: { elderId },
       include: [
@@ -457,11 +498,39 @@ const getElderLastRecordWithVitals = async (req, res) => {
         {
           model: Appointment,
           as: 'appointment',
-          attributes: ['id', 'appointmentDate', 'type']
+          attributes: ['id', 'appointmentDate', 'type'],
+          include: [{
+            model: AppointmentVisibility,
+            as: 'visibility',
+            attributes: ['allowMedicalRecordAccess', 'grantedBy', 'grantedAt', 'notes']
+          }]
         }
       ],
       order: [['sessionDate', 'DESC']]
     });
+
+    // If user is a doctor, check visibility permissions
+    if (userRole === 'doctor' && lastConsultation) {
+      const visibility = lastConsultation.appointment?.visibility;
+      
+      console.log('🔐 Checking visibility for doctor:', {
+        appointmentId: lastConsultation.appointment?.id,
+        hasVisibilityRecord: !!visibility,
+        allowAccess: visibility?.allowMedicalRecordAccess
+      });
+
+      // If no visibility record exists or access is denied, return access denied
+      if (!visibility || !visibility.allowMedicalRecordAccess) {
+        console.log('❌ Access denied: Medical record access not granted by family');
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. The family member has not granted permission to view medical records.',
+          accessDenied: true
+        });
+      }
+
+      console.log('✅ Access granted for doctor to view medical records');
+    }
 
     // Get the most recent vitals
     const latestVitals = await HealthMonitoring.findOne({

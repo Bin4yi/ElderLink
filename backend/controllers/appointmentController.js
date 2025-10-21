@@ -1,5 +1,5 @@
 // backend/controllers/appointmentController.js
-const { Appointment, User, Doctor, Elder, FamilyMember, DoctorSchedule } = require('../models');
+const { Appointment, User, Doctor, Elder, FamilyMember, DoctorSchedule, AppointmentVisibility } = require('../models');
 const { Op } = require('sequelize');
 const emailService = require('../services/emailService');
 
@@ -377,13 +377,16 @@ class AppointmentController {
         priority = 'medium',
         reason,
         symptoms,
-        notes
+        notes,
+        allowMedicalRecordAccess = false, // NEW: Visibility preference
+        visibilityNotes
       } = req.body;
 
       console.log('🔄 Completing reservation:', { 
         reservationId, 
         elderId, 
         reason,
+        allowMedicalRecordAccess,
         userId: req.user.id 
       });
 
@@ -471,6 +474,24 @@ class AppointmentController {
       });
 
       console.log('✅ Reservation updated to pending appointment');
+
+      // Create visibility record for this appointment
+      try {
+        await AppointmentVisibility.create({
+          appointmentId: reservation.id,
+          allowMedicalRecordAccess: allowMedicalRecordAccess === true || allowMedicalRecordAccess === 'true',
+          grantedBy: req.user.id,
+          grantedAt: new Date(),
+          notes: visibilityNotes || null
+        });
+        console.log('✅ Visibility record created:', { 
+          appointmentId: reservation.id, 
+          allowMedicalRecordAccess 
+        });
+      } catch (visibilityError) {
+        console.error('⚠️ Failed to create visibility record:', visibilityError);
+        // Continue with appointment creation even if visibility record fails
+      }
 
       // Fetch the complete appointment with relations
       const completeAppointment = await Appointment.findByPk(reservation.id, {

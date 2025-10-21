@@ -31,6 +31,10 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
     symptoms: '',
     notes: ''
   });
+  const [medicalRecordAccess, setMedicalRecordAccess] = useState({
+    allowAccess: false,
+    notes: ''
+  });
   const [paymentIntent, setPaymentIntent] = useState(null);
   const [reservation, setReservation] = useState(null);
   const [remainingTime, setRemainingTime] = useState(0);
@@ -194,7 +198,9 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
         priority: appointmentDetails.priority,
         reason: appointmentDetails.reason,
         symptoms: appointmentDetails.symptoms,
-        notes: appointmentDetails.notes
+        notes: appointmentDetails.notes,
+        allowMedicalRecordAccess: medicalRecordAccess.allowAccess,
+        visibilityNotes: medicalRecordAccess.notes
       });
 
       if (response.success) {
@@ -236,23 +242,24 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
 
   const renderStepIndicator = () => (
     <div className="mb-8">
-      <div className="flex items-center justify-center space-x-8">
+      <div className="flex items-center justify-center space-x-4">
         {[
           { step: 1, label: 'Select Elder' },
           { step: 2, label: 'Choose Doctor & Time' },
           { step: 3, label: 'Patient Details' },
-          { step: 4, label: 'Payment' }
+          { step: 4, label: 'Medical Records Access' },
+          { step: 5, label: 'Payment' }
         ].map(({ step: stepNumber, label }) => (
           <div key={stepNumber} className="flex items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm ${
               step >= stepNumber 
                 ? 'bg-red-500 text-white' 
                 : 'bg-gray-200 text-gray-600'
             }`}>
               {stepNumber}
             </div>
-            {stepNumber < 4 && (
-              <div className={`w-16 h-1 mx-2 ${
+            {stepNumber < 5 && (
+              <div className={`w-12 h-1 mx-1 ${
                 step > stepNumber ? 'bg-red-500' : 'bg-gray-200'
               }`} />
             )}
@@ -265,7 +272,8 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
             {step === 1 && 'Select Elder'}
             {step === 2 && 'Choose Doctor & Time'}
             {step === 3 && 'Patient Details'}
-            {step === 4 && 'Payment'}
+            {step === 4 && 'Medical Records Access'}
+            {step === 5 && 'Payment'}
           </div>
           {reservation && remainingTime > 0 && (
             <div className="mt-2 flex items-center justify-center space-x-2">
@@ -549,6 +557,135 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
           disabled={!appointmentDetails.reason.trim()}
           className="flex-1 bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
+          Next: Medical Records
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderMedicalRecordsAccess = () => (
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold mb-6">Medical Records Access Permission</h2>
+      
+      {/* Information Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="flex items-start space-x-3">
+          <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+          <div>
+            <h3 className="font-semibold text-blue-900 mb-2">Privacy & Data Control</h3>
+            <p className="text-blue-800 text-sm leading-relaxed">
+              You have full control over your elder's medical information. By granting access, 
+              the doctor will be able to view previous consultation records and vital signs 
+              to provide better, more informed care.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Access Control Checkbox */}
+      <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
+        <label className="flex items-start space-x-4 cursor-pointer group">
+          <div className="relative flex items-center">
+            <input
+              type="checkbox"
+              checked={medicalRecordAccess.allowAccess}
+              onChange={(e) => setMedicalRecordAccess(prev => ({ 
+                ...prev, 
+                allowAccess: e.target.checked 
+              }))}
+              className="w-6 h-6 text-green-600 border-gray-300 rounded focus:ring-green-500 focus:ring-2 cursor-pointer"
+            />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center space-x-2 mb-2">
+              {medicalRecordAccess.allowAccess ? (
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-gray-400" />
+              )}
+              <span className="font-semibold text-lg text-gray-900">
+                Allow doctor to view elder's medical records and vitals
+              </span>
+            </div>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Granting access allows the doctor to view:
+            </p>
+            <ul className="mt-2 ml-4 space-y-1 text-sm text-gray-600">
+              <li className="flex items-center space-x-2">
+                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                <span>Previous consultation records and diagnoses</span>
+              </li>
+              <li className="flex items-center space-x-2">
+                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                <span>Recent vital signs (blood pressure, heart rate, etc.)</span>
+              </li>
+              <li className="flex items-center space-x-2">
+                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                <span>Treatment history and medications</span>
+              </li>
+            </ul>
+          </div>
+        </label>
+
+        {/* Status Indicator */}
+        <div className={`mt-4 p-3 rounded-lg ${
+          medicalRecordAccess.allowAccess 
+            ? 'bg-green-50 border border-green-200' 
+            : 'bg-orange-50 border border-orange-200'
+        }`}>
+          <div className="flex items-center space-x-2">
+            {medicalRecordAccess.allowAccess ? (
+              <>
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <span className="text-green-800 font-medium">Access Granted</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-5 h-5 text-orange-600" />
+                <span className="text-orange-800 font-medium">Access Restricted</span>
+              </>
+            )}
+          </div>
+          <p className={`mt-1 text-sm ${
+            medicalRecordAccess.allowAccess ? 'text-green-700' : 'text-orange-700'
+          }`}>
+            {medicalRecordAccess.allowAccess 
+              ? 'The doctor will have access to view previous medical records for this appointment.'
+              : 'The doctor will not be able to view previous medical records. They will only see information you provide in this appointment.'}
+          </p>
+        </div>
+      </div>
+
+      {/* Optional Notes */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Additional Notes (Optional)
+        </label>
+        <textarea
+          value={medicalRecordAccess.notes}
+          onChange={(e) => setMedicalRecordAccess(prev => ({ ...prev, notes: e.target.value }))}
+          placeholder="Any specific preferences or concerns about medical record access..."
+          rows={3}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      {/* Navigation */}
+      <div className="flex space-x-4">
+        <button
+          type="button"
+          onClick={() => setStep(3)}
+          className="flex-1 flex items-center justify-center space-x-2 py-3 px-6 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Back</span>
+        </button>
+        
+        <button
+          type="button"
+          onClick={() => setStep(5)}
+          className="flex-1 bg-green-500 text-white py-3 px-6 rounded-lg hover:bg-green-600 transition-colors"
+        >
           Proceed to Payment
         </button>
       </div>
@@ -599,7 +736,7 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
           paymentIntent={paymentIntent}
           appointmentId="temp"
           onSuccess={handlePaymentSuccess}
-          onBack={() => setStep(3)}
+          onBack={() => setStep(4)}
         />
       </Elements>
     </div>
@@ -637,7 +774,8 @@ const AppointmentBooking = ({ onBack, onSuccess }) => {
           {step === 1 && renderElderSelection()}
           {step === 2 && renderDoctorSelection()}
           {step === 3 && renderPatientDetails()}
-          {step === 4 && renderPaymentForm()}
+          {step === 4 && renderMedicalRecordsAccess()}
+          {step === 5 && renderPaymentForm()}
 
           {/* Calendar Modal */}
           {showCalendarModal && selectedDoctor && (

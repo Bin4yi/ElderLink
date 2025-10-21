@@ -307,8 +307,28 @@ const ConsultationHistory = () => {
 
   // Handle view last record
   const handleViewLastRecord = (consultation) => {
+    // Check if medical record access is allowed
+    const canAccess = consultation?.canAccessMedicalRecords || 
+                      consultation?.appointment?.visibility?.allowMedicalRecordAccess;
+    
+    if (canAccess === false) {
+      toast.error('Access denied. The family member has not granted permission to view medical records.', {
+        icon: '🔒',
+        duration: 4000
+      });
+      return;
+    }
+    
     setSelectedConsultation(consultation);
     setShowLastRecordModal(true);
+  };
+
+  // Check if last record access is allowed
+  const canAccessLastRecord = (consultation) => {
+    // Allow access if visibility is explicitly granted or if no record exists yet
+    return consultation?.canAccessMedicalRecords === true || 
+           consultation?.appointment?.visibility?.allowMedicalRecordAccess === true ||
+           !consultation?.appointment?.visibility; // No visibility record means old appointment before feature
   };
 
   // Handle schedule session
@@ -987,15 +1007,28 @@ const ConsultationHistory = () => {
 
                             {/* Action Buttons */}
                             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 pt-4 border-t border-gray-200">
-                              {/* Last Record Button */}
-                              <button
-                                onClick={() => handleViewLastRecord({ elder: session.elder, id: session.id })}
-                                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
-                              >
-                                <History className="w-4 h-4" />
-                                <span className="hidden sm:inline">Last Record</span>
-                                <span className="sm:hidden">Record</span>
-                              </button>
+                              {/* Last Record Button - With Visibility Check */}
+                              {canAccessLastRecord(session) ? (
+                                <button
+                                  onClick={() => handleViewLastRecord({ elder: session.elder, id: session.id, appointment: session.appointment, canAccessMedicalRecords: session.canAccessMedicalRecords })}
+                                  className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                                  title="View patient's last consultation record and vitals"
+                                >
+                                  <History className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Last Record</span>
+                                  <span className="sm:hidden">Record</span>
+                                </button>
+                              ) : (
+                                <div 
+                                  className="px-4 py-2.5 bg-gray-300 text-gray-500 rounded-lg flex items-center justify-center gap-2 font-medium text-sm cursor-not-allowed"
+                                  title="Access denied. Family member has not granted permission to view medical records."
+                                >
+                                  <History className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Last Record</span>
+                                  <span className="sm:hidden">Record</span>
+                                  <span className="text-xs">🔒</span>
+                                </div>
+                              )}
 
                               {/* Elder Details Button */}
                               <button
@@ -1376,15 +1409,28 @@ const ConsultationHistory = () => {
 
                             {/* Action Buttons - 4 buttons for Upcoming */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-gray-200">
-                              {/* Last Record Button */}
-                              <button
-                                onClick={() => handleViewLastRecord(appointment)}
-                                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
-                              >
-                                <History className="w-4 h-4" />
-                                <span className="hidden sm:inline">Last Record</span>
-                                <span className="sm:hidden">Record</span>
-                              </button>
+                              {/* Last Record Button - With Visibility Check */}
+                              {canAccessLastRecord(appointment) ? (
+                                <button
+                                  onClick={() => handleViewLastRecord(appointment)}
+                                  className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                                  title="View patient's last consultation record and vitals"
+                                >
+                                  <History className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Last Record</span>
+                                  <span className="sm:hidden">Record</span>
+                                </button>
+                              ) : (
+                                <div 
+                                  className="px-4 py-2.5 bg-gray-300 text-gray-500 rounded-lg flex items-center justify-center gap-2 font-medium text-sm cursor-not-allowed"
+                                  title="Access denied. Family member has not granted permission to view medical records."
+                                >
+                                  <History className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Last Record</span>
+                                  <span className="sm:hidden">Record</span>
+                                  <span className="text-xs">🔒</span>
+                                </div>
+                              )}
 
                               {/* Schedule Session Button */}
                               <button
@@ -1703,15 +1749,26 @@ const ConsultationHistory = () => {
 
                               {/* Action Buttons - 3 buttons for In Progress */}
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                {/* Last Record Button */}
-                                <button
-                                  onClick={() => handleViewLastRecord(appointment)}
-                                  className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
-                                >
-                                  <History className="w-4 h-4" />
-                                  <span>Last Record</span>
-                                </button>
-
+                                {/* Last Record Button - With Visibility Check */}
+                                {canAccessLastRecord(appointment) ? (
+                                  <button
+                                    onClick={() => handleViewLastRecord(appointment)}
+                                    className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                                    title="View patient's last consultation record and vitals"
+                                  >
+                                    <History className="w-4 h-4" />
+                                    <span>Last Record</span>
+                                  </button>
+                                ) : (
+                                  <div 
+                                    className="px-4 py-2.5 bg-gray-300 text-gray-500 rounded-lg flex items-center justify-center gap-2 font-medium text-sm cursor-not-allowed"
+                                    title="Access denied. Family member has not granted permission to view medical records."
+                                  >
+                                    <History className="w-4 h-4" />
+                                    <span>Last Record</span>
+                                    <span className="text-xs">🔒</span>
+                                  </div>
+                                )}
                                 {/* Join Session Button */}
                                 <button
                                   onClick={() => handleStartZoomMeeting(appointment)}
@@ -2000,15 +2057,28 @@ const ConsultationHistory = () => {
 
                             {/* Action Buttons - 4 buttons for Completed */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-gray-200">
-                              {/* Last Record Button */}
-                              <button
-                                onClick={() => handleViewLastRecord(appointment)}
-                                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
-                              >
-                                <History className="w-4 h-4" />
-                                <span className="hidden sm:inline">Last Record</span>
-                                <span className="sm:hidden">Record</span>
-                              </button>
+                              {/* Last Record Button - With Visibility Check */}
+                              {canAccessLastRecord(appointment) ? (
+                                <button
+                                  onClick={() => handleViewLastRecord(appointment)}
+                                  className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg text-sm"
+                                  title="View patient's last consultation record and vitals"
+                                >
+                                  <History className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Last Record</span>
+                                  <span className="sm:hidden">Record</span>
+                                </button>
+                              ) : (
+                                <div 
+                                  className="px-4 py-2.5 bg-gray-300 text-gray-500 rounded-lg flex items-center justify-center gap-2 font-medium text-sm cursor-not-allowed"
+                                  title="Access denied. Family member has not granted permission to view medical records."
+                                >
+                                  <History className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Last Record</span>
+                                  <span className="sm:hidden">Record</span>
+                                  <span className="text-xs">🔒</span>
+                                </div>
+                              )}
 
                               {/* Elder Details Button */}
                               <button

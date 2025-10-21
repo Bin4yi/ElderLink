@@ -23,10 +23,26 @@ const LastRecordModal = ({ isOpen, onClose, elderId, elderName }) => {
       if (response.success) {
         setLastConsultation(response.data.lastConsultation);
         setLatestVitals(response.data.latestVitals);
+      } else if (response.accessDenied) {
+        // Handle access denied from backend
+        toast.error('Access denied. The family member has not granted permission to view medical records.', {
+          icon: '🔒',
+          duration: 4000
+        });
+        onClose(); // Close modal
       }
     } catch (error) {
       console.error('Error loading records:', error);
-      toast.error('Failed to load records');
+      
+      if (error.response?.status === 403 || error.response?.data?.accessDenied) {
+        toast.error('Access denied. The family member has not granted permission to view medical records.', {
+          icon: '🔒',
+          duration: 4000
+        });
+        onClose(); // Close modal
+      } else {
+        toast.error('Failed to load records');
+      }
     } finally {
       setLoading(false);
     }
